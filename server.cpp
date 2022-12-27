@@ -39,8 +39,8 @@ int main() {
         return EXIT_FAILURE;
     }
     while ( ~0 ) {
-        int new_events = kevent( kq, NULL, 0, event, 1, NULL );
-        for ( int i = 0; new_events > i; i++ ) {
+        int ne = kevent( kq, NULL, 0, event, 1, NULL );
+        for ( int i = 0; i < ne; i++ ) {
             int efd = event[i].ident;
             if ( event[i].flags & EV_EOF ) {
                 close( efd );
