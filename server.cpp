@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/event.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <vector>
 
 #define BUFFER_SIZE 1024
 
@@ -30,35 +30,34 @@ int main() {
         perror( "listen" );
         return EXIT_FAILURE;
     }
-    std::vector< pollfd > pfds;
-    pollfd                pfd = { 0 };
-    pfd.fd                    = fd;
-    pfd.events                = POLLIN;
-    pfds.push_back( pfd );
+    int                kq = kqueue();
+    struct kevent      change_event[4], event[4];
+    struct sockaddr_in serv_addr, client_addr;
+    EV_SET( change_event, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0 );
+    if ( kevent( kq, change_event, 1, NULL, 0, NULL ) < 0 ) {
+        perror( "kqueue" );
+        return EXIT_FAILURE;
+    }
     while ( ~0 ) {
-        poll( pfds.data(), pfds.size(), 1000 );
-        for ( std::vector< pollfd >::iterator it = pfds.begin();
-              it != pfds.end();
-              it++ ) {
-            if ( it->revents & POLLIN ) {
-                if ( it->fd == fd ) {
-                    bzero( &pfd, sizeof( pfd ) );
-                    pfd.fd     = accept( fd, ( struct sockaddr     *) &addr, &l );
-                    pfd.events = POLLIN;
-                    pfds.push_back( pfd );
-                    break;
-                } else {
-                    char   buff[BUFFER_SIZE];
-                    size_t n;
-                    while ( ( n = read( it->fd, buff, BUFFER_SIZE ) )
-                            == BUFFER_SIZE ) {
-                        write( STDOUT_FILENO, buff, n );
-                    }
+        int new_events = kevent( kq, NULL, 0, event, 1, NULL );
+        for ( int i = 0; new_events > i; i++ ) {
+            int efd = event[i].ident;
+            if ( event[i].flags & EV_EOF ) {
+                close( efd );
+            } else if ( efd == fd ) {
+                int cfd = accept( fd, ( struct sockaddr * ) &addr, &l );
+                EV_SET( change_event, cfd, EVFILT_READ, EV_ADD, 0, 0, NULL );
+                kevent( kq, change_event, 1, NULL, 0, NULL );
+            } else if ( event[i].filter & EVFILT_READ ) {
+                char   buff[BUFFER_SIZE];
+                size_t n;
+                while ( ( n = read( efd, buff, BUFFER_SIZE ) )
+                        == BUFFER_SIZE ) {
                     write( STDOUT_FILENO, buff, n );
-                    close( it->fd );
-                    pfds.erase( it );
-                    break;
                 }
+                write( STDOUT_FILENO, buff, n );
+                printf( "\n\n" );
+                fflush( stdin );
             }
         }
     }
