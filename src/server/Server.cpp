@@ -1,18 +1,19 @@
 #include "Server.hpp"
 
-Server::Server() {  _kq = kqueue();}
+Server::Server() { _kq = kqueue(); }
 
 void Server::bind( uint16_t port ) {
-    _fd = socket( AF_INET, SOCK_STREAM, 0 );
-    bzero( &_addr, sizeof _addr );
-    _addr.sin_family = AF_INET;
-    _addr.sin_port   = htons( port );
-    if ( ::bind( _fd, ( sockaddr * ) &_addr, sizeof _addr ) < 0 ) {
+    int fd = socket( AF_INET, SOCK_STREAM, 0 );
+    _servers.insert( std::make_pair( fd, ServerConf( port ) ) );
+    if ( ::bind( fd,
+                 ( sockaddr * ) &_servers.find( fd )->second.get_addr(),
+                 sizeof( sockaddr_in ) )
+         < 0 ) {
         perror( "bind" );
         exit( EXIT_FAILURE );
     }
-    listen( _fd, 100 );
-    EV_SET( _change_event, _fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0 );
+    listen( fd, 100 );
+    EV_SET( _change_event, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0 );
     kevent( _kq, _change_event, 1, NULL, 0, NULL );
 }
 
@@ -21,9 +22,12 @@ void Server::run() {
         int ne = kevent( _kq, NULL, 0, _event, 1, NULL );
         for ( int i = 0; i < ne; i++ ) {
             int efd = _event[i].ident;
-            if ( efd == _fd ) {
+            if ( _servers.find( efd ) != _servers.end() ) {
                 socklen_t l   = sizeof( sockaddr_in );
-                int       cfd = accept( _fd, ( struct sockaddr       *) &_addr, &l );
+                int       cfd = accept(
+                    efd,
+                    ( sockaddr       *) &_servers.find( efd )->second.get_addr(),
+                    &l );
                 EV_SET( _change_event, cfd, EVFILT_READ, EV_ADD, 0, 0, NULL );
                 kevent( _kq, _change_event, 1, NULL, 0, NULL );
                 std::cout << "accepted" << std::endl;
