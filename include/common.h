@@ -12,5 +12,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string>
 
 #include "../src/server/Server.hpp"
