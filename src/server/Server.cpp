@@ -30,7 +30,6 @@ void Server::run() {
                     &l );
                 EV_SET( _change_event, cfd, EVFILT_READ, EV_ADD, 0, 0, NULL );
                 kevent( _kq, _change_event, 1, NULL, 0, NULL );
-                std::cout << "accepted" << std::endl;
             } else if ( _event[i].filter & EVFILT_READ ) {
                 char   buff[BUFFER_SIZE];
                 size_t n = read( efd, buff, BUFFER_SIZE );

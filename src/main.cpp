@@ -5,5 +5,6 @@ int main( int, char ** ) {
     Server s;
     s.bind(80);
     s.bind(5000);
+    s.bind(8000);
     s.run();
 }
