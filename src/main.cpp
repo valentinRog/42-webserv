@@ -1,10 +1,10 @@
 #include "common.h"
+#include "ServerCluster.hpp"
 
 int main( int, char ** ) {
-    std::cout << "this is a non-blocking webserver" << std::endl;
-    Server s;
+    ServerCluster s;
     s.bind(80);
     s.bind(5000);
-    s.bind(8000);
     s.run();
+
 }

@@ -1,12 +1,12 @@
 NAME = webserv
 
-SRC = src/main.cpp $(wildcard src/*/*.cpp)
+SRC = $(wildcard src/*.cpp)
 
 INCLUDE = include
 
 CXX = clang++
 
-CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE)
+CXXFLAGS = -Wall -Wextra -I$(INCLUDE)
 
 OBJ = $(SRC:.cpp=.o)
 
