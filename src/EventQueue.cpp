@@ -5,7 +5,6 @@
 EventQueue::EventQueue( int max_events ) : _max_events( max_events ) {
     _epoll_fd = epoll_create( _max_events );
     if ( _epoll_fd == -1 ) { throw std::runtime_error( "epoll_create" ); }
-
     _events = new epoll_event[_max_events];
 }
 
@@ -27,8 +26,7 @@ void EventQueue::wait() {
     int n_events = epoll_wait( _epoll_fd, _events, _max_events, -1 );
     if ( n_events == -1 ) { throw std::runtime_error( "epoll_wait" ); }
     for ( int i = 0; i < n_events; i++ ) {
-        int fd = _events[i].data.fd;
-        ( *_callbacks[fd] )();
+        ( *_callbacks[_events[i].data.fd] )();
     }
 }
 
@@ -60,12 +58,10 @@ void EventQueue::remove( int fd ) {
 }
 
 void EventQueue::wait() {
-    int n_events
-        = kevent( _kqueue_fd, 0, 0, _events, _max_events, 0 );
+    int n_events = kevent( _kqueue_fd, 0, 0, _events, _max_events, 0 );
     if ( n_events == -1 ) { throw std::runtime_error( "kevent" ); }
     for ( int i = 0; i < n_events; i++ ) {
-        int fd = _events[i].ident;
-        ( *_callbacks[fd] )();
+        ( *_callbacks[_events[i].ident] )();
     }
 }
 
