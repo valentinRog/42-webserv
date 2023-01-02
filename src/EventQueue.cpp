@@ -44,6 +44,12 @@ void EventQueue::wait() {
 
 EventQueue::CallbackBase::~CallbackBase() {}
 
+time_t EventQueue::CallbackBase::get_to() const { return _to; }
+
+time_t EventQueue::CallbackBase::get_last_t() const { return _last_t; }
+
+void EventQueue::CallbackBase::update_last_t() { _last_t = time( 0 ); }
+
 #else
 
 EventQueue::EventQueue( int max_events ) : _max_events( max_events ) {
@@ -89,5 +95,11 @@ void EventQueue::wait() {
 }
 
 EventQueue::CallbackBase::~CallbackBase() {}
+
+time_t EventQueue::CallbackBase::get_to() const { return _to; }
+
+time_t EventQueue::CallbackBase::get_last_t() const { return _last_t; }
+
+void EventQueue::CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
 #endif
