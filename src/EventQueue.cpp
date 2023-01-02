@@ -86,20 +86,30 @@ void EventQueue::wait() {
           it != _callbacks.end(); ) {
         std::map< int, CallbackBase * >::iterator tmp( it );
         tmp++;
-        if ( it->second->get_to()
-             && time( 0 ) - it->second->get_last_t() > it->second->get_to() ) {
+        if ( ( it->second->get_idle_to()
+               && time( 0 ) - it->second->get_last_t()
+                      > it->second->get_idle_to() )
+             || ( it->second->get_con_to()
+                  && time( 0 ) - it->second->get_t0()
+                         > it->second->get_con_to() ) ) {
             remove( it->first );
         }
         it = tmp;
     }
 }
 
+EventQueue::CallbackBase::CallbackBase( time_t con_to, time_t idle_to )
+    : _con_to( con_to ),
+      _t0( time( 0 ) ),
+      _idle_to( idle_to ),
+      _last_t( time( 0 ) ) {}
+
 EventQueue::CallbackBase::~CallbackBase() {}
 
-time_t EventQueue::CallbackBase::get_to() const { return _to; }
-
+time_t EventQueue::CallbackBase::get_con_to() const { return _con_to; }
+time_t EventQueue::CallbackBase::get_t0() const { return _t0; }
+time_t EventQueue::CallbackBase::get_idle_to() const { return _idle_to; }
 time_t EventQueue::CallbackBase::get_last_t() const { return _last_t; }
-
-void EventQueue::CallbackBase::update_last_t() { _last_t = time( 0 ); }
+void   EventQueue::CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
 #endif
