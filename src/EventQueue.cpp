@@ -30,7 +30,7 @@ void EventQueue::wait() {
     }
 }
 
-EventQueue::HandlerBase::~HandlerBase() {}
+EventQueue::CallbackBase::~CallbackBase() {}
 
 #else
 
@@ -58,13 +58,23 @@ void EventQueue::remove( int fd ) {
 }
 
 void EventQueue::wait() {
-    int n_events = kevent( _kqueue_fd, 0, 0, _events, _max_events, 0 );
+    struct timespec ts = { 1, 0 };
+    int n_events       = kevent( _kqueue_fd, 0, 0, _events, _max_events, &ts );
     if ( n_events == -1 ) { throw std::runtime_error( "kevent" ); }
     for ( int i = 0; i < n_events; i++ ) {
+        _callbacks[_events[i].ident]->update_last_t();
         ( *_callbacks[_events[i].ident] )();
+    }
+    for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
+          it != _callbacks.end();
+          it++ ) {
+        if ( it->second->get_to()
+             && time( 0 ) - it->second->get_last_t() > it->second->get_to() ) {
+            remove( it->first );
+        }
     }
 }
 
-EventQueue::HandlerBase::~HandlerBase() {}
+EventQueue::CallbackBase::~CallbackBase() {}
 
 #endif

@@ -47,5 +47,5 @@ ServerCluster::SocketCallback::SocketCallback( int         fd,
 void ServerCluster::SocketCallback::operator()() {
     socklen_t l  = sizeof( _conf.get_addr() );
     int       fd = accept( _fd, ( sockaddr       *) &_conf.get_addr(), &l );
-    _q.add( fd, ClientCallback( fd, _q ) );
+    _q.add( fd, ClientCallback( fd, _q ), 5 );
 }

@@ -4,3 +4,4 @@ webserv
 .cache
 .vscode
 .clangd
+*.txt
