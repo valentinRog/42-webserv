@@ -23,10 +23,22 @@ void EventQueue::remove( int fd ) {
 }
 
 void EventQueue::wait() {
-    int n_events = epoll_wait( _epoll_fd, _events, _max_events, -1 );
+    int n_events = epoll_wait( _epoll_fd, _events, _max_events, 1000 );
     if ( n_events == -1 ) { throw std::runtime_error( "epoll_wait" ); }
     for ( int i = 0; i < n_events; i++ ) {
+        _callbacks[_events[i].data.fd]->update_last_t();
         ( *_callbacks[_events[i].data.fd] )();
+    }
+    for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
+          it != _callbacks.end(); ) {
+        std::map< int, CallbackBase * >::iterator tmp( it );
+        tmp++;
+        if ( it->second->get_to()
+             && time( 0 ) - it->second->get_last_t() > it->second->get_to() ) {
+            std::cout << it->first << std::endl;
+            remove( it->first );
+        }
+        it = tmp;
     }
 }
 
@@ -37,7 +49,6 @@ EventQueue::CallbackBase::~CallbackBase() {}
 EventQueue::EventQueue( int max_events ) : _max_events( max_events ) {
     _kqueue_fd = kqueue();
     if ( _kqueue_fd == -1 ) { throw std::runtime_error( "kqueue" ); }
-
     _events = new struct kevent[_max_events];
 }
 
@@ -66,12 +77,14 @@ void EventQueue::wait() {
         ( *_callbacks[_events[i].ident] )();
     }
     for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
-          it != _callbacks.end();
-          it++ ) {
+          it != _callbacks.end(); ) {
+        std::map< int, CallbackBase * >::iterator tmp( it );
+        tmp++;
         if ( it->second->get_to()
              && time( 0 ) - it->second->get_last_t() > it->second->get_to() ) {
             remove( it->first );
         }
+        it = tmp;
     }
 }
 
