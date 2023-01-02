@@ -14,9 +14,8 @@ template < typename F > void EventQueue::add( int fd, F callback, time_t to ) {
 
 template < class F >
 EventQueue::Callback< F >::Callback( F f, time_t to )
-    : _f( f ),
-      _to( to ),
-      _last_t( time( 0 ) ) {}
+    : CallbackBase( to ),
+      _f( f ) {}
 
 template < class F > void EventQueue::Callback< F >::operator()() { _f(); }
 
