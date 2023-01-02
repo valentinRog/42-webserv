@@ -6,7 +6,7 @@ INCLUDE = include
 
 CXX = clang++
 
-CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE) -fsanitize=thread -pthread
+CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE)
 
 OBJ = $(SRC:.cpp=.o)
 

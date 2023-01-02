@@ -21,7 +21,7 @@ class EventQueue {
 public:
     EventQueue( int max_events );
     ~EventQueue();
-    template < typename F > void AddEvent( int fd, F callback );
+    template < typename F > void add( int fd, F callback );
     void                         remove( int fd );
     void                         wait();
 
@@ -29,7 +29,7 @@ private:
     int                            _max_events;
     int                            _epoll_fd;
     std::map< int, HandlerBase * > _callbacks;
-    epoll_event *                  _events;
+    epoll_event                   *_events;
 };
 
 #else
@@ -40,8 +40,8 @@ class EventQueue {
         virtual ~HandlerBase();
     };
 
-    template <typename F> struct Handler : public HandlerBase {
-        Handler(F f);
+    template < typename F > struct Handler : public HandlerBase {
+        Handler( F f );
         void operator()();
 
     private:
@@ -49,17 +49,17 @@ class EventQueue {
     };
 
 public:
-    EventQueue(int max_events);
+    EventQueue( int max_events );
     ~EventQueue();
-    template <typename F> void AddEvent(int fd, F callback);
-    void remove(int fd);
-    void wait();
+    template < typename F > void add( int fd, F callback );
+    void                         remove( int fd );
+    void                         wait();
 
 private:
-    int _max_events;
-    int _kqueue_fd;
-    std::map<int, HandlerBase*> _callbacks;
-    struct kevent* _events;
+    int                            _max_events;
+    int                            _kqueue_fd;
+    std::map< int, HandlerBase * > _callbacks;
+    struct kevent                 *_events;
 };
 
 #endif

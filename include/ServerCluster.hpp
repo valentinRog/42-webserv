@@ -13,6 +13,7 @@ class ServerCluster {
     class ClientCallback {
         int         _fd;
         EventQueue &_q;
+        std::string _s;
 
     public:
         ClientCallback( int fd, EventQueue &q );

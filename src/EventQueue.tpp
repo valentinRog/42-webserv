@@ -2,7 +2,7 @@
 
 #ifdef __linux__
 
-template < typename F > void EventQueue::AddEvent( int fd, F callback ) {
+template < typename F > void EventQueue::add( int fd, F callback ) {
     epoll_event event;
     event.data.fd = fd;
     event.events  = EPOLLIN;
@@ -18,7 +18,7 @@ template < class F > void EventQueue::Handler< F >::operator()() { _f(); }
 
 #else
 
-template < typename F > void EventQueue::AddEvent( int fd, F callback ) {
+template < typename F > void EventQueue::add( int fd, F callback ) {
     struct kevent event;
     EV_SET( &event, fd, EVFILT_READ, EV_ADD, 0, 0, 0 );
     if ( kevent( _kqueue_fd, &event, 1, 0, 0, 0 ) == -1 ) {

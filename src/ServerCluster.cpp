@@ -11,8 +11,8 @@ void ServerCluster::bind( uint16_t port ) {
          == -1 ) {
         throw std::runtime_error( "bind" );
     }
-    listen( fd, 100 );
-    _q.AddEvent( fd, SocketCallback( fd, conf, _q ) );
+    listen( fd, SOMAXCONN );
+    _q.add( fd, SocketCallback( fd, conf, _q ) );
 }
 
 void ServerCluster::run() {
@@ -28,8 +28,13 @@ void ServerCluster::ClientCallback::operator()() {
     size_t n = read( _fd, buff, sizeof( buff ) );
     write( STDOUT_FILENO, buff, n );
     fflush( stdout );
-    write( _fd, "yo", 2 );
-    _q.remove( _fd );
+    _s.append( buff, n );
+    const std::string end = "\r\n\r\n";
+    if ( _s.size() >= end.size()
+         && !_s.compare( _s.size() - end.size(), end.size(), end ) ) {
+        write( _fd, "yo", 2 );
+        _q.remove( _fd );
+    }
 }
 
 ServerCluster::SocketCallback::SocketCallback( int         fd,
@@ -41,6 +46,6 @@ ServerCluster::SocketCallback::SocketCallback( int         fd,
 
 void ServerCluster::SocketCallback::operator()() {
     socklen_t l  = sizeof( _conf.get_addr() );
-    int       fd = accept( _fd, ( sockaddr * ) &_conf.get_addr(), &l );
-    _q.AddEvent( fd, ClientCallback( fd, _q ) );
+    int       fd = accept( _fd, ( sockaddr       *) &_conf.get_addr(), &l );
+    _q.add( fd, ClientCallback( fd, _q ) );
 }
