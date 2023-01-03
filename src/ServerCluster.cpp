@@ -1,6 +1,8 @@
 #include "ServerCluster.hpp"
 
-ServerCluster::ServerCluster() : _q( MAX_EVENTS ) {}
+/* -------------------------------------------------------------------------- */
+
+ServerCluster::ServerCluster() : _q( _max_events ) {}
 
 void ServerCluster::bind( uint16_t port ) {
     int        fd = socket( AF_INET, SOCK_STREAM, 0 );
@@ -12,26 +14,30 @@ void ServerCluster::bind( uint16_t port ) {
         throw std::runtime_error( "bind" );
     }
     listen( fd, SOMAXCONN );
-    _q.add( fd,
-            new Callback< SocketCallback >( SocketCallback( fd, conf, _q ),
-                                            0,
-                                            0 ) );
+    _q.add( fd, new SocketCallback( fd, conf, _q ) );
 }
 
 void ServerCluster::run() {
     while ( ~0 ) { _q.wait(); }
 }
 
+/* -------------------------------------------------------------------------- */
+
 ServerCluster::ClientCallback::ClientCallback( int fd, EventQueue &q )
-    : _fd( fd ),
+    : CallbackBase( 30, 5 ),
+      _fd( fd ),
       _q( q ) {}
 
-void ServerCluster::ClientCallback::operator()() {
-    char   buff[BUFFER_SIZE];
+void ServerCluster::ClientCallback::handle_read() {
+    char   buff[_buffer_size];
     size_t n = read( _fd, buff, sizeof( buff ) );
     write( STDOUT_FILENO, buff, n );
     fflush( stdout );
     _s.append( buff, n );
+    update_last_t();
+}
+
+void ServerCluster::ClientCallback::handle_write() {
     const std::string end = "\r\n\r\n";
     if ( _s.size() >= end.size()
          && !_s.compare( _s.size() - end.size(), end.size(), end ) ) {
@@ -40,16 +46,26 @@ void ServerCluster::ClientCallback::operator()() {
     }
 }
 
+void ServerCluster::ClientCallback::handle_timeout() { _q.remove( _fd ); }
+
+/* -------------------------------------------------------------------------- */
+
 ServerCluster::SocketCallback::SocketCallback( int         fd,
                                                ServerConf  conf,
                                                EventQueue &q )
-    : _fd( fd ),
+    : CallbackBase( 0, 0 ),
+      _fd( fd ),
       _conf( conf ),
       _q( q ) {}
 
-void ServerCluster::SocketCallback::operator()() {
+void ServerCluster::SocketCallback::handle_read() {
     socklen_t l  = sizeof( _conf.get_addr() );
     int       fd = accept( _fd, ( sockaddr       *) &_conf.get_addr(), &l );
-    _q.add( fd,
-            new Callback< ClientCallback >( ClientCallback( fd, _q ), 30, 5 ) );
+    _q.add( fd, new ClientCallback( fd, _q ) );
 }
+
+void ServerCluster::SocketCallback::handle_write() {}
+
+void ServerCluster::SocketCallback::handle_timeout() {}
+
+/* -------------------------------------------------------------------------- */

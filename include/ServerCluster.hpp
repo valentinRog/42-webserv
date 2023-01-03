@@ -4,30 +4,35 @@
 #include "ServerConf.hpp"
 #include "common.h"
 
-#define BUFFER_SIZE 1024
-#define MAX_EVENTS 40
+/* -------------------------------------------------------------------------- */
 
 class ServerCluster {
-    EventQueue _q;
+    EventQueue          _q;
+    static const int    _max_events  = 40;
+    static const size_t _buffer_size = 1024;
 
-    class ClientCallback {
+    class ClientCallback : public CallbackBase {
         int         _fd;
         EventQueue &_q;
         std::string _s;
 
     public:
         ClientCallback( int fd, EventQueue &q );
-        void operator()();
+        void handle_read();
+        void handle_write();
+        void handle_timeout();
     };
 
-    class SocketCallback {
+    class SocketCallback : public CallbackBase {
         int         _fd;
         ServerConf  _conf;
         EventQueue &_q;
 
     public:
         SocketCallback( int fd, ServerConf conf, EventQueue &q );
-        void operator()();
+        void handle_read();
+        void handle_write();
+        void handle_timeout();
     };
 
 public:
@@ -36,3 +41,5 @@ public:
     void bind( uint16_t port );
     void run();
 };
+
+/* -------------------------------------------------------------------------- */

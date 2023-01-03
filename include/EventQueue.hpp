@@ -12,21 +12,17 @@ class CallbackBase {
 
 public:
     CallbackBase( time_t con_to, time_t idle_to );
-    virtual void operator()() = 0;
     virtual ~CallbackBase();
-    time_t get_con_to() const;
-    time_t get_t0() const;
-    time_t get_idle_to() const;
-    time_t get_last_t() const;
-    void   update_last_t();
-};
+    virtual void handle_read()    = 0;
+    virtual void handle_write()   = 0;
+    virtual void handle_timeout() = 0;
+    time_t       get_con_to() const;
+    time_t       get_t0() const;
+    time_t       get_idle_to() const;
+    time_t       get_last_t() const;
 
-template < typename F > class Callback : public CallbackBase {
-    F _f;
-
-public:
-    Callback( F f, time_t con_to, time_t idle_to );
-    void operator()();
+protected:
+    void update_last_t();
 };
 
 /* -------------------------------------------------------------------------- */
@@ -84,5 +80,3 @@ private:
 /* -------------------------------------------------------------------------- */
 
 #endif
-
-#include "../src/EventQueue.tpp"
