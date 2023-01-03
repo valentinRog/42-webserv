@@ -36,7 +36,7 @@ EventQueue::~EventQueue() {
 void EventQueue::add( int fd, CallbackBase *callback ) {
     epoll_event event;
     event.data.fd = fd;
-    event.events  = EPOLLIN;
+    event.events  = EPOLLIN | EPOLLOUT;
     if ( epoll_ctl( _epoll_fd, EPOLL_CTL_ADD, fd, &event ) == -1 ) {
         throw std::runtime_error( "epoll_ctl" );
     }
@@ -47,17 +47,23 @@ void EventQueue::remove( int fd ) {
     if ( epoll_ctl( _epoll_fd, EPOLL_CTL_DEL, fd, 0 ) == -1 ) {
         throw std::runtime_error( "epoll_ctl" );
     }
-    close( fd );
     delete _callbacks[fd];
     _callbacks.erase( fd );
+    close( fd );
 }
 
 void EventQueue::wait() {
     int n_events = epoll_wait( _epoll_fd, _events, _max_events, 1000 );
     if ( n_events == -1 ) { throw std::runtime_error( "epoll_wait" ); }
     for ( int i = 0; i < n_events; i++ ) {
-        _callbacks[_events[i].data.fd]->update_last_t();
-        ( *_callbacks[_events[i].data.fd] )();
+        if ( _callbacks.find( _events[i].data.fd ) == _callbacks.end() ) {
+            continue;
+        }
+        if ( _events[i].events & EPOLLIN ) {
+            _callbacks[_events[i].data.fd]->handle_read();
+        } else if ( _events[i].events & EPOLLOUT ) {
+            _callbacks[_events[i].data.fd]->handle_write();
+        }
     }
     for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
           it != _callbacks.end(); ) {
@@ -69,7 +75,7 @@ void EventQueue::wait() {
              || ( it->second->get_con_to()
                   && time( 0 ) - it->second->get_t0()
                          > it->second->get_con_to() ) ) {
-            remove( it->first );
+            it->second->handle_timeout();
         }
         it = tmp;
     }
