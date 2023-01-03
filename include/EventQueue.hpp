@@ -49,13 +49,13 @@ public:
 
 /* -------------------------------------------------------------------------- */
 
-class EventQueue : EventEventQueueBase {
+class EventQueue : EventQueueBase {
 public:
     EventQueue( int max_events );
     ~EventQueue();
-    template < typename F > void add( int fd, CallbackBase *callback );
-    void                         remove( int fd );
-    void                         wait();
+    void add( int fd, CallbackBase *callback );
+    void remove( int fd );
+    void wait();
 
 private:
     int          _epoll_fd;
