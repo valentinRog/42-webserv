@@ -29,11 +29,6 @@ public:
     void operator()();
 };
 
-template < typename F >
-CallbackBase *new_callback( F f, time_t con_to, time_t idle_to ) {
-    return new Callback< F >( f, con_to, idle_to );
-}
-
 /* -------------------------------------------------------------------------- */
 
 class EventQueueBase {

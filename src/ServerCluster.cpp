@@ -12,7 +12,10 @@ void ServerCluster::bind( uint16_t port ) {
         throw std::runtime_error( "bind" );
     }
     listen( fd, SOMAXCONN );
-    _q.add( fd, new_callback( SocketCallback( fd, conf, _q ), 0, 0 ) );
+    _q.add( fd,
+            new Callback< SocketCallback >( SocketCallback( fd, conf, _q ),
+                                            0,
+                                            0 ) );
 }
 
 void ServerCluster::run() {
@@ -47,5 +50,6 @@ ServerCluster::SocketCallback::SocketCallback( int         fd,
 void ServerCluster::SocketCallback::operator()() {
     socklen_t l  = sizeof( _conf.get_addr() );
     int       fd = accept( _fd, ( sockaddr       *) &_conf.get_addr(), &l );
-    _q.add( fd, new_callback( ClientCallback( fd, _q ), 30, 5 ) );
+    _q.add( fd,
+            new Callback< ClientCallback >( ClientCallback( fd, _q ), 30, 5 ) );
 }
