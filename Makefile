@@ -6,7 +6,7 @@ INCLUDE = include
 
 CXX = clang++
 
-CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE)
+CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE) -fsanitize=address
 
 OBJ = $(SRC:.cpp=.o)
 
