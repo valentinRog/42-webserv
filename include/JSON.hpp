@@ -19,7 +19,6 @@ class String : public Value {
 
 public:
     String( const std::string &s );
-    String( const String &other );
     Value             *clone() const;
     const std::string &get() const;
     std::ostream      &repr( std::ostream &os ) const;

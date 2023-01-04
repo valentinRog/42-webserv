@@ -8,8 +8,6 @@ JSON::Value::~Value() {}
 
 JSON::String::String( const std::string &s ) : _s( s ) {}
 
-JSON::String::String( const JSON::String &other ) : _s( other._s ) {}
-
 JSON::Value *JSON::String::clone() const { return new JSON::String( *this ); }
 
 const std::string &JSON::String::get() const { return _s; }
@@ -119,7 +117,9 @@ JSON::Value *JSON::Boolean::clone() const { return new JSON::Boolean( *this ); }
 
 bool JSON::Boolean::get() const { return _b; }
 
-std::ostream &JSON::Boolean::repr( std::ostream &os ) const { return os << _b; }
+std::ostream &JSON::Boolean::repr( std::ostream &os ) const {
+    return os << std::boolalpha << _b;
+}
 
 /* -------------------------------------------------------------------------- */
 
