@@ -63,7 +63,8 @@ std::ostream &JSON::Object::repr( std::ostream &os ) const {
           it != _m.end();
           it++ ) {
         if ( it != _m.begin() ) { os << ", "; }
-        os << it->first << ": " << *it->second;
+        os << "\"" << it->first << "\""
+           << ": " << *it->second;
     }
     return os << "}";
 }
@@ -122,7 +123,7 @@ std::ostream &JSON::Boolean::repr( std::ostream &os ) const {
 JSON::Value *JSON::Null::clone() const { return new JSON::Null( *this ); }
 
 std::ostream &JSON::Null::repr( std::ostream &os ) const {
-    return os << "Null";
+    return os << "null";
 }
 
 /* -------------------------------------------------------------------------- */
