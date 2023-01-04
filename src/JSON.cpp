@@ -20,8 +20,6 @@ std::ostream &JSON::String::repr( std::ostream &os ) const {
 
 JSON::Number::Number( double n ) : _n( n ) {}
 
-JSON::Number::Number( const Number &other ) : _n( other._n ) {}
-
 JSON::Value *JSON::Number::clone() const { return new JSON::Number( *this ); }
 
 double JSON::Number::get() const { return _n; }
@@ -111,8 +109,6 @@ std::ostream &JSON::Array::repr( std::ostream &os ) const {
 
 JSON::Boolean::Boolean( bool b ) : _b( b ) {}
 
-JSON::Boolean::Boolean( const JSON::Boolean &other ) : _b( other._b ) {}
-
 JSON::Value *JSON::Boolean::clone() const { return new JSON::Boolean( *this ); }
 
 bool JSON::Boolean::get() const { return _b; }
@@ -122,10 +118,6 @@ std::ostream &JSON::Boolean::repr( std::ostream &os ) const {
 }
 
 /* -------------------------------------------------------------------------- */
-
-JSON::Null::Null() {}
-
-JSON::Null::Null( const Null & ) {}
 
 JSON::Value *JSON::Null::clone() const { return new JSON::Null( *this ); }
 

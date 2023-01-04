@@ -31,7 +31,6 @@ class Number : public Value {
 
 public:
     Number( double n );
-    Number( const Number &other );
     Value        *clone() const;
     double        get() const;
     std::ostream &repr( std::ostream &os ) const;
@@ -74,7 +73,6 @@ class Boolean : public Value {
 
 public:
     Boolean( bool b );
-    Boolean( const Boolean &other );
     Value        *clone() const;
     bool          get() const;
     std::ostream &repr( std::ostream &os ) const;
@@ -84,8 +82,6 @@ public:
 
 class Null : public Value {
 public:
-    Null();
-    Null( const Null &other );
     Value        *clone() const;
     std::ostream &repr( std::ostream &os ) const;
 };
