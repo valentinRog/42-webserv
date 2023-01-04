@@ -33,14 +33,14 @@ EventQueue::~EventQueue() {
     delete[] _events;
 }
 
-void EventQueue::add( int fd, CallbackBase *callback ) {
+void EventQueue::add( int fd, const CallbackBase &callback ) {
     epoll_event event;
     event.data.fd = fd;
     event.events  = EPOLLIN | EPOLLOUT;
     if ( epoll_ctl( _epoll_fd, EPOLL_CTL_ADD, fd, &event ) == -1 ) {
         throw std::runtime_error( "epoll_ctl" );
     }
-    _callbacks[fd] = callback;
+    _callbacks[fd] = callback.clone();
 }
 
 void EventQueue::remove( int fd ) {
@@ -98,14 +98,14 @@ EventQueue::~EventQueue() {
     delete[] _events;
 }
 
-void EventQueue::add( int fd, CallbackBase *callback ) {
+void EventQueue::add( int fd, const CallbackBase &callback ) {
     struct kevent events[2];
     EV_SET( events, fd, EVFILT_READ, EV_ADD, 0, 0, 0 );
     EV_SET( events + 1, fd, EVFILT_WRITE, EV_ADD, 0, 0, 0 );
     if ( kevent( _kqueue_fd, events, 2, 0, 0, 0 ) == -1 ) {
         throw std::runtime_error( "kevent" );
     }
-    _callbacks[fd] = callback;
+    _callbacks[fd] = callback.clone();
 }
 
 void EventQueue::remove( int fd ) {

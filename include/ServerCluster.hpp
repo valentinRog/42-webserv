@@ -18,9 +18,10 @@ class ServerCluster {
 
     public:
         ClientCallback( int fd, EventQueue &q );
-        void handle_read();
-        void handle_write();
-        void handle_timeout();
+        CallbackBase *clone() const;
+        void          handle_read();
+        void          handle_write();
+        void          handle_timeout();
     };
 
     class SocketCallback : public CallbackBase {
@@ -30,9 +31,10 @@ class ServerCluster {
 
     public:
         SocketCallback( int fd, ServerConf conf, EventQueue &q );
-        void handle_read();
-        void handle_write();
-        void handle_timeout();
+        CallbackBase *clone() const;
+        void          handle_read();
+        void          handle_write();
+        void          handle_timeout();
     };
 
 public:
