@@ -160,10 +160,35 @@ std::deque< std::string > JSON::Parse::_lexer( const std::string &s ) {
 
 JSON::Parse::Parse( const std::string &s ) : _q( _lexer( s ) ) {}
 
-JSON::Object JSON::Parse::_json() const { return Object(); }
+JSON::Value *JSON::Parse::_json() {
+    if ( !_q.size() ) { throw std::runtime_error( "" ); }
+    if ( _q.front() == "{" ) {
+        Object o;
+        _q.pop_front();
+        while ( _q.size() && _q.front() != "}" ) {
+            std::string tok( _q.front() );
+            if ( tok.size() < 3 || tok.front() != quote
+                 || tok.back() != quote ) {
+                throw std::runtime_error( "" );
+            }
+            _q.pop_front();
+            std::string k = tok;
+            if ( !_q.size() || _q.front() != ":" ) {
+                throw std::runtime_error( "" );
+            }
+            _q.pop_front();
+            if ( !_q.size() ) { throw std::runtime_error( "error" ); }
+            Value *v = _json();
+            o.add( k, *v );
+        }
+        _q.pop_front();
+        return o.clone();
+    }
+    return String("yo").clone();
+}
 
 JSON::Object JSON::Parse::from_string( const std::string &s ) {
-    return Parse( s )._json();
+    return *dynamic_cast< Object * >( Parse( s )._json() );
 }
 
 /* -------------------------------------------------------------------------- */
