@@ -93,13 +93,14 @@ class Parse {
     static const std::string tokens;
     static const char        quote;
 
-    std::deque< std::string > _q;
-
-    std::deque< std::string > _lexer( const std::string &s );
-
-    Parse( const std::string &s );
-
-    Value *_json();
+    static std::deque< std::string > _lexer( const std::string &s );
+    static Value                    *_parse( std::deque< std::string > &q );
+    static String  _parse_string( std::deque< std::string > &q );
+    static Number  _parse_number( std::deque< std::string > &q );
+    static Object  _parse_object( std::deque< std::string > &q );
+    static Array   _parse_array( std::deque< std::string > &q );
+    static Boolean _parse_boolean( std::deque< std::string > &q );
+    static Null    _parse_null( std::deque< std::string > &q );
 
 public:
     static Object from_string( const std::string &s );

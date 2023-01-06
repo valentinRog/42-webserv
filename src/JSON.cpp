@@ -158,37 +158,97 @@ std::deque< std::string > JSON::Parse::_lexer( const std::string &s ) {
     return q;
 }
 
-JSON::Parse::Parse( const std::string &s ) : _q( _lexer( s ) ) {}
-
-JSON::Value *JSON::Parse::_json() {
-    if ( !_q.size() ) { throw std::runtime_error( "" ); }
-    if ( _q.front() == "{" ) {
-        Object o;
-        _q.pop_front();
-        while ( _q.size() && _q.front() != "}" ) {
-            std::string tok( _q.front() );
-            if ( tok.size() < 3 || tok.front() != quote
-                 || tok.back() != quote ) {
-                throw std::runtime_error( "" );
-            }
-            _q.pop_front();
-            std::string k = tok;
-            if ( !_q.size() || _q.front() != ":" ) {
-                throw std::runtime_error( "" );
-            }
-            _q.pop_front();
-            if ( !_q.size() ) { throw std::runtime_error( "error" ); }
-            Value *v = _json();
-            o.add( k, *v );
-        }
-        _q.pop_front();
-        return o.clone();
+JSON::Value *JSON::Parse::_parse( std::deque< std::string > &q ) {
+    if ( !q.size() ) { throw std::runtime_error( "" ); }
+    if ( q.front().front() == quote ) { return _parse_string( q ).clone(); }
+    if ( std::isdigit( q.front().front() ) ) {
+        return _parse_number( q ).clone();
     }
-    return String("yo").clone();
+    if ( q.front() == "{" ) { return _parse_object( q ).clone(); }
+    if ( q.front() == "[" ) { return _parse_array( q ).clone(); }
+    if ( q.front() == "true" || q.front() == "false" ) {
+        return _parse_boolean( q ).clone();
+    }
+    return _parse_null( q ).clone();
+}
+
+JSON::String JSON::Parse::_parse_string( std::deque< std::string > &q ) {
+    if ( !q.size() ) { throw std::runtime_error( "" ); }
+    std::string s( q.front().substr( 1, q.front().size() - 2 ) );
+    q.pop_front();
+    return String( s );
+}
+
+JSON::Number JSON::Parse::_parse_number( std::deque< std::string > &q ) {
+    std::string s( q.front() );
+    if ( !q.size() ) { throw std::runtime_error( "" ); }
+    q.pop_front();
+    std::stringstream ss( s );
+    double            n;
+    ss >> n;
+    return Number( n );
+}
+
+JSON::Object JSON::Parse::_parse_object( std::deque< std::string > &q ) {
+    if ( q.size() < 5 || q.front() != "{" ) { throw std::runtime_error( "" ); }
+    Object o;
+    q.pop_front();
+    while ( q.size() && q.front() != "}" ) {
+        std::string tok( q.front() );
+        if ( tok.size() < 3 || tok.front() != quote || tok.back() != quote ) {
+            throw std::runtime_error( "yo" );
+        }
+        q.pop_front();
+        std::string k = tok.substr( 1, tok.size() - 2 );
+        if ( q.front() != ":" ) { throw std::runtime_error( "" ); }
+        q.pop_front();
+        Value *v = _parse( q );
+        o.add( k, *v );
+        delete v;
+        if ( q.front() == "," ) {
+            if ( q.size() < 4 ) { throw std::runtime_error( "" ); }
+            q.pop_front();
+        }
+    }
+    q.pop_front();
+    return o;
+}
+
+JSON::Array JSON::Parse::_parse_array( std::deque< std::string > &q ) {
+    if ( q.size() < 3 || q.front() != "[" ) { throw std::runtime_error( "" ); }
+    Array a;
+    q.pop_front();
+    while ( q.front() != "]" ) {
+        Value *v( _parse( q ) );
+        a.add( *v );
+        delete v;
+        if ( q.front() == "," ) {
+            if ( q.size() < 3 ) { throw std::runtime_error( "" ); }
+            q.pop_front();
+        }
+    }
+    q.pop_front();
+    return a;
+}
+
+JSON::Boolean JSON::Parse::_parse_boolean( std::deque< std::string > &q ) {
+    std::string s( q.front() );
+    if ( !q.size() || ( s != "true" && s != "false" ) ) {
+        throw std::runtime_error( "" );
+    }
+    q.pop_front();
+    return s == "true" ? Boolean( true ) : Boolean( false );
+}
+
+JSON::Null JSON::Parse::_parse_null( std::deque< std::string > &q ) {
+    if ( !q.size() ) { throw std::runtime_error( "" ); }
+    q.pop_front();
+    return Null();
 }
 
 JSON::Object JSON::Parse::from_string( const std::string &s ) {
-    return *dynamic_cast< Object * >( Parse( s )._json() );
+    std::deque< std::string > q( _lexer( s ) );
+    return *dynamic_cast< Object * >( _parse( q ) );
 }
 
 /* -------------------------------------------------------------------------- */
