@@ -2,6 +2,6 @@
 
 #include "common.h"
 
-class HttpResponse{
-  
+class HttpResponse {
+    
 };
