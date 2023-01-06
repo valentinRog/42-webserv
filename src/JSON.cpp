@@ -246,9 +246,9 @@ JSON::Null JSON::Parse::_parse_null( std::deque< std::string > &q ) {
     return Null();
 }
 
-JSON::Object JSON::Parse::from_string( const std::string &s ) {
+JSON::Value *JSON::Parse::from_string( const std::string &s ) {
     std::deque< std::string > q( _lexer( s ) );
-    return *dynamic_cast< Object * >( _parse( q ) );
+    return _parse( q );
 }
 
 /* -------------------------------------------------------------------------- */

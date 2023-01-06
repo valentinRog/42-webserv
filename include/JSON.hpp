@@ -103,7 +103,7 @@ class Parse {
     static Null    _parse_null( std::deque< std::string > &q );
 
 public:
-    static Object from_string( const std::string &s );
+    static Value *from_string( const std::string &s );
 };
 
 /* -------------------------------------------------------------------------- */
