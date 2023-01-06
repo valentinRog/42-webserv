@@ -11,8 +11,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <deque>
 #include <map>
+#include <queue>
 #include <functional>
+#include <fstream>
+#include <sstream>
 
 #ifdef __linux__
 #include <sys/epoll.h>

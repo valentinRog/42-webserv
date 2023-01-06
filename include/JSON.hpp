@@ -87,7 +87,37 @@ public:
 };
 
 /* -------------------------------------------------------------------------- */
+
+class Parse {
+    static const std::string whitespaces;
+    static const std::string tokens;
+    static const char        quote;
+
+    std::deque< std::string > _q;
+
+    std::deque< std::string > _lexer( const std::string &s );
+
+    template < typename T > T parse( std::deque< std::string > &q );
+    template <> String        parse< String >( std::deque< std::string > &q );
+    template <> Number        parse< Number >( std::deque< std::string > &q );
+    template <> Object        parse< Object >( std::deque< std::string > &q );
+    template <> Array         parse< Array >( std::deque< std::string > &q );
+    template <> Boolean       parse< Boolean >( std::deque< std::string > &q );
+    template <> Null          parse< Null >( std::deque< std::string > &q );
+
+    Parse( const std::string &s );
+
+    Object _json() const;
+
+public:
+    static Object from_string( const std::string &s );
+};
+
+/* -------------------------------------------------------------------------- */
+
 }
+
+/* ------------------------------------------------------------------------- */
 
 std::ostream &operator<<( std::ostream &os, const JSON::Value &v );
 

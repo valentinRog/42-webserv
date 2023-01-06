@@ -63,8 +63,7 @@ std::ostream &JSON::Object::repr( std::ostream &os ) const {
           it != _m.end();
           it++ ) {
         if ( it != _m.begin() ) { os << ", "; }
-        os << "\"" << it->first << "\""
-           << ": " << *it->second;
+        os << '"' << it->first << '"' << ": " << *it->second;
     }
     return os << "}";
 }
@@ -124,6 +123,47 @@ JSON::Value *JSON::Null::clone() const { return new JSON::Null( *this ); }
 
 std::ostream &JSON::Null::repr( std::ostream &os ) const {
     return os << "null";
+}
+
+/* -------------------------------------------------------------------------- */
+
+const std::string JSON::Parse::whitespaces = " \t\n\r";
+const std::string JSON::Parse::tokens      = "{}[],:";
+const char        JSON::Parse::quote       = '"';
+
+std::deque< std::string > JSON::Parse::_lexer( const std::string &s ) {
+    std::deque< std::string > q;
+    std::string               acc;
+    bool                      in_quote( false );
+    for ( std::string::const_iterator it = s.begin(); it != s.end(); it++ ) {
+        if ( *it == quote && !in_quote ) {
+            if ( acc.size() ) { q.push_back( acc ); }
+            acc      = *it;
+            in_quote = true;
+        } else if ( *it == quote && in_quote ) {
+            q.push_back( acc + *it );
+            acc.clear();
+            in_quote = false;
+        } else if ( in_quote ) {
+            acc += *it;
+        } else if ( tokens.find( *it ) != std::string::npos ) {
+            if ( acc.size() ) { q.push_back( acc ); }
+            q.push_back( std::string( 1, *it ) );
+            acc.clear();
+        } else if ( whitespaces.find( *it ) == std::string::npos ) {
+            acc += *it;
+        }
+    }
+    if ( acc.size() ) { q.push_back( acc ); }
+    return q;
+}
+
+JSON::Parse::Parse( const std::string &s ) : _q( _lexer( s ) ) {}
+
+JSON::Object JSON::Parse::_json() const { return Object(); }
+
+JSON::Object JSON::Parse::from_string( const std::string &s ) {
+    return Parse( s )._json();
 }
 
 /* -------------------------------------------------------------------------- */

@@ -24,7 +24,7 @@ void ServerCluster::run() {
 /* -------------------------------------------------------------------------- */
 
 ServerCluster::ClientCallback::ClientCallback( int fd, EventQueue &q )
-    : CallbackBase( 30, 5 ),
+    : CallbackBase( 0, 0 ),
       _fd( fd ),
       _q( q ) {}
 
