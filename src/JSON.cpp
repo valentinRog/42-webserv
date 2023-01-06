@@ -129,25 +129,7 @@ std::ostream &JSON::Null::repr( std::ostream &os ) const {
 /* -------------------------------------------------------------------------- */
 
 std::ostream &operator<<( std::ostream &os, const JSON::Value &v ) {
-    try {
-        return dynamic_cast< const JSON::String & >( v ).repr( os );
-    } catch ( const std::exception & ) {}
-    try {
-        return dynamic_cast< const JSON::Number & >( v ).repr( os );
-    } catch ( const std::exception & ) {}
-    try {
-        return dynamic_cast< const JSON::Object & >( v ).repr( os );
-    } catch ( const std::exception & ) {}
-    try {
-        return dynamic_cast< const JSON::Array & >( v ).repr( os );
-    } catch ( const std::exception & ) {}
-    try {
-        return dynamic_cast< const JSON::Boolean & >( v ).repr( os );
-    } catch ( const std::exception & ) {}
-    try {
-        return dynamic_cast< const JSON::Null & >( v ).repr( os );
-    } catch ( const std::exception & ) {}
-    return os << "What the hell is this ?";
+    return v.repr( os );
 }
 
 /* -------------------------------------------------------------------------- */
