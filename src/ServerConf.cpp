@@ -1,9 +1,9 @@
 #include "ServerConf.hpp"
 
-ServerConf::ServerConf( uint16_t port ) {
-    ::bzero( &_addr, sizeof _addr );
+ServerConf::ServerConf( const JSON::Object &o ) {
     _addr.sin_family = AF_INET;
-    _addr.sin_port   = htons( port );
+    _addr.sin_port   = htons(
+        dynamic_cast< const JSON::Number * >( o.get().at( "listen" ) )->get() );
 }
 
-sockaddr_in &ServerConf::get_addr() { return _addr; }
+const sockaddr_in &ServerConf::get_addr() const { return _addr; }

@@ -1,12 +1,13 @@
 #pragma once
 
+#include "JSON.hpp"
 #include "common.h"
 
 class ServerConf {
     sockaddr_in _addr;
 
 public:
-    ServerConf( uint16_t port );
+    ServerConf( const JSON::Object &o );
 
-    sockaddr_in &get_addr();
+    const sockaddr_in &get_addr() const;
 };

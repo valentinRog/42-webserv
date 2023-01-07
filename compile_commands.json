@@ -1,0 +1,82 @@
+[
+    {
+        "arguments": [
+            "clang++",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-std=c++98",
+            "-Iinclude",
+            "-fsanitize=leak",
+            "-o",
+            "src/main.o",
+            "src/main.cpp"
+        ],
+        "directory": "/root/goinfre/42-webserv",
+        "file": "src/main.cpp"
+    },
+    {
+        "arguments": [
+            "clang++",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-std=c++98",
+            "-Iinclude",
+            "-fsanitize=leak",
+            "-o",
+            "src/ServerConf.o",
+            "src/ServerConf.cpp"
+        ],
+        "directory": "/root/goinfre/42-webserv",
+        "file": "src/ServerConf.cpp"
+    },
+    {
+        "arguments": [
+            "clang++",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-std=c++98",
+            "-Iinclude",
+            "-fsanitize=leak",
+            "-o",
+            "src/EventQueue.o",
+            "src/EventQueue.cpp"
+        ],
+        "directory": "/root/goinfre/42-webserv",
+        "file": "src/EventQueue.cpp"
+    },
+    {
+        "arguments": [
+            "clang++",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-std=c++98",
+            "-Iinclude",
+            "-fsanitize=leak",
+            "-o",
+            "src/ServerCluster.o",
+            "src/ServerCluster.cpp"
+        ],
+        "directory": "/root/goinfre/42-webserv",
+        "file": "src/ServerCluster.cpp"
+    },
+    {
+        "arguments": [
+            "clang++",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-std=c++98",
+            "-Iinclude",
+            "-fsanitize=leak",
+            "-o",
+            "src/JSON.o",
+            "src/JSON.cpp"
+        ],
+        "directory": "/root/goinfre/42-webserv",
+        "file": "src/JSON.cpp"
+    }
+]

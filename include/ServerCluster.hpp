@@ -40,7 +40,7 @@ class ServerCluster {
 public:
     ServerCluster();
 
-    void bind( uint16_t port );
+    void bind( const ServerConf &conf );
     void run();
 };
 

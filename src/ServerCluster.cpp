@@ -4,9 +4,8 @@
 
 ServerCluster::ServerCluster() : _q( _max_events ) {}
 
-void ServerCluster::bind( uint16_t port ) {
-    int        fd = socket( AF_INET, SOCK_STREAM, 0 );
-    ServerConf conf( port );
+void ServerCluster::bind( const ServerConf &conf ) {
+    int fd = socket( AF_INET, SOCK_STREAM, 0 );
     if ( ::bind( fd,
                  ( sockaddr * ) &conf.get_addr(),
                  sizeof( conf.get_addr() ) )
@@ -68,7 +67,7 @@ CallbackBase *ServerCluster::SocketCallback::clone() const {
 
 void ServerCluster::SocketCallback::handle_read() {
     socklen_t l  = sizeof( _conf.get_addr() );
-    int       fd = accept( _fd, ( sockaddr       *) &_conf.get_addr(), &l );
+    int       fd = accept( _fd, ( sockaddr * ) &_conf.get_addr(), &l );
     _q.add( fd, ClientCallback( fd, _q ) );
 }
 

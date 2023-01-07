@@ -1,6 +1,5 @@
 *.o
 webserv
-*.json
 .cache
 .vscode
 .clangd
