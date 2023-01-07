@@ -8,4 +8,3 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         for line in sys.stdin:
             s.sendall(line.encode())
         s.sendall(b"\r\n\r\n")
-            

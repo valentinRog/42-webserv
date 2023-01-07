@@ -9,7 +9,7 @@ namespace JSON {
 struct Value {
     virtual ~Value();
     virtual std::ostream &repr( std::ostream &os ) const = 0;
-    virtual Value        *clone() const                  = 0;
+    virtual Value *       clone() const                  = 0;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -19,9 +19,9 @@ class String : public Value {
 
 public:
     String( const std::string &s );
-    Value             *clone() const;
+    Value *            clone() const;
     const std::string &get() const;
-    std::ostream      &repr( std::ostream &os ) const;
+    std::ostream &     repr( std::ostream &os ) const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -31,7 +31,7 @@ class Number : public Value {
 
 public:
     Number( double n );
-    Value        *clone() const;
+    Value *       clone() const;
     double        get() const;
     std::ostream &repr( std::ostream &os ) const;
 };
@@ -45,7 +45,7 @@ public:
     Object();
     Object( const Object &other );
     ~Object();
-    Value                                  *clone() const;
+    Value *                                 clone() const;
     const std::map< std::string, Value * > &get() const;
     void          add( const std::string &k, const Value &v );
     std::ostream &repr( std::ostream &os ) const;
@@ -60,10 +60,10 @@ public:
     Array();
     Array( const Array &other );
     ~Array();
-    Value                        *clone() const;
+    Value *                       clone() const;
     const std::vector< Value * > &get() const;
     void                          add( const Value &v );
-    std::ostream                 &repr( std::ostream &os ) const;
+    std::ostream &                repr( std::ostream &os ) const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -73,7 +73,7 @@ class Boolean : public Value {
 
 public:
     Boolean( bool b );
-    Value        *clone() const;
+    Value *       clone() const;
     bool          get() const;
     std::ostream &repr( std::ostream &os ) const;
 };
@@ -82,7 +82,7 @@ public:
 
 class Null : public Value {
 public:
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 };
 
@@ -93,17 +93,21 @@ class Parse {
     static const std::string tokens;
     static const char        quote;
 
-    static std::deque< std::string > _lexer( const std::string &s );
-    static Value                    *_parse( std::deque< std::string > &q );
-    static String  _parse_string( std::deque< std::string > &q );
-    static Number  _parse_number( std::deque< std::string > &q );
-    static Object  _parse_object( std::deque< std::string > &q );
-    static Array   _parse_array( std::deque< std::string > &q );
-    static Boolean _parse_boolean( std::deque< std::string > &q );
-    static Null    _parse_null( std::deque< std::string > &q );
+    static std::queue< std::string > _lexer( const std::string &s );
+    static Value *                   _parse( std::queue< std::string > &q );
+    static String  _parse_string( std::queue< std::string > &q );
+    static Number  _parse_number( std::queue< std::string > &q );
+    static Object  _parse_object( std::queue< std::string > &q );
+    static Array   _parse_array( std::queue< std::string > &q );
+    static Boolean _parse_boolean( std::queue< std::string > &q );
+    static Null    _parse_null( std::queue< std::string > &q );
 
 public:
     static Value *from_string( const std::string &s );
+
+    class ParsingError : public std::exception {
+        virtual const char *what() const throw();
+    };
 };
 
 /* -------------------------------------------------------------------------- */
