@@ -10,7 +10,9 @@ JSON::String::String( const std::string &s ) : _s( s ) {}
 
 JSON::Value *JSON::String::clone() const { return new JSON::String( *this ); }
 
-const std::string &JSON::String::get() const { return _s; }
+std::string &JSON::String::operator*() { return _s; }
+
+const std::string &JSON::String::operator*() const { return _s; }
 
 std::ostream &JSON::String::repr( std::ostream &os ) const {
     return os << '"' << _s << '"';
@@ -22,7 +24,9 @@ JSON::Number::Number( double n ) : _n( n ) {}
 
 JSON::Value *JSON::Number::clone() const { return new JSON::Number( *this ); }
 
-double JSON::Number::get() const { return _n; }
+double &JSON::Number::operator*() { return _n; }
+
+double JSON::Number::operator*() const { return _n; }
 
 std::ostream &JSON::Number::repr( std::ostream &os ) const { return os << _n; }
 
@@ -90,8 +94,6 @@ JSON::Array::~Array() {
 
 JSON::Value *JSON::Array::clone() const { return new JSON::Array( *this ); }
 
-const std::vector< JSON::Value * > &JSON::Array::get() const { return _v; }
-
 void JSON::Array::add( const JSON::Value &v ) { _v.push_back( v.clone() ); }
 
 std::ostream &JSON::Array::repr( std::ostream &os ) const {
@@ -105,13 +107,20 @@ std::ostream &JSON::Array::repr( std::ostream &os ) const {
     return os << "]";
 }
 
+JSON::Array::iterator       JSON::Array::begin() { return _v.begin(); }
+JSON::Array::const_iterator JSON::Array::begin() const { return _v.begin(); }
+JSON::Array::iterator       JSON::Array::end() { return _v.end(); }
+JSON::Array::const_iterator JSON::Array::end() const { return _v.end(); }
+
 /* -------------------------------------------------------------------------- */
 
 JSON::Boolean::Boolean( bool b ) : _b( b ) {}
 
 JSON::Value *JSON::Boolean::clone() const { return new JSON::Boolean( *this ); }
 
-bool JSON::Boolean::get() const { return _b; }
+bool &JSON::Boolean::operator*() { return _b; }
+
+bool JSON::Boolean::operator*() const { return _b; }
 
 std::ostream &JSON::Boolean::repr( std::ostream &os ) const {
     return os << std::boolalpha << _b;
@@ -249,11 +258,6 @@ JSON::Null JSON::Parse::_parse_null( std::queue< std::string > &q ) {
     if ( !q.size() || q.front() != "null" ) { throw ParsingError(); }
     q.pop();
     return Null();
-}
-
-JSON::Value *JSON::Parse::from_string( const std::string &s ) {
-    std::queue< std::string > q( _lexer( s ) );
-    return _parse( q );
 }
 
 const char *JSON::Parse::ParsingError::what() const throw() {

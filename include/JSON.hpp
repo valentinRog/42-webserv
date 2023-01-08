@@ -20,7 +20,8 @@ class String : public Value {
 public:
     String( const std::string &s );
     Value *            clone() const;
-    const std::string &get() const;
+    std::string &      operator*();
+    const std::string &operator*() const;
     std::ostream &     repr( std::ostream &os ) const;
 };
 
@@ -32,7 +33,8 @@ class Number : public Value {
 public:
     Number( double n );
     Value *       clone() const;
-    double        get() const;
+    double &      operator*();
+    double        operator*() const;
     std::ostream &repr( std::ostream &os ) const;
 };
 
@@ -54,16 +56,83 @@ public:
 /* -------------------------------------------------------------------------- */
 
 class Array : public Value {
+    template < typename T, typename I > class Iterator;
+
+public:
+    typedef Iterator< Value, std::vector< Value * >::iterator > iterator;
+    typedef Iterator< const Value, std::vector< Value * >::const_iterator >
+        const_iterator;
+
+private:
     std::vector< Value * > _v;
+
+    template < typename T, typename I > class Iterator {
+    public:
+        typedef T              value_type;
+        typedef T &            reference;
+        typedef T *            pointer;
+        typedef std::ptrdiff_t difference_type;
+
+    private:
+        I _it;
+
+    public:
+        Iterator();
+        Iterator( const I &it );
+
+        I base() const { return _it; }
+
+        Iterator        operator+( difference_type n ) const;
+        friend Iterator operator+( difference_type lhs, const Iterator &rhs );
+        Iterator        operator-( difference_type n ) const;
+        difference_type operator-( const Iterator &other ) const;
+
+        Iterator &operator++();
+        Iterator &operator--();
+        Iterator  operator++( int );
+        Iterator  operator--( int );
+
+        Iterator operator+=( difference_type n );
+        Iterator operator-=( difference_type n );
+
+        bool operator==( const const_iterator &rhs ) const;
+        bool operator!=( const const_iterator &rhs ) const;
+        bool operator>( const const_iterator &rhs ) const;
+        bool operator<( const const_iterator &rhs ) const;
+        bool operator>=( const const_iterator &rhs ) const;
+        bool operator<=( const const_iterator &rhs ) const;
+
+        reference operator*();
+        typename Iterator< const T,
+                           std::vector< Value * >::const_iterator >::reference
+        operator*() const;
+
+        reference operator[]( difference_type i );
+        typename Iterator< const T,
+                           std::vector< Value * >::const_iterator >::reference
+        operator[]( difference_type i ) const;
+
+        pointer operator->();
+        typename Iterator< const T,
+                           std::vector< Value * >::const_iterator >::pointer
+        operator->() const;
+
+        operator const_iterator() const;
+    };
 
 public:
     Array();
     Array( const Array &other );
     ~Array();
-    Value *                       clone() const;
-    const std::vector< Value * > &get() const;
-    void                          add( const Value &v );
-    std::ostream &                repr( std::ostream &os ) const;
+
+    Value *       clone() const;
+    void          add( const Value &v );
+    std::ostream &repr( std::ostream &os ) const;
+
+    iterator       begin();
+    const_iterator begin() const;
+    iterator       end();
+    const_iterator end() const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -74,7 +143,8 @@ class Boolean : public Value {
 public:
     Boolean( bool b );
     Value *       clone() const;
-    bool          get() const;
+    bool &        operator*();
+    bool          operator*() const;
     std::ostream &repr( std::ostream &os ) const;
 };
 
@@ -103,7 +173,7 @@ class Parse {
     static Null    _parse_null( std::queue< std::string > &q );
 
 public:
-    static Value *from_string( const std::string &s );
+    template < typename T > T static from_string( const std::string &s );
 
     class ParsingError : public std::exception {
         virtual const char *what() const throw();
@@ -119,3 +189,5 @@ public:
 std::ostream &operator<<( std::ostream &os, const JSON::Value &v );
 
 /* -------------------------------------------------------------------------- */
+
+#include "JSON.tpp"

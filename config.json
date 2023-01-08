@@ -1,7 +1,11 @@
 [
   {
     "server_name": "127.0.0.1",
-    "listen": 80
+    "listen": 80,
+    "timeout": {
+      "connection": 30,
+      "idle": 5
+    }
   },
   {
     "server_name": "127.0.0.1",

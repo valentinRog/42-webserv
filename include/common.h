@@ -17,6 +17,9 @@
 #include <functional>
 #include <fstream>
 #include <sstream>
+#include <iterator>
+#include <memory>
+#include <typeinfo>
 
 #ifdef __linux__
 #include <sys/epoll.h>

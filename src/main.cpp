@@ -9,15 +9,17 @@ int main( int argc, char **argv ) {
     std::ifstream     f( argv[1] );
     std::stringstream buff;
     buff << f.rdbuf();
-    JSON::Value *v( JSON::Parse::from_string( buff.str() ) );
-    JSON::Array  a( *dynamic_cast< JSON::Array * >( v ) );
-    delete v;
-    ServerCluster s;
-    for ( std::vector< JSON::Value * >::const_iterator it( a.get().begin() );
-          it != ( a.get().end() );
-          it++ ) {
-        ServerConf conf( *dynamic_cast< const JSON::Object * >( *it ) );
-        s.bind( conf );
+    JSON::Array a( JSON::Parse::from_string< JSON::Array >( buff.str() ) );
+    for ( JSON::Array::iterator it( a.begin() ); it != a.end(); it++ ) {
+        std::cout << *it << std::endl;
     }
-    s.run();
+    // ServerCluster s;
+    // for ( std::vector< JSON::Value * >::const_iterator it( a.get().begin() );
+    //       it != ( a.get().end() );
+    //       it++ ) {
+    //     ServerConf conf( *dynamic_cast< const JSON::Object * >( *it ) );
+    //     // s.bind( conf );
+    //     std::cout << **it << std::endl;
+    // }
+    // s.run();
 }
