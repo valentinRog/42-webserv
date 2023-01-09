@@ -6,17 +6,31 @@ JSON::Value::~Value() {}
 
 /* -------------------------------------------------------------------------- */
 
+JSON::Wrapper::Wrapper() : _v( 0 ) {}
+JSON::Wrapper::Wrapper( const Value &v ) : _v( v.clone() ) {}
+JSON::Wrapper::Wrapper( const Wrapper &other ) : _v( other._v->clone() ) {}
+JSON::Wrapper::~Wrapper() { delete _v; }
+
+JSON::Wrapper &JSON::Wrapper::operator=( const Wrapper &other ) {
+    delete _v;
+    _v = other._v->clone();
+    return *this;
+}
+
+JSON::Value &      JSON::Wrapper::unwrap() { return *_v; }
+const JSON::Value &JSON::Wrapper::unwrap() const { return *_v; }
+
+/* -------------------------------------------------------------------------- */
+
 JSON::String::String( const std::string &s ) : _s( s ) {}
 
 JSON::Value *JSON::String::clone() const { return new JSON::String( *this ); }
 
-std::string &JSON::String::operator*() { return _s; }
-
-const std::string &JSON::String::operator*() const { return _s; }
-
 std::ostream &JSON::String::repr( std::ostream &os ) const {
     return os << '"' << _s << '"';
 }
+
+JSON::String::operator std::string() const { return _s; }
 
 /* -------------------------------------------------------------------------- */
 
@@ -24,93 +38,35 @@ JSON::Number::Number( double n ) : _n( n ) {}
 
 JSON::Value *JSON::Number::clone() const { return new JSON::Number( *this ); }
 
-double &JSON::Number::operator*() { return _n; }
-
-double JSON::Number::operator*() const { return _n; }
-
 std::ostream &JSON::Number::repr( std::ostream &os ) const { return os << _n; }
+
+JSON::Number::operator double() const { return _n; }
 
 /* -------------------------------------------------------------------------- */
 
-JSON::Object::Object() {}
-
-JSON::Object::Object( const JSON::Object &other ) {
-    for ( std::map< std::string, Value * >::const_iterator it(
-              other._m.begin() );
-          it != other._m.end();
-          it++ ) {
-        add( it->first, *it->second );
-    }
-}
-
-JSON::Object::~Object() {
-    for ( std::map< std::string, JSON::Value * >::iterator it( _m.begin() );
-          it != _m.end();
-          it++ ) {
-        delete it->second;
-    }
-}
-
 JSON::Value *JSON::Object::clone() const { return new JSON::Object( *this ); }
-
-const std::map< std::string, JSON::Value * > &JSON::Object::get() const {
-    return _m;
-}
-
-void JSON::Object::add( const std::string &k, const JSON::Value &v ) {
-    _m[k] = v.clone();
-}
 
 std::ostream &JSON::Object::repr( std::ostream &os ) const {
     os << "{";
-    for ( std::map< std::string, Value * >::const_iterator it( _m.begin() );
-          it != _m.end();
-          it++ ) {
-        if ( it != _m.begin() ) { os << ", "; }
-        os << '"' << it->first << '"' << ": " << *it->second;
+    for ( const_iterator it( begin() ); it != end(); it++ ) {
+        if ( it != begin() ) { os << ", "; }
+        os << '"' << it->first << '"' << ": " << it->second.unwrap();
     }
     return os << "}";
 }
 
 /* -------------------------------------------------------------------------- */
 
-JSON::Array::Array() {}
-
-JSON::Array::Array( const JSON::Array &other ) {
-    for ( std::vector< Value * >::const_iterator it( other._v.begin() );
-          it != other._v.end();
-          it++ ) {
-        add( **it );
-    }
-}
-
-JSON::Array::~Array() {
-    for ( std::vector< JSON::Value * >::iterator it( _v.begin() );
-          it != _v.end();
-          it++ ) {
-        delete *it;
-    }
-}
-
 JSON::Value *JSON::Array::clone() const { return new JSON::Array( *this ); }
-
-void JSON::Array::add( const JSON::Value &v ) { _v.push_back( v.clone() ); }
 
 std::ostream &JSON::Array::repr( std::ostream &os ) const {
     os << "[";
-    for ( std::vector< Value * >::const_iterator it( _v.begin() );
-          it != _v.end();
-          it++ ) {
-        if ( it != _v.begin() ) { os << ", "; }
-        os << **it;
+    for ( const_iterator it( begin() ); it != end(); it++ ) {
+        if ( it != begin() ) { os << ", "; }
+        os << it->unwrap();
     }
     return os << "]";
 }
-
-JSON::Array::iterator       JSON::Array::begin() { return _v.begin(); }
-JSON::Array::const_iterator JSON::Array::begin() const { return _v.begin(); }
-JSON::Array::iterator       JSON::Array::end() { return _v.end(); }
-JSON::Array::const_iterator JSON::Array::end() const { return _v.end(); }
 
 /* -------------------------------------------------------------------------- */
 
@@ -118,13 +74,11 @@ JSON::Boolean::Boolean( bool b ) : _b( b ) {}
 
 JSON::Value *JSON::Boolean::clone() const { return new JSON::Boolean( *this ); }
 
-bool &JSON::Boolean::operator*() { return _b; }
-
-bool JSON::Boolean::operator*() const { return _b; }
-
 std::ostream &JSON::Boolean::repr( std::ostream &os ) const {
     return os << std::boolalpha << _b;
 }
+
+JSON::Boolean::operator bool() const { return _b; }
 
 /* -------------------------------------------------------------------------- */
 
@@ -167,16 +121,16 @@ std::queue< std::string > JSON::Parse::_lexer( const std::string &s ) {
     return q;
 }
 
-JSON::Value *JSON::Parse::_parse( std::queue< std::string > &q ) {
+JSON::Wrapper JSON::Parse::_parse( std::queue< std::string > &q ) {
     if ( !q.size() ) { throw ParsingError(); }
-    if ( q.front()[0] == quote ) { return _parse_string( q ).clone(); }
-    if ( std::isdigit( q.front()[0] ) ) { return _parse_number( q ).clone(); }
-    if ( q.front() == "{" ) { return _parse_object( q ).clone(); }
-    if ( q.front() == "[" ) { return _parse_array( q ).clone(); }
+    if ( q.front()[0] == quote ) { return _parse_string( q ); }
+    if ( std::isdigit( q.front()[0] ) ) { return _parse_number( q ); }
+    if ( q.front() == "{" ) { return _parse_object( q ); }
+    if ( q.front() == "[" ) { return _parse_array( q ); }
     if ( q.front() == "true" || q.front() == "false" ) {
-        return _parse_boolean( q ).clone();
+        return _parse_boolean( q );
     }
-    return _parse_null( q ).clone();
+    return _parse_null( q );
 }
 
 JSON::String JSON::Parse::_parse_string( std::queue< std::string > &q ) {
@@ -214,9 +168,7 @@ JSON::Object JSON::Parse::_parse_object( std::queue< std::string > &q ) {
         std::string k = tok.substr( 1, tok.size() - 2 );
         if ( q.front() != ":" ) { throw ParsingError(); }
         q.pop();
-        Value *v = _parse( q );
-        o.add( k, *v );
-        delete v;
+        o.insert( Object::value_type( k, _parse( q ) ) );
         if ( q.front() == "," ) {
             if ( q.size() < 4 ) { throw ParsingError(); }
             q.pop();
@@ -231,9 +183,7 @@ JSON::Array JSON::Parse::_parse_array( std::queue< std::string > &q ) {
     Array a;
     q.pop();
     while ( q.front() != "]" ) {
-        Value *v( _parse( q ) );
-        a.add( *v );
-        delete v;
+        a.push_back( _parse( q ) );
         if ( q.front() == "," ) {
             if ( q.size() < 3 ) { throw ParsingError(); }
             q.pop();
@@ -258,6 +208,11 @@ JSON::Null JSON::Parse::_parse_null( std::queue< std::string > &q ) {
     if ( !q.size() || q.front() != "null" ) { throw ParsingError(); }
     q.pop();
     return Null();
+}
+
+JSON::Wrapper JSON::Parse::from_string( const std::string &s ) {
+    std::queue< std::string > q( _lexer( s ) );
+    return _parse( q );
 }
 
 const char *JSON::Parse::ParsingError::what() const throw() {
