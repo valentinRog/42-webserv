@@ -6,7 +6,7 @@ JSON::Value::~Value() {}
 
 /* -------------------------------------------------------------------------- */
 
-JSON::Wrapper::Wrapper() : _v( 0 ) {}
+JSON::Wrapper::Wrapper() : _v( JSON::Null().clone() ) {}
 JSON::Wrapper::Wrapper( const Value &v ) : _v( v.clone() ) {}
 JSON::Wrapper::Wrapper( const Wrapper &other ) : _v( other._v->clone() ) {}
 JSON::Wrapper::~Wrapper() { delete _v; }

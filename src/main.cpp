@@ -20,4 +20,11 @@ int main( int argc, char **argv ) {
     std::cout << n << std::endl;
     x[0] = JSON::Number( 42 );
     std::cout << x << std::endl;
+    JSON::Wrapper w;
+    std::cout << w.unwrap() << std::endl;
+    w = JSON::Number( 8 );
+    std::cout << w.unwrap() << std::endl;
+    w                                 = JSON::Object();
+    w.unwrap< JSON::Object >()["key"] = JSON::Boolean( true );
+    std::cout << w.unwrap() << std::endl;
 }
