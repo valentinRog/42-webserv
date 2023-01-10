@@ -1,6 +1,6 @@
 [
   {
-    "server_name": "127.0.0.1",
+    "server_name": "0.0.0.0",
     "listen": 80,
     "timeout": {
       "connection": 30,
@@ -8,7 +8,7 @@
     }
   },
   {
-    "server_name": "127.0.0.1",
+    "server_name": "0.0.0.0",
     "listen": 5000
   }
 ]

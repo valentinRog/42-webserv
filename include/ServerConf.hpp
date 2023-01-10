@@ -5,6 +5,8 @@
 
 class ServerConf {
     sockaddr_in _addr;
+    time_t      _con_to;
+    time_t      _idle_to;
 
 public:
     ServerConf( const JSON::Object &o );
