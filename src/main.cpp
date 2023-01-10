@@ -5,10 +5,10 @@
 #include "common.h"
 
 int main( int, char ** ) {
-    // ServerCluster s;
-    // s.bind( 80 );
-    // s.bind( 5000 );
-    // s.run();
+    ServerCluster s;
+    s.bind( 80 );
+    //s.bind( 5000 );
+    s.run();
 
     // JSON::Object o;
     // JSON::Array  a;
@@ -23,9 +23,9 @@ int main( int, char ** ) {
     // o.add( "2", a );
     // std::cout << o << std::endl;
 
-    HttpRequest plop;
+    // HttpRequest req;
 
-    std::string girafe("GET /path/to/blabla HTTP/1.1\t\nHost: example.com\n....\n");
+    // std::string request("GET /path/to/blabla?key1=value1&key2=value2&key3=value3 HTTP/1.1\t\nHost: example.com\n....\n");
 
-    plop.readRequest(girafe);
+    // req.readRequest(request);
 }

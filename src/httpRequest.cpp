@@ -7,40 +7,51 @@ HttpRequest::HttpRequest() {
 }
 
 void    HttpRequest::readRequest(std::string & request) {
-    std::string line = request.substr(0, request.find("\n"));
+    _request = request;
+    std::stringstream ss(request.c_str());
+    ss >> _method;
+    ss >> _path;
+    ss >> _version;
 
-    _method = line.substr(0, line.find(" "));
-    std::cout << _method << std::endl; 
-    line.erase(0, line.find(" ") + 1);
-    verifMethod();
+    // verifMethod();
+    // verifPath(); 
+    // verifVersion();
 
-    _path = line.substr(0, line.find(" "));
-    std::cout << _path << std::endl;
-    line.erase(0, line.find(" ") + 1);
-    verifPath();
-
-    _version = line;
-    std::cout << _version << std::endl;
-    verifVersion();
+    std::cout << "Method:" << _method << std::endl;
+    std::cout << "path:" << _path << std::endl;
+    std::cout << "version:" << _version << std::endl;
 }
 
-void    HttpRequest::verifMethod() {
-    for (std::vector<std::string>::iterator i = _validMethods.begin(); i != _validMethods.end(); i++) {
-        if (*i == _method)
-            return ;
-    }
-    std::cout << "thow exeption method not found pour plus tard erreur 400" << std::endl;
-}
+// void    HttpRequest::verifMethod() {
+//     for (std::vector<std::string>::iterator i = _validMethods.begin(); i != _validMethods.end(); i++) {
+//         if (*i == _method)
+//             return ;
+//     }
+//     std::cout << "thow exeption method not found invalid method" << std::endl;
+// }
 
-void    HttpRequest::verifPath() {
-    std::cout << "thow exeption path ou file not good pour plus tard erreur 400" << std::endl;
-}
+// void    HttpRequest::verifPath() {
+//     size_t pos;
 
-void    HttpRequest::verifVersion() {   
-    if (_version.substr(0, 5) != "HTTP/") {
-        std::cout << "thow exeption miss HTTP not good pour plus tard erreur 400" << std::endl;
-    }
-    else if (_version.substr(5, 3) != "1.1") {
-        std::cout << "thow exeption miss HTTP not good pour plus tard erreur 400" << std::endl;
-    }
-}
+//     if ((pos = _path.find("?")) != std::string::npos) {
+//         _query = _path.substr(pos + 1);
+//         _path = _path.substr(0, _path.size() - _query.size() - 1); 
+//     }
+// }
+
+// void    HttpRequest::verifVersion() {   
+//     if (_version.size() > 8)
+//         std::cout << "Http error" << std::endl;
+//     else if (_version.substr(0, 5) != "HTTP/") {
+//         std::cout << "Http error" << std::endl;
+//     }
+//     else if (_version.substr(5, 3) != "1.1") {
+//         std::cout << "Http error" << std::endl;
+//     }
+// }
+
+std::string HttpRequest::getMethod() { return (_method); }
+
+std::string HttpRequest::getPath() { return (_path); }
+
+std::string HttpRequest::getVersion() { return (_version); }

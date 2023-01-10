@@ -13,6 +13,8 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include <sstream>
+#include <algorithm>
 
 #ifdef __linux__
 #include <sys/epoll.h>

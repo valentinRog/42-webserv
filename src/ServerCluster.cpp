@@ -7,11 +7,8 @@ ServerCluster::ServerCluster() : _q( _max_events ) {}
 void ServerCluster::bind( uint16_t port ) {
     int        fd = socket( AF_INET, SOCK_STREAM, 0 );
     ServerConf conf( port );
-    if ( ::bind( fd,
-                 ( sockaddr * ) &conf.get_addr(),
-                 sizeof( conf.get_addr() ) )
-         == -1 ) {
-        throw std::runtime_error( "bind" );
+    if ( ::bind( fd, ( sockaddr * ) &conf.get_addr(), sizeof( conf.get_addr() ) ) == -1 ) {
+        throw std::runtime_error( "binde" );
     }
     listen( fd, SOMAXCONN );
     _q.add( fd, SocketCallback( fd, conf, _q ) );
