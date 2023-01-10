@@ -1,7 +1,6 @@
 #include "ServerConf.hpp"
 
 ServerConf::ServerConf( const JSON::Object &o ) {
-    new ( &_addr ) sockaddr_in;
     _addr.sin_family      = AF_INET;
     _addr.sin_port        = htons( o.at( "listen" ).unwrap< JSON::Number >() );
     _addr.sin_addr.s_addr = inet_addr(
