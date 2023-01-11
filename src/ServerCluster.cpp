@@ -22,13 +22,16 @@ void ServerCluster::run() {
 
 /* -------------------------------------------------------------------------- */
 
-ServerCluster::ClientCallback::ClientCallback( int fd, EventQueue &q )
-    : CallbackBase( 0, 0 ),
+ServerCluster::ClientCallback::ClientCallback( int         fd,
+                                               EventQueue &q,
+                                               time_t      con_to,
+                                               time_t      idle_to )
+    : CallbackBase( con_to, idle_to ),
       _fd( fd ),
       _q( q ) {}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
-    return new ServerCluster::ClientCallback( *this );
+    return new ClientCallback( *this );
 }
 
 void ServerCluster::ClientCallback::handle_read() {
@@ -62,13 +65,14 @@ ServerCluster::SocketCallback::SocketCallback( int         fd,
       _q( q ) {}
 
 CallbackBase *ServerCluster::SocketCallback::clone() const {
-    return new ServerCluster::SocketCallback( *this );
+    return new SocketCallback( *this );
 }
 
 void ServerCluster::SocketCallback::handle_read() {
     socklen_t l  = sizeof( _conf.get_addr() );
-    int       fd = accept( _fd, ( sockaddr * ) &_conf.get_addr(), &l );
-    _q.add( fd, ClientCallback( fd, _q ) );
+    int       fd = accept( _fd, ( sockaddr       *) &_conf.get_addr(), &l );
+    _q.add( fd,
+            ClientCallback( fd, _q, _conf.get_con_to(), _conf.get_idle_to() ) );
 }
 
 void ServerCluster::SocketCallback::handle_write() {}

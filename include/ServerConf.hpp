@@ -12,6 +12,8 @@ public:
     ServerConf( const JSON::Object &o );
 
     const sockaddr_in &get_addr() const;
+    time_t             get_con_to() const;
+    time_t             get_idle_to() const;
 
     class ConfigError : public std::exception {
         virtual const char *what() const throw();

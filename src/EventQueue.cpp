@@ -18,6 +18,16 @@ void   CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
 /* -------------------------------------------------------------------------- */
 
+EventQueueBase::~EventQueueBase() {
+    for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
+          it != _callbacks.end();
+          it++ ) {
+        delete it->second;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+
 #ifdef __linux__
 
 /* -------------------------------------------------------------------------- */

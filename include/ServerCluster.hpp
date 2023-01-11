@@ -17,7 +17,10 @@ class ServerCluster {
         std::string _s;
 
     public:
-        ClientCallback( int fd, EventQueue &q );
+        ClientCallback( int         fd,
+                        EventQueue &q,
+                        time_t      con_to  = 0,
+                        time_t      idle_to = 0 );
         CallbackBase *clone() const;
         void          handle_read();
         void          handle_write();

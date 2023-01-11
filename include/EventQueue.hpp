@@ -34,6 +34,7 @@ protected:
     std::map< int, CallbackBase * > _callbacks;
 
 public:
+    virtual ~EventQueueBase();
     virtual void add( int fd, const CallbackBase &callback ) = 0;
     virtual void remove( int fd )                            = 0;
     virtual void wait()                                      = 0;

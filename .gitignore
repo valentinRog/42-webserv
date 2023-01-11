@@ -4,3 +4,4 @@ webserv
 .vscode
 .clangd
 *.txt
+compile_commands.json
