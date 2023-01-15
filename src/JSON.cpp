@@ -12,8 +12,9 @@ JSON::Wrapper::Wrapper( const Wrapper &other ) : _v( other._v->clone() ) {}
 JSON::Wrapper::~Wrapper() { delete _v; }
 
 JSON::Wrapper &JSON::Wrapper::operator=( const Wrapper &other ) {
+    Value *tmp(other._v->clone());
     delete _v;
-    _v = other._v->clone();
+    _v = tmp;
     return *this;
 }
 

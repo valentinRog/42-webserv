@@ -2,25 +2,35 @@
 
 #include "EventQueue.hpp"
 #include "ServerConf.hpp"
+#include "VirtualHostMapper.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
 
 class ServerCluster {
-    EventQueue          _q;
     static const int    _max_events  = 40;
     static const size_t _buffer_size = 1024;
 
+    struct Addr_Less {
+        bool operator()( const sockaddr_in &lhs, const sockaddr_in &rhs ) const;
+    };
+
+    EventQueue                                            _q;
+    std::set< uint16_t >                                  _ports;
+    std::map< sockaddr_in, VirtualHostMapper, Addr_Less > _virtual_hosts;
+
     class ClientCallback : public CallbackBase {
-        int         _fd;
-        EventQueue &_q;
-        std::string _s;
+        int            _fd;
+        sockaddr_in    _addr;
+        ServerCluster &_server;
+        std::string    _s;
 
     public:
-        ClientCallback( int         fd,
-                        EventQueue &q,
-                        time_t      con_to  = 0,
-                        time_t      idle_to = 0 );
+        ClientCallback( int                fd,
+                        const sockaddr_in &addr,
+                        ServerCluster &    server,
+                        time_t             con_to  = 0,
+                        time_t             idle_to = 0 );
         CallbackBase *clone() const;
         void          handle_read();
         void          handle_write();
@@ -28,12 +38,12 @@ class ServerCluster {
     };
 
     class SocketCallback : public CallbackBase {
-        int         _fd;
-        ServerConf  _conf;
-        EventQueue &_q;
+        int            _fd;
+        sockaddr_in    _addr;
+        ServerCluster &_server;
 
     public:
-        SocketCallback( int fd, ServerConf conf, EventQueue &q );
+        SocketCallback( int fd, const sockaddr_in &addr, ServerCluster &s );
         CallbackBase *clone() const;
         void          handle_read();
         void          handle_write();
@@ -45,6 +55,9 @@ public:
 
     void bind( const ServerConf &conf );
     void run();
+
+private:
+    void _bind( uint16_t port );
 };
 
 /* -------------------------------------------------------------------------- */

@@ -1,14 +1,15 @@
 [
   {
-    "server_name": "0.0.0.0",
-    "listen": 80,
-    "timeout": {
-      "connection": 30,
-      "idle": 5
-    }
+    "listen": {
+      "port": 80,
+      "address": "0.0.0.0"
+    },
+    "names": ["yo.com"]
   },
   {
-    "server_name": "0.0.0.0",
-    "listen": 5000
+    "listen": {
+      "port": 80,
+      "address": "0.0.0.0"
+    }
   }
 ]
