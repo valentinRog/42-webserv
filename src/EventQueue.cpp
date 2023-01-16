@@ -18,13 +18,7 @@ void   CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
 /* -------------------------------------------------------------------------- */
 
-EventQueueBase::~EventQueueBase() {
-    for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
-          it != _callbacks.end();
-          it++ ) {
-        delete it->second;
-    }
-}
+EventQueueBase::~EventQueueBase() {}
 
 /* -------------------------------------------------------------------------- */
 
@@ -50,14 +44,14 @@ void EventQueue::add( int fd, const CallbackBase &callback ) {
     if ( epoll_ctl( _epoll_fd, EPOLL_CTL_ADD, fd, &event ) == -1 ) {
         throw std::runtime_error( "epoll_ctl" );
     }
-    _callbacks[fd] = callback.clone();
+    _callbacks.insert(
+        std::make_pair( fd, PolymorphicWrapper< CallbackBase >( callback ) ) );
 }
 
 void EventQueue::remove( int fd ) {
     if ( epoll_ctl( _epoll_fd, EPOLL_CTL_DEL, fd, 0 ) == -1 ) {
         throw std::runtime_error( "epoll_ctl" );
     }
-    delete _callbacks[fd];
     _callbacks.erase( fd );
     close( fd );
 }
@@ -70,14 +64,15 @@ void EventQueue::wait() {
             continue;
         }
         if ( _events[i].events & EPOLLIN ) {
-            _callbacks[_events[i].data.fd]->handle_read();
+            _callbacks.at( _events[i].data.fd )->handle_read();
         } else if ( _events[i].events & EPOLLOUT ) {
-            _callbacks[_events[i].data.fd]->handle_write();
+            _callbacks.at( _events[i].data.fd )->handle_write();
         }
     }
-    for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
+    for ( std::map< int, PolymorphicWrapper< CallbackBase > >::iterator it(
+              _callbacks.begin() );
           it != _callbacks.end(); ) {
-        std::map< int, CallbackBase * >::iterator tmp( it );
+        std::map< int, PolymorphicWrapper< CallbackBase > >::iterator tmp( it );
         tmp++;
         if ( ( it->second->get_idle_to()
                && time( 0 ) - it->second->get_last_t()
@@ -115,7 +110,8 @@ void EventQueue::add( int fd, const CallbackBase &callback ) {
     if ( kevent( _kqueue_fd, events, 2, 0, 0, 0 ) == -1 ) {
         throw std::runtime_error( "kevent" );
     }
-    _callbacks[fd] = callback.clone();
+    _callbacks.insert(
+        std::make_pair( fd, PolymorphicWrapper< CallbackBase >( callback ) ) );
 }
 
 void EventQueue::remove( int fd ) {
@@ -125,7 +121,6 @@ void EventQueue::remove( int fd ) {
     if ( kevent( _kqueue_fd, events, 2, 0, 0, 0 ) == -1 ) {
         throw std::runtime_error( "kevent" );
     }
-    delete _callbacks[fd];
     _callbacks.erase( fd );
     close( fd );
 }
@@ -139,13 +134,18 @@ void EventQueue::wait() {
             continue;
         }
         switch ( _events[i].filter ) {
-        case EVFILT_READ: _callbacks[_events[i].ident]->handle_read(); break;
-        case EVFILT_WRITE: _callbacks[_events[i].ident]->handle_write(); break;
+        case EVFILT_READ:
+            _callbacks.at( _events[i].ident )->handle_read();
+            break;
+        case EVFILT_WRITE:
+            _callbacks.at( _events[i].ident )->handle_write();
+            break;
         }
     }
-    for ( std::map< int, CallbackBase * >::iterator it( _callbacks.begin() );
+    for ( std::map< int, PolymorphicWrapper< CallbackBase > >::iterator it(
+              _callbacks.begin() );
           it != _callbacks.end(); ) {
-        std::map< int, CallbackBase * >::iterator tmp( it );
+        std::map< int, PolymorphicWrapper< CallbackBase > >::iterator tmp( it );
         tmp++;
         if ( ( it->second->get_idle_to()
                && time( 0 ) - it->second->get_last_t()

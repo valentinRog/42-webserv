@@ -6,23 +6,6 @@ JSON::Value::~Value() {}
 
 /* -------------------------------------------------------------------------- */
 
-JSON::Wrapper::Wrapper() : _v( JSON::Null().clone() ) {}
-JSON::Wrapper::Wrapper( const Value &v ) : _v( v.clone() ) {}
-JSON::Wrapper::Wrapper( const Wrapper &other ) : _v( other._v->clone() ) {}
-JSON::Wrapper::~Wrapper() { delete _v; }
-
-JSON::Wrapper &JSON::Wrapper::operator=( const Wrapper &other ) {
-    Value *tmp(other._v->clone());
-    delete _v;
-    _v = tmp;
-    return *this;
-}
-
-JSON::Value &      JSON::Wrapper::unwrap() { return *_v; }
-const JSON::Value &JSON::Wrapper::unwrap() const { return *_v; }
-
-/* -------------------------------------------------------------------------- */
-
 JSON::String::String( const std::string &s ) : _s( s ) {}
 
 JSON::Value *JSON::String::clone() const { return new JSON::String( *this ); }
@@ -51,7 +34,7 @@ std::ostream &JSON::Object::repr( std::ostream &os ) const {
     os << "{";
     for ( const_iterator it( begin() ); it != end(); it++ ) {
         if ( it != begin() ) { os << ", "; }
-        os << '"' << it->first << '"' << ": " << it->second.unwrap();
+        os << '"' << it->first << '"' << ": " << *it->second;
     }
     return os << "}";
 }
@@ -64,7 +47,7 @@ std::ostream &JSON::Array::repr( std::ostream &os ) const {
     os << "[";
     for ( const_iterator it( begin() ); it != end(); it++ ) {
         if ( it != begin() ) { os << ", "; }
-        os << it->unwrap();
+        os << **it;
     }
     return os << "]";
 }

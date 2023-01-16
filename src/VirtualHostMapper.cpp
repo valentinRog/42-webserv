@@ -14,7 +14,7 @@ VirtualHostMapper &
 VirtualHostMapper::operator=( const VirtualHostMapper &other ) {
     _conf.clear();
     _names_map.clear();
-    for ( std::vector< ServerConf >::const_iterator it( other._conf.begin() );
+    for ( std::list< ServerConf >::const_iterator it( other._conf.begin() );
           it != other._conf.end();
           it++ ) {
         add( *it );
@@ -27,8 +27,9 @@ const ServerConf &VirtualHostMapper::get_default() const {
 }
 
 const ServerConf &VirtualHostMapper::operator[]( const std::string &s ) const {
-    std::map< std::string, ServerConf * >::const_iterator it(
-        _names_map.find( s ) );
+    std::map< std::string,
+              std::list< ServerConf >::const_iterator >::const_iterator
+        it( _names_map.find( s ) );
     return it == _names_map.end() ? get_default() : *it->second;
 }
 
@@ -38,7 +39,7 @@ void VirtualHostMapper::add( const ServerConf &conf ) {
               conf.get_names().begin() );
           it != conf.get_names().end();
           it++ ) {
-        _names_map.insert( std::make_pair( *it, &_conf.back() ) );
+        _names_map.insert( std::make_pair( *it, --_conf.end() ) );
     }
 }
 

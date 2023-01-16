@@ -1,11 +1,12 @@
 #pragma once
 
 #include "ServerConf.hpp"
+#include "Wrapper.hpp"
 #include "common.h"
 
 class VirtualHostMapper {
-    std::vector< ServerConf >             _conf;
-    std::map< std::string, ServerConf * > _names_map;
+    std::list< ServerConf >                                          _conf;
+    std::map< std::string, std::list< ServerConf >::const_iterator > _names_map;
 
 public:
     VirtualHostMapper( const ServerConf &default_conf );

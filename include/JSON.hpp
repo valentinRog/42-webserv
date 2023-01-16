@@ -1,34 +1,21 @@
 #pragma once
 
+#include "Wrapper.hpp"
 #include "common.h"
 
 namespace JSON {
 
 /* -------------------------------------------------------------------------- */
 
-struct Value {
+struct Value : public CloneTraitCRTP< Value > {
     virtual ~Value();
     virtual std::ostream &repr( std::ostream &os ) const = 0;
-    virtual Value        *clone() const                  = 0;
+    virtual Value *       clone() const                  = 0;
 };
 
 /* -------------------------------------------------------------------------- */
 
-class Wrapper {
-    Value *_v;
-
-public:
-    Wrapper();
-    Wrapper( const Value &v );
-    Wrapper( const Wrapper &other );
-    ~Wrapper();
-    Wrapper &operator=( const Wrapper &other );
-
-    Value                           &unwrap();
-    const Value                     &unwrap() const;
-    template < typename T > T       &unwrap();
-    template < typename T > const T &unwrap() const;
-};
+typedef PolymorphicWrapper< Value > Wrapper;
 
 /* -------------------------------------------------------------------------- */
 
@@ -37,7 +24,7 @@ class String : public Value {
 
 public:
     String( const std::string &s );
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 
     operator std::string() const;
@@ -50,7 +37,7 @@ class Number : public Value {
 
 public:
     Number( double n );
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 
     operator double() const;
@@ -59,14 +46,14 @@ public:
 /* -------------------------------------------------------------------------- */
 
 struct Object : public Value, public std::map< std::string, Wrapper > {
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 };
 
 /* -------------------------------------------------------------------------- */
 
 struct Array : public Value, public std::vector< Wrapper > {
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 };
 
@@ -77,7 +64,7 @@ class Boolean : public Value {
 
 public:
     Boolean( bool b );
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 
     operator bool() const;
@@ -87,7 +74,7 @@ public:
 
 class Null : public Value {
 public:
-    Value        *clone() const;
+    Value *       clone() const;
     std::ostream &repr( std::ostream &os ) const;
 };
 
@@ -124,5 +111,3 @@ public:
 std::ostream &operator<<( std::ostream &os, const JSON::Value &v );
 
 /* -------------------------------------------------------------------------- */
-
-#include "JSON.tpp"

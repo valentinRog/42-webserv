@@ -1,10 +1,11 @@
 #pragma once
 
+#include "Wrapper.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
 
-class CallbackBase {
+class CallbackBase : public CloneTraitCRTP< CallbackBase > {
     time_t _con_to;
     time_t _t0;
     time_t _idle_to;
@@ -30,8 +31,8 @@ protected:
 
 class EventQueueBase {
 protected:
-    int                             _max_events;
-    std::map< int, CallbackBase * > _callbacks;
+    int                                                 _max_events;
+    std::map< int, PolymorphicWrapper< CallbackBase > > _callbacks;
 
 public:
     virtual ~EventQueueBase();
