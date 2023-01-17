@@ -6,12 +6,12 @@ ServerConf::ServerConf( const JSON::Object &conf_o )
     ::bzero( &_addr, sizeof _addr );
     _addr.sin_family = AF_INET;
     JSON::Object o( conf_o.at( "listen" ).unwrap< JSON::Object >() );
-    _addr.sin_port = ::htons( o.at( "port" ).unwrap< JSON::Number >() );
+    _addr.sin_port = htons( o.at( "port" ).unwrap< JSON::Number >() );
     if ( o.count( "address" ) ) {
         _addr.sin_addr.s_addr = ::inet_addr(
             std::string( o.at( "address" ).unwrap< JSON::String >() ).c_str() );
     } else {
-        _addr.sin_addr.s_addr = ::htonl( INADDR_ANY );
+        _addr.sin_addr.s_addr = htonl( INADDR_ANY );
     }
 }
 

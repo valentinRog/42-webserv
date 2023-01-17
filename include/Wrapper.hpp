@@ -2,7 +2,9 @@
 
 /* -------------------------------------------------------------------------- */
 
-template < typename T > struct CloneTraitCRTP { virtual T *clone() const = 0; };
+template < typename T > struct CloneTraitCRTP {
+    virtual T *clone() const = 0;
+};
 
 /* -------------------------------------------------------------------------- */
 
@@ -15,13 +17,13 @@ public:
     ~PolymorphicWrapper();
     PolymorphicWrapper &operator=( const PolymorphicWrapper &other );
 
-    T &      operator*();
+    T       &operator*();
     const T &operator*() const;
 
-    T *      operator->();
+    T       *operator->();
     const T *operator->() const;
 
-    template < typename U > U &      unwrap();
+    template < typename U > U       &unwrap();
     template < typename U > const U &unwrap() const;
 };
 

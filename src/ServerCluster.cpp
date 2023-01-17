@@ -2,26 +2,18 @@
 
 /* -------------------------------------------------------------------------- */
 
-bool ServerCluster::Addr_Less::operator()( const sockaddr_in &lhs,
-                                           const sockaddr_in &rhs ) const {
-    return ( lhs.sin_addr.s_addr == rhs.sin_addr.s_addr )
-               ? lhs.sin_port < rhs.sin_port
-               : lhs.sin_addr.s_addr < rhs.sin_addr.s_addr;
-}
-
-/* -------------------------------------------------------------------------- */
-
 ServerCluster::ServerCluster() : _q( _max_events ) {}
 
 void ServerCluster::bind( const ServerConf &conf ) {
-    std::map< sockaddr_in, VirtualHostMapper, Addr_Less >::iterator it(
-        _virtual_hosts.find( conf.get_addr() ) );
-    if ( it == _virtual_hosts.end() ) {
-        if ( !_ports.count( conf.get_addr().sin_port ) ) {
-            _bind( ::ntohs( conf.get_addr().sin_port ) );
+    uint64_t n( static_cast< uint64_t >( conf.get_addr().sin_port ) << 31
+                | conf.get_addr().sin_addr.s_addr );
+    std::map< uint64_t, VirtualHostMapper >::iterator it(
+        _virtual_hosts.lower_bound( n ) );
+    if ( it == _virtual_hosts.end() || it->first != n ) {
+        if ( it == _virtual_hosts.end() || it->first >> 31 != n >> 31 ) {
+            _bind( ntohs( n >> 31 ) );
         }
-        _virtual_hosts.insert(
-            std::make_pair( conf.get_addr(), VirtualHostMapper( conf ) ) );
+        _virtual_hosts.insert( std::make_pair( n, VirtualHostMapper( conf ) ) );
     } else {
         it->second.add( conf );
     }
@@ -36,8 +28,9 @@ void ServerCluster::_bind( uint16_t port ) {
     sockaddr_in addr;
     ::bzero( &addr, sizeof( addr ) );
     addr.sin_family      = AF_INET;
-    addr.sin_port        = ::htons( port );
-    addr.sin_addr.s_addr = ::htonl( INADDR_ANY );
+    addr.sin_port        = htons( port );
+    addr.sin_addr.s_addr = htonl( INADDR_ANY );
+    std::cout << "binding " << port << std::endl;
     if ( ::bind( fd, reinterpret_cast< sockaddr * >( &addr ), sizeof( addr ) )
          == -1 ) {
         throw std::runtime_error( "bind" );
@@ -51,7 +44,7 @@ void ServerCluster::_bind( uint16_t port ) {
 
 ServerCluster::ClientCallback::ClientCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster &    server,
+                                               ServerCluster     &server,
                                                time_t             con_to,
                                                time_t             idle_to )
     : CallbackBase( con_to, idle_to ),
@@ -91,7 +84,7 @@ void ServerCluster::ClientCallback::handle_timeout() {
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster &    server )
+                                               ServerCluster     &server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),

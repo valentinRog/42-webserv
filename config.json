@@ -2,14 +2,14 @@
   {
     "listen": {
       "port": 80,
-      "address": "0.0.0.0"
+      "address": "127.0.0.1",
     },
-    "names": ["yo.com"]
   },
   {
     "listen": {
       "port": 80,
       "address": "0.0.0.0"
-    }
+    },
+    "names": ["yo.com", "salut.com"]
   }
 ]

@@ -11,13 +11,9 @@ class ServerCluster {
     static const int    _max_events  = 40;
     static const size_t _buffer_size = 1024;
 
-    struct Addr_Less {
-        bool operator()( const sockaddr_in &lhs, const sockaddr_in &rhs ) const;
-    };
-
-    EventQueue                                            _q;
-    std::set< uint16_t >                                  _ports;
-    std::map< sockaddr_in, VirtualHostMapper, Addr_Less > _virtual_hosts;
+    EventQueue                              _q;
+    std::set< uint16_t >                    _ports;
+    std::map< uint64_t, VirtualHostMapper > _virtual_hosts;
 
     class ClientCallback : public CallbackBase {
         int            _fd;
@@ -28,7 +24,7 @@ class ServerCluster {
     public:
         ClientCallback( int                fd,
                         const sockaddr_in &addr,
-                        ServerCluster &    server,
+                        ServerCluster     &server,
                         time_t             con_to  = 0,
                         time_t             idle_to = 0 );
         CallbackBase *clone() const;
