@@ -2,16 +2,71 @@
   {
     "listen": {
       "port": 80,
-      "address": "127.0.0.1",
+      "address": "0.0.0.0"
     },
     "root": "/var/www",
-    "methods": ["GET"],
     "location": [
-    {
-     "path": "/fruits",
-     "root": "/var/www",
-      "methods": ["GET"]
-    }
-  ]
+      {
+        "path": "/yo",
+        "root": "/var/www",
+        "methods": [
+          "GET"
+        ],
+        "autoindex": true,
+        "try_files": [
+          "index.html"
+        ],
+        "rewrite": [
+          [
+            "/yo/1",
+            "google.com"
+          ],
+          [
+            "/yo/2",
+            "lichess.org"
+          ]
+        ]
+      },
+      {
+        "path": "/upload",
+        "root": "/var/www/upload",
+        "methods": [
+          "POST"
+        ]
+      }
+    ]
+  },
+  {
+    "listen": {
+      "port": 80,
+      "address": "127.0.0.1"
+    },
+    "root": "/var/www/upload",
+    "location": [
+      {
+        "path": "/",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "autoindex": true
+      }
+    ]
+  },
+  {
+    "listen": {
+      "port": 5000
+    },
+    "root": "/var/www",
+    "location": [
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "autoindex": false
+      }
+    ]
   }
 ]

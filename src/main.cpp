@@ -9,11 +9,8 @@ int main( int argc, char **argv ) {
     }
     ServerCluster s;
     {
-        std::ifstream     f( argv[1] );
-        std::stringstream buff;
-        buff << f.rdbuf();
         JSON::Array a(
-            JSON::Parse::from_string( buff.str() ).unwrap< JSON::Array >() );
+            JSON::Parse::from_file( argv[1] ).unwrap< JSON::Array & >() );
         std::vector< ServerConf > v;
         for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
               it++ ) {

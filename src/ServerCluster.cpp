@@ -5,17 +5,17 @@
 ServerCluster::ServerCluster() : _q( _max_events ) {}
 
 void ServerCluster::bind( const ServerConf &conf ) {
-    uint64_t n( static_cast< uint64_t >( conf.get_addr().sin_port ) << 31
-                | conf.get_addr().sin_addr.s_addr );
-    std::map< uint64_t, VirtualHostMapper >::iterator it(
-        _virtual_hosts.lower_bound( n ) );
-    if ( it == _virtual_hosts.end() || it->first != n ) {
-        if ( it == _virtual_hosts.end() || it->first >> 31 != n >> 31 ) {
-            _bind( ntohs( n >> 31 ) );
-        }
-        _virtual_hosts.insert( std::make_pair( n, VirtualHostMapper( conf ) ) );
+    uint16_t port( conf.get_addr().sin_port );
+    uint32_t addr( conf.get_addr().sin_addr.s_addr );
+    if ( !_vh.count( port ) ) {
+        _bind( ntohs( port ) );
+        _vh[port];
+    }
+    if ( _vh.at( port ).count( addr ) ) {
+        _vh.at( port ).at( addr ).add( conf );
     } else {
-        it->second.add( conf );
+        _vh.at( port ).insert(
+            std::make_pair( addr, VirtualHostMapper( conf ) ) );
     }
 }
 

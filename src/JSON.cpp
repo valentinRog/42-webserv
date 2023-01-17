@@ -199,6 +199,13 @@ JSON::Wrapper JSON::Parse::from_string( const std::string &s ) {
     return _parse( q );
 }
 
+JSON::Wrapper JSON::Parse::from_file( const std::string &filename ) {
+    std::stringstream ss;
+    ss << std::ifstream( filename ).rdbuf();
+    std::queue< std::string > q( _lexer( ss.str() ) );
+    return _parse( q );
+}
+
 const char *JSON::Parse::ParsingError::what() const throw() {
     return "Error while parsing JSON";
 }

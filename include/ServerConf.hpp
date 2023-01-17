@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JSON.hpp"
 #include "common.h"
+#include "JSON.hpp"
 
 class ServerConf {
     sockaddr_in             _addr;
@@ -11,8 +11,7 @@ class ServerConf {
 
 public:
     class Location {
-        std::string                _path;
-        std::string                _root;
+        std::string                _path; std::string                _root;
         std::string                _index;
         std::vector< std::string > _method;
         bool                       _dirListing;

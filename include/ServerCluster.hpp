@@ -14,6 +14,7 @@ class ServerCluster {
     EventQueue                              _q;
     std::set< uint16_t >                    _ports;
     std::map< uint64_t, VirtualHostMapper > _virtual_hosts;
+    std::map< uint16_t, std::map< uint32_t, VirtualHostMapper > > _vh;
 
     class ClientCallback : public CallbackBase {
         int            _fd;
