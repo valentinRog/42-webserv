@@ -15,13 +15,13 @@ class HttpResponse {
     std::string _rootPath;
 
     //serv
-    std::string                _path;
-    std::string                _root;
-    std::vector< std::string > _allowedMethod;
-    std::string                _defaultPathError;
-    std::string                _index;
-    bool                       _dirListing;
-    std::string                _redir;
+    std::string             _path;
+    std::string             _root;
+    std::set< std::string > _allowedMethod;
+    std::string             _defaultPathError;
+    std::string             _index;
+    bool                    _dirListing;
+    std::string             _redir;
 
     ServerConf _conf;
 
@@ -31,7 +31,7 @@ public:
                          int               clientFd,
                          const ServerConf &serv );
     void
-    response( HttpRequest httpRequest, int clientFd, const ServerConf &serv );
+        response( HttpRequest httpRequest, int clientFd, const ServerConf &serv );
     int verifLocation( std::string                           path,
                        std::vector< ServerConf::Location * > locs );
 

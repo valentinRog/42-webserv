@@ -201,7 +201,7 @@ JSON::Wrapper JSON::Parse::from_string( const std::string &s ) {
 
 JSON::Wrapper JSON::Parse::from_file( const std::string &filename ) {
     std::stringstream ss;
-    ss << std::ifstream( filename ).rdbuf();
+    ss << std::ifstream( filename.c_str() ).rdbuf();
     std::queue< std::string > q( _lexer( ss.str() ) );
     return _parse( q );
 }

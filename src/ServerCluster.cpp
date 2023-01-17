@@ -37,7 +37,6 @@ void ServerCluster::_bind( uint16_t port ) {
     }
     ::listen( fd, SOMAXCONN );
     _q.add( fd, SocketCallback( fd, addr, *this ) );
-    _ports.insert( addr.sin_port );
 }
 
 /* -------------------------------------------------------------------------- */
