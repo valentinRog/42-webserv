@@ -1,16 +1,16 @@
-#include "httpResponse.hpp"
+#include "HttpResponse.hpp"
 
 HttpResponse::HttpResponse() {
-    _responseStatus.insert(std::pair<int, std::string>(200, "OK"));
-    _responseStatus.insert(std::pair<int, std::string>(201, "Created"));
-    _responseStatus.insert(std::pair<int, std::string>(400, "Bad Request"));
-    _responseStatus.insert(std::pair<int, std::string>(403, "Forbidden"));
-    _responseStatus.insert(std::pair<int, std::string>(404, "Not Found"));
-    _responseStatus.insert(std::pair<int, std::string>(405, "Method Not Allowed"));
-    _responseStatus.insert(std::pair<int, std::string>(505, "Version Not Supported"));
+    _responseStatus.insert(std::make_pair(200, "OK"));
+    _responseStatus.insert(std::make_pair(201, "Created"));
+    _responseStatus.insert(std::make_pair(400, "Bad Request"));
+    _responseStatus.insert(std::make_pair(403, "Forbidden"));
+    _responseStatus.insert(std::make_pair(404, "Not Found"));
+    _responseStatus.insert(std::make_pair(405, "Method Not Allowed"));
+    _responseStatus.insert(std::make_pair(505, "Version Not Supported"));
 }
 
-void    HttpResponse::response(HttpRequest httpRequest, int clientFd, TestServ serv) {
+void    HttpResponse::response(HttpRequest httpRequest, int clientFd, const ServerConf &serv) {
     setInformation(httpRequest, clientFd, serv);
 
     //si aucun error 405
@@ -29,7 +29,7 @@ void    HttpResponse::response(HttpRequest httpRequest, int clientFd, TestServ s
         sendResponse(403, _defaultPathError);
 }
 
-void    HttpResponse::setInformation(HttpRequest httpRequest, int clientFd, TestServ serv) {
+void    HttpResponse::setInformation(HttpRequest httpRequest, int clientFd, const ServerConf& serv) {
     _rootPath = std::getenv("PWD"); //A changer car pas c++98
     _clientFd = clientFd;
     _version = httpRequest.getVersion();
@@ -48,7 +48,7 @@ void    HttpResponse::setInformation(HttpRequest httpRequest, int clientFd, Test
 
     int pos;
     if ((pos = verifLocation(httpRequest.getPath(), serv.getLocation())) >= 0) {
-        Location* loc = serv.getLocation()[pos];
+        ServerConf::Location* loc = serv.getLocation()[pos];
 
         _allowedMethod = loc->getMethod();
         _dirListing = loc->getDirListing();
@@ -61,12 +61,12 @@ void    HttpResponse::setInformation(HttpRequest httpRequest, int clientFd, Test
     }
 }
 
-int HttpResponse::verifLocation(std::string path, std::vector<Location *> locs) {
+int HttpResponse::verifLocation(std::string path, std::vector<ServerConf::Location *> locs) {
     if (locs.size() <= 0)
         return (-1);
     if (path.find("/", 1) != std::string::npos)
         path = path.substr(0, path.find("/", 1));
-    for (int i = 0; i < locs.size(); i++) {
+    for (size_t i = 0; i < locs.size(); i++) {
         if (path == locs[i]->getPath())
             return (i);
     }

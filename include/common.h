@@ -22,6 +22,7 @@
 #include <iterator>
 #include <memory>
 #include <typeinfo>
+#include <dirent.h>
 
 #ifdef __linux__
 #include <sys/epoll.h>

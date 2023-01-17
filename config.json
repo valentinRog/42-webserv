@@ -4,12 +4,14 @@
       "port": 80,
       "address": "127.0.0.1",
     },
-  },
-  {
-    "listen": {
-      "port": 80,
-      "address": "0.0.0.0"
-    },
-    "names": ["yo.com", "salut.com"]
+    "root": "/var/www",
+    "methods": ["GET"],
+    "location": [
+    {
+     "path": "/fruits",
+     "root": "/var/www",
+      "methods": ["GET"]
+    }
+  ]
   }
 ]
