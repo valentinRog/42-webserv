@@ -5,6 +5,8 @@
 #include "VirtualHostMapper.hpp"
 #include "common.h"
 
+/* -------------------------------------------------------------------------- */
+
 class HttpResponse {
     std::map< int, std::string > _responseStatus;
 
@@ -31,7 +33,7 @@ public:
                          int               clientFd,
                          const ServerConf &serv );
     void
-        response( HttpRequest httpRequest, int clientFd, const ServerConf &serv );
+    response( HttpRequest httpRequest, int clientFd, const ServerConf &serv );
     int verifLocation( std::string                           path,
                        std::vector< ServerConf::Location * > locs );
 
@@ -44,3 +46,5 @@ public:
     std::string getContentType( std::string path );
     void        sendResponse( int nb, std::string page );
 };
+
+/* -------------------------------------------------------------------------- */

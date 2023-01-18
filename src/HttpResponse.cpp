@@ -1,13 +1,15 @@
 #include "HttpResponse.hpp"
 
+/* -------------------------------------------------------------------------- */
+
 HttpResponse::HttpResponse() {
-    _responseStatus.insert( std::make_pair( 200, "OK" ) );
-    _responseStatus.insert( std::make_pair( 201, "Created" ) );
-    _responseStatus.insert( std::make_pair( 400, "Bad Request" ) );
-    _responseStatus.insert( std::make_pair( 403, "Forbidden" ) );
-    _responseStatus.insert( std::make_pair( 404, "Not Found" ) );
-    _responseStatus.insert( std::make_pair( 405, "Method Not Allowed" ) );
-    _responseStatus.insert( std::make_pair( 505, "Version Not Supported" ) );
+    _responseStatus[200] = "OK";
+    _responseStatus[201] = "Created";
+    _responseStatus[400] = "Bad Request";
+    _responseStatus[403] = "Forbidden";
+    _responseStatus[404] = "Not Found";
+    _responseStatus[405] = "Method Not Allowed";
+    _responseStatus[505] = "Version Not Supported";
 }
 
 void HttpResponse::response( HttpRequest       httpRequest,
@@ -139,16 +141,11 @@ void HttpResponse::sendResponse( int nb, std::string path ) {
     std::cout << _rootPath + _root + path << std::endl;
     std::string page( ( std::istreambuf_iterator< char >( fd ) ),
                       std::istreambuf_iterator< char >() );
-    std::string res = _version + " "
-                      + static_cast< std::ostringstream * >(
-                            &( std::ostringstream() << nb ) )
-                            ->str()
+    std::string res = _version + " " + ( std::ostringstream() << nb ).str()
                       + " " + _responseStatus.find( nb )->second + "\r\n";
     res = res + "Content-type:" + getContentType( path ) + "\r\n";
     res = res + "Content-length:"
-          + static_cast< std::ostringstream * >(
-                &( std::ostringstream() << ( res + page ).size() ) )
-                ->str()
+          + ( std::ostringstream() << ( res + page ).size() ).str()
           + "\r\n\r\n";
     res = res + page + "\r\n";
     std::cout << res << std::endl;
@@ -188,3 +185,5 @@ std::string HttpResponse::getContentType( std::string path ) {
         return ( "text/plain" );
     }
 }
+
+/* -------------------------------------------------------------------------- */
