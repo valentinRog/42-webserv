@@ -139,14 +139,16 @@ void HttpResponse::sendResponse( int nb, std::string path ) {
     if ( nb >= 400 ) _root.clear();
     std::ifstream fd( ( _rootPath + _root + path ).c_str() );
     std::cout << _rootPath + _root + path << std::endl;
-    std::string page( ( std::istreambuf_iterator< char >( fd ) ),
+    std::string        page( ( std::istreambuf_iterator< char >( fd ) ),
                       std::istreambuf_iterator< char >() );
-    std::string res = _version + " " + ( std::ostringstream() << nb ).str()
-                      + " " + _responseStatus.find( nb )->second + "\r\n";
+    std::ostringstream ss;
+    ss << nb;
+    std::string res = _version + " " + ss.str() + " "
+                      + _responseStatus.find( nb )->second + "\r\n";
     res = res + "Content-type:" + getContentType( path ) + "\r\n";
-    res = res + "Content-length:"
-          + ( std::ostringstream() << ( res + page ).size() ).str()
-          + "\r\n\r\n";
+    ss.clear();
+    ss << ( page ).size();
+    res = res + "Content-length:" + ss.str() + "\r\n\r\n";
     res = res + page + "\r\n";
     std::cout << res << std::endl;
     send( _clientFd, res.c_str(), res.size(), 0 );
