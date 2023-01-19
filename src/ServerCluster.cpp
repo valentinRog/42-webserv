@@ -49,9 +49,8 @@ ServerCluster::ClientCallback::ClientCallback( int                fd,
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
       _addr( addr ),
-      _server( server ) {
-    std::cout << ntohs( _addr.sin_port ) << std::endl;
-}
+      _server( server ),
+      _vhm( server._vh.at( addr.sin_port ).at( addr.sin_addr.s_addr ) ) {}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
     return new ClientCallback( *this );
@@ -67,12 +66,13 @@ void ServerCluster::ClientCallback::handle_read() {
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    const std::string end = "\r\n\r\n";
-    if ( _s.size() >= end.size()
-         && !_s.compare( _s.size() - end.size(), end.size(), end ) ) {
+    try {
+        HttpRequest  request( _s, _vhm );
+        HttpResponse response( request );
+        // send (reponse.get_str())
         write( _fd, "yo", 2 );
         _server._q.remove( _fd );
-    }
+    } catch ( const std::exception & ) {}
 }
 
 void ServerCluster::ClientCallback::handle_timeout() {
@@ -98,6 +98,11 @@ void ServerCluster::SocketCallback::handle_read() {
     socklen_t   l = sizeof( addr );
     int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     getsockname( fd, ( struct sockaddr * ) &addr, &l );
+    std::cout << ntohs( addr.sin_port ) << std::endl;
+    std::cout << _server._vh.at( addr.sin_port ).begin()->first << std::endl;
+    std::cout << addr.sin_addr.s_addr << std::endl;
+    _server._vh.at( addr.sin_port ).at( addr.sin_addr.s_addr );
+    std::cout << "yo" << std::endl;
     _server._q.add( fd, ClientCallback( fd, addr, _server ) );
 }
 

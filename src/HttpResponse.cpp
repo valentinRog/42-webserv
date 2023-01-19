@@ -2,7 +2,7 @@
 
 /* -------------------------------------------------------------------------- */
 
-HttpResponse::HttpResponse() {
+HttpResponse::HttpResponse(const HttpRequest&) {
     _responseStatus[200] = "OK";
     _responseStatus[201] = "Created";
     _responseStatus[400] = "Bad Request";

@@ -3,6 +3,8 @@
 #include "EventQueue.hpp"
 #include "ServerConf.hpp"
 #include "VirtualHostMapper.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
@@ -15,15 +17,16 @@ class ServerCluster {
     std::map< uint16_t, std::map< uint32_t, VirtualHostMapper > > _vh;
 
     class ClientCallback : public CallbackBase {
-        int            _fd;
-        sockaddr_in    _addr;
-        ServerCluster &_server;
-        std::string    _s;
+        int                      _fd;
+        sockaddr_in              _addr;
+        ServerCluster           &_server;
+        std::string              _s;
+        const VirtualHostMapper &_vhm;
 
     public:
         ClientCallback( int                fd,
                         const sockaddr_in &addr,
-                        ServerCluster &    server,
+                        ServerCluster     &server,
                         time_t             con_to  = 0,
                         time_t             idle_to = 0 );
         CallbackBase *clone() const;

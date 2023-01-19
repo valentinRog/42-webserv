@@ -28,7 +28,7 @@ class HttpResponse {
     ServerConf _conf;
 
 public:
-    HttpResponse();
+    HttpResponse( const HttpRequest &request );
     void setInformation( HttpRequest       httpRequest,
                          int               clientFd,
                          const ServerConf &serv );
