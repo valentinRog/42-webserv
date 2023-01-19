@@ -35,9 +35,8 @@ const ServerConf &VirtualHostMapper::operator[]( const std::string &s ) const {
 
 void VirtualHostMapper::add( const ServerConf &conf ) {
     _conf.push_back( conf );
-    for ( std::set< std::string >::const_iterator it(
-              conf.get_names().begin() );
-          it != conf.get_names().end();
+    for ( std::set< std::string >::const_iterator it( conf.names.begin() );
+          it != conf.names.end();
           it++ ) {
         _names_map.insert( std::make_pair( *it, --_conf.end() ) );
     }

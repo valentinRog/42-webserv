@@ -5,6 +5,9 @@
       "address": "0.0.0.0"
     },
     "root": "/var/www",
+    "server_names": [
+      "yo.org"
+    ],
     "location": [
       {
         "path": "/yo",

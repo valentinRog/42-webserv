@@ -5,8 +5,8 @@
 ServerCluster::ServerCluster() : _q( _max_events ) {}
 
 void ServerCluster::bind( const ServerConf &conf ) {
-    uint16_t port( conf.get_addr().sin_port );
-    uint32_t addr( conf.get_addr().sin_addr.s_addr );
+    uint16_t port( conf.addr.sin_port );
+    uint32_t addr( conf.addr.sin_addr.s_addr );
     if ( !_vh.count( port ) ) {
         _bind( ntohs( port ) );
         _vh[port];

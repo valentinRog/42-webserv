@@ -38,32 +38,32 @@ void HttpResponse::setInformation( HttpRequest       httpRequest,
     _version       = httpRequest.getVersion();
     _methodRequest = httpRequest.getMethod();
 
-    _defaultPathError = serv.getErrorPage();
+    _defaultPathError = serv.error_page;
 
-    _allowedMethod = serv.getMethod();
-    _dirListing    = serv.getDirListing();
-    _index         = serv.getIndex();
-    _path          = httpRequest.getPath();
-    if ( ( _path.empty() || _path == "/" ) && _dirListing == false )
-        _path = _index;
-    _root  = serv.getRoot();
-    _redir = serv.getRedir();
+    // _allowedMethod = serv.getMethod();
+    // _dirListing    = serv.getDirListing();
+    // _index         = serv.getIndex();
+    // _path          = httpRequest.getPath();
+    // if ( ( _path.empty() || _path == "/" ) && _dirListing == false )
+    //     _path = _index;
+    // _root  = serv.getRoot();
+    // _redir = serv.getRedir();
 
-    int pos;
-    if ( ( pos = verifLocation( httpRequest.getPath(), serv.getLocation() ) )
-         >= 0 ) {
-        ServerConf::Location *loc = serv.getLocation()[pos];
+    // int pos;
+    // if ( ( pos = verifLocation( httpRequest.getPath(), serv.getLocation() ) )
+    //      >= 0 ) {
+    //     ServerConf::Location *loc = serv.getLocation()[pos];
 
-        _allowedMethod = loc->getMethod();
-        _dirListing    = loc->getDirListing();
-        _index         = loc->getIndex();
-        _path          = httpRequest.getPath().substr( loc->getPath().size(),
-                                              httpRequest.getPath().size() );
-        if ( ( _path.empty() || _path == "/" ) && _dirListing == false )
-            _path = _index;
-        _root  = loc->getRoot();
-        _redir = loc->getRedir();
-    }
+    //     _allowedMethod = loc->getMethod();
+    //     _dirListing    = loc->getDirListing();
+    //     _index         = loc->getIndex();
+    //     _path          = httpRequest.getPath().substr( loc->getPath().size(),
+    //                                           httpRequest.getPath().size() );
+    //     if ( ( _path.empty() || _path == "/" ) && _dirListing == false )
+    //         _path = _index;
+    //     _root  = loc->getRoot();
+    //     _redir = loc->getRedir();
+    // }
 }
 
 int HttpResponse::verifLocation( std::string                           path,
@@ -71,9 +71,9 @@ int HttpResponse::verifLocation( std::string                           path,
     if ( locs.size() <= 0 ) return ( -1 );
     if ( path.find( "/", 1 ) != std::string::npos )
         path = path.substr( 0, path.find( "/", 1 ) );
-    for ( size_t i = 0; i < locs.size(); i++ ) {
-        if ( path == locs[i]->getPath() ) return ( i );
-    }
+    // for ( size_t i = 0; i < locs.size(); i++ ) {
+    //     if ( path == locs[i]->getPath() ) return ( i );
+    // }
     return ( -1 );
 }
 

@@ -10,14 +10,14 @@ PolymorphicWrapper< T >::PolymorphicWrapper( const PolymorphicWrapper &other )
     : _p( other._p->clone() ) {}
 
 template < typename T > PolymorphicWrapper< T >::~PolymorphicWrapper() {
-    delete _p;
+    if ( _p ) { delete _p; }
 }
 
 template < class T >
 PolymorphicWrapper< T > &
 PolymorphicWrapper< T >::operator=( const PolymorphicWrapper< T > &other ) {
     T *tmp( other._p->clone() );
-    delete _p;
+    if ( _p ) { delete _p; }
     _p = tmp;
     return *this;
 }
