@@ -35,7 +35,7 @@ public:
     void
     response( HttpRequest httpRequest, int clientFd, const ServerConf &serv );
     int verifLocation( std::string                           path,
-                       std::vector< ServerConf::Location * > locs );
+                       std::vector< ServerConf::Route * > locs );
 
     void toRedir();
     void toDirListing();

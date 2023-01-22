@@ -1,76 +1,12 @@
 [
   {
-    "listen": {
-      "port": 80,
-      "address": "0.0.0.0"
-    },
-    "root": "/var/www",
-    "server_names": [
-      "yo.org"
-    ],
-    "location": [
-      {
-        "path": "/yo",
-        "root": "/var/www",
-        "methods": [
-          "GET"
-        ],
-        "autoindex": true,
-        "try_files": [
-          "index.html"
-        ],
-        "rewrite": [
-          [
-            "/yo/1",
-            "google.com"
-          ],
-          [
-            "/yo/2",
-            "lichess.org"
-          ]
-        ]
-      },
-      {
-        "path": "/upload",
-        "root": "/var/www/upload",
-        "methods": [
-          "POST"
-        ]
-      }
-    ]
-  },
-  {
-    "listen": {
-      "port": 80,
-      "address": "127.0.0.1"
-    },
-    "root": "/var/www/upload",
-    "location": [
-      {
-        "path": "/",
-        "methods": [
-          "GET",
-          "POST",
-          "DELETE"
-        ],
-        "autoindex": true
-      }
-    ]
-  },
-  {
-    "listen": {
-      "port": 5000,
-      "address": "127.0.0.1",
-    },
-    "root": "/var/www",
-    "location": [
-      {
-        "path": "/",
-        "methods": [
-          "GET"
-        ],
-        "autoindex": false
-      }
-    ]
+    "listen": ["0.0.0.0", 80],
+    "server_names": ["yo.org"],
+    "routes": {
+      "/": { "root": "/var/www" },
+      "/yo": { "root": "/var/www" },
+      "/yo/salut": { "root": "/var/www" },
+      "/salut": { "root": "/var/www" }
+    }
   }
 ]

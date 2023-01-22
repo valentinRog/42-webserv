@@ -2,14 +2,11 @@
 
 /* -------------------------------------------------------------------------- */
 
-ServerConf::Location::Location() : autoindex( false ) {}
-
-ServerConf::Location::Location( const JSON::Object &o ) : autoindex( false ) {
+ServerConf::Route::Route( const JSON::Object &o ) : autoindex( false ) {
+    root = o.at( "root" ).unwrap< JSON::String >();
     if ( o.count( "autoindex" ) ) {
         autoindex = o.at( "autoindex" ).unwrap< JSON::Boolean >();
     }
-    path = o.at( "path" ).unwrap< JSON::String >();
-    if ( o.count( "root" ) ) { root = o.at( "root" ).unwrap< JSON::String >(); }
     if ( o.count( "methods" ) ) {
         JSON::Array a( o.at( "methods" ).unwrap< JSON::Array >() );
         for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
@@ -27,19 +24,12 @@ ServerConf::ServerConf( const JSON::Object &o ) : con_to( 0 ), idle_to( 0 ) {
     try {
         ::bzero( &addr, sizeof addr );
         addr.sin_family = AF_INET;
-        addr.sin_port   = htons( o.at( "listen" )
-                                   .unwrap< JSON::Object >()
-                                   .at( "port" )
-                                   .unwrap< JSON::Number >() );
-        if ( o.at( "listen" ).unwrap< JSON::Object >().count( "address" ) ) {
-            addr.sin_addr.s_addr
-                = ::inet_addr( std::string( o.at( "listen" )
-                                                .unwrap< JSON::Object >()
-                                                .at( "address" )
-                                                .unwrap< JSON::String >() )
-                                   .c_str() );
-        } else {
-            addr.sin_addr.s_addr = htonl( INADDR_ANY );
+        JSON::Array a( o.at( "listen" ).unwrap< JSON::Array >() );
+        addr.sin_port = htons( a[1].unwrap< JSON::Number >() );
+        if ( ( addr.sin_addr.s_addr = ::inet_addr(
+                   std::string( a[0].unwrap< JSON::String >() ).c_str() ) )
+             == INADDR_NONE ) {
+            throw std::runtime_error( "inet_addr" );
         }
         if ( o.count( "server_names" ) ) {
             JSON::Array a( o.at( "server_names" ).unwrap< JSON::Array >() );
@@ -48,11 +38,14 @@ ServerConf::ServerConf( const JSON::Object &o ) : con_to( 0 ), idle_to( 0 ) {
                 names.insert( it->unwrap< JSON::String >() );
             }
         }
-        JSON::Array a( o.at( "location" ).unwrap< JSON::Array >() );
-        for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
+        JSON::Object routes_o( o.at( "routes" ).unwrap< JSON::Object >() );
+        for ( JSON::Object::const_iterator it( routes_o.begin() );
+              it != routes_o.end();
               it++ ) {
-            Location location( it->unwrap< JSON::Object >() );
-            locations.push_back( location );
+            routes.insert( it->first );
+            routes_table.insert(
+                std::make_pair( it->first,
+                                it->second.unwrap< JSON::Object >() ) );
         }
     } catch ( const std::out_of_range & ) {
         throw ConfigError();

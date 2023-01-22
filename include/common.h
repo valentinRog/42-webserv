@@ -23,6 +23,8 @@
 #include <memory>
 #include <typeinfo>
 #include <dirent.h>
+#include <limits>
+#include <climits>
 
 #ifdef __linux__
 #include <sys/epoll.h>

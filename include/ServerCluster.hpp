@@ -1,10 +1,10 @@
 #pragma once
 
 #include "EventQueue.hpp"
-#include "ServerConf.hpp"
-#include "VirtualHostMapper.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "ServerConf.hpp"
+#include "VirtualHostMapper.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
@@ -19,16 +19,17 @@ class ServerCluster {
     class ClientCallback : public CallbackBase {
         int                      _fd;
         sockaddr_in              _addr;
-        ServerCluster           &_server;
+        ServerCluster &          _server;
         std::string              _s;
         const VirtualHostMapper &_vhm;
 
     public:
-        ClientCallback( int                fd,
-                        const sockaddr_in &addr,
-                        ServerCluster     &server,
-                        time_t             con_to  = 0,
-                        time_t             idle_to = 0 );
+        ClientCallback( int                      fd,
+                        const sockaddr_in &      addr,
+                        ServerCluster &          server,
+                        const VirtualHostMapper &vhm,
+                        time_t                   con_to  = 0,
+                        time_t                   idle_to = 0 );
         CallbackBase *clone() const;
         void          handle_read();
         void          handle_write();

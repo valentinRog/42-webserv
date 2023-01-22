@@ -67,7 +67,7 @@ void HttpResponse::setInformation( HttpRequest       httpRequest,
 }
 
 int HttpResponse::verifLocation( std::string                           path,
-                                 std::vector< ServerConf::Location * > locs ) {
+                                 std::vector< ServerConf::Route * > locs ) {
     if ( locs.size() <= 0 ) return ( -1 );
     if ( path.find( "/", 1 ) != std::string::npos )
         path = path.substr( 0, path.find( "/", 1 ) );

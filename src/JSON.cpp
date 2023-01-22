@@ -139,7 +139,7 @@ JSON::Number JSON::Parse::_parse_number( std::queue< std::string > &q ) {
 }
 
 JSON::Object JSON::Parse::_parse_object( std::queue< std::string > &q ) {
-    if ( q.size() < 5 || q.front() != "{" ) { throw ParsingError(); }
+    if ( q.size() < 2 || q.front() != "{" ) { throw ParsingError(); }
     Object o;
     q.pop();
     while ( q.size() && q.front() != "}" ) {
