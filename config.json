@@ -4,9 +4,9 @@
     "server_names": ["yo.org"],
     "routes": {
       "/": { "root": "/var/www" },
-      "/yo": { "root": "/var/www" },
-      "/yo/salut": { "root": "/var/www" },
-      "/salut": { "root": "/var/www" }
+      "/yo/": { "root": "/var/www" },
+      "/yo/salut/": { "root": "/var/www" },
+      "/salut/": { "root": "/var/www" }
     }
   }
 ]

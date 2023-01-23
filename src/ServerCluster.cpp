@@ -60,20 +60,18 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n = read( _fd, buff, sizeof( buff ) );
-    write( STDOUT_FILENO, buff, n );
-    fflush( stdout );
-    _s.append( buff, n );
+    std::string s;
+    s.append( buff, n );
+    _http_parser << s;
     update_last_t();
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    try {
-        HttpRequest  request( _s, _vhm );
-        HttpResponse response( request );
-        // send (reponse.get_str())
-        write( _fd, "yo", 2 );
-        _server._q.remove( _fd );
-    } catch ( const std::exception & ) {}
+    // Request  request( _s, _vhm );
+    // Response response( request );
+    // send (reponse.get_str())
+    write( _fd, "yo", 2 );
+    _server._q.remove( _fd );
 }
 
 void ServerCluster::ClientCallback::handle_timeout() {

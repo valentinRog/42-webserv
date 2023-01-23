@@ -1,8 +1,7 @@
 #pragma once
 
 #include "EventQueue.hpp"
-#include "HttpRequest.hpp"
-#include "HttpResponse.hpp"
+#include "HTTP.hpp"
 #include "ServerConf.hpp"
 #include "VirtualHostMapper.hpp"
 #include "common.h"
@@ -10,7 +9,7 @@
 /* -------------------------------------------------------------------------- */
 
 class ServerCluster {
-    static const int    _max_events  = 40;
+    static const int    _max_events  = 4000;
     static const size_t _buffer_size = 1024;
 
     EventQueue                                                    _q;
@@ -20,7 +19,7 @@ class ServerCluster {
         int                      _fd;
         sockaddr_in              _addr;
         ServerCluster &          _server;
-        std::string              _s;
+        HTTP::DynamicParser      _http_parser;
         const VirtualHostMapper &_vhm;
 
     public:

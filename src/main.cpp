@@ -1,6 +1,5 @@
 #include "JSON.hpp"
 #include "ServerCluster.hpp"
-#include "Trie.hpp"
 #include "Wrapper.hpp"
 #include "common.h"
 

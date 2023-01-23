@@ -19,8 +19,6 @@ struct ServerConf {
     };
 
     sockaddr_in                    addr;
-    time_t                         con_to;
-    time_t                         idle_to;
     std::set< std::string >        names;
     std::string                    error_page;
     std::map< std::string, Route > routes_table;

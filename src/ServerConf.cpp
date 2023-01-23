@@ -20,7 +20,7 @@ ServerConf::Route::Route( const JSON::Object &o ) : autoindex( false ) {
 
 ServerConf::ServerConf() {}
 
-ServerConf::ServerConf( const JSON::Object &o ) : con_to( 0 ), idle_to( 0 ) {
+ServerConf::ServerConf( const JSON::Object &o ) {
     try {
         ::bzero( &addr, sizeof addr );
         addr.sin_family = AF_INET;
