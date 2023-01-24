@@ -58,8 +58,8 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 }
 
 void ServerCluster::ClientCallback::handle_read() {
-    char   buff[_buffer_size];
-    size_t n = read( _fd, buff, sizeof( buff ) );
+    char        buff[_buffer_size];
+    size_t      n = read( _fd, buff, sizeof( buff ) );
     std::string s;
     s.append( buff, n );
     _http_parser << s;
@@ -67,11 +67,12 @@ void ServerCluster::ClientCallback::handle_read() {
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    // Request  request( _s, _vhm );
-    // Response response( request );
-    // send (reponse.get_str())
-    write( _fd, "yo", 2 );
-    _server._q.remove( _fd );
+    if ( _http_parser.step() == HTTP::DynamicParser::DONE ) {
+        HTTP::RequestHandler rh( _http_parser.request(), _vhm );
+        std::string          response = rh.response();
+        write( _fd, response.c_str(), response.size() );
+        _server._q.remove( _fd );
+    }
 }
 
 void ServerCluster::ClientCallback::handle_timeout() {

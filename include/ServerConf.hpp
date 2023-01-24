@@ -24,7 +24,6 @@ struct ServerConf {
     std::map< std::string, Route > routes_table;
     Trie                           routes;
 
-    ServerConf();
     ServerConf( const JSON::Object &o );
 
     class ConfigError : public std::exception {

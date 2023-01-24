@@ -21,17 +21,21 @@ std::ostream &operator<<( std::ostream &os, const Request &r );
 /* -------------------------------------------------------------------------- */
 
 class DynamicParser {
-    enum step { REQUEST, HOST, HEADER, CONTENT };
+public:
+    enum e_step { REQUEST, HOST, HEADER, CONTENT, DONE };
 
+private:
     std::string _line;
     std::string _sep;
-    step        _step;
+    e_step      _step;
     Request     _request;
 
 public:
     DynamicParser();
 
-    void operator<<( const std::string &s );
+    void           operator<<( const std::string &s );
+    e_step         step() const;
+    const Request &request() const;
 
 private:
     void _parse_line();
@@ -39,46 +43,96 @@ private:
 
 /* -------------------------------------------------------------------------- */
 
-class Response {
-    std::map< int, std::string > _responseStatus;
+struct Response {
+    std::string                          version;
+    std::string                          code;
+    std::string                          outcome;
+    std::map< std::string, std::string > header;
+    std::string                          content;
 
-    //request
-    int         _clientFd;
-    std::string _methodRequest;
-    std::string _version;
-    std::string _rootPath;
+    Response()
+        : version( "HTTP/1.1" ),
+          code( "200" ),
+          outcome( "OK" ),
+          content( "yo\n" ) {
+        header["Content-Type"] = "text/html";
+        std::ostringstream oss;
+        oss << content.size();
+        header["Content-Length"] = oss.str();
+    }
 
-    //serv
-    std::string             _path;
-    std::string             _root;
-    std::set< std::string > _allowedMethod;
-    std::string             _defaultPathError;
-    std::string             _index;
-    bool                    _dirListing;
-    std::string             _redir;
-
-    ServerConf _conf;
-
-public:
-    Response( const Request &request );
-    void setInformation( Request       httpRequest,
-                         int               clientFd,
-                         const ServerConf &serv );
-    void
-    response( Request httpRequest, int clientFd, const ServerConf &serv );
-    int verifLocation( std::string                           path,
-                       std::vector< ServerConf::Route * > locs );
-
-    void toRedir();
-    void toDirListing();
-    void getMethod();
-    void postMethod();
-    void deleteMethod();
-
-    std::string getContentType( std::string path );
-    void        sendResponse( int nb, std::string page );
+    operator std::string() const {
+        std::string s( version + ' ' + code + ' ' + outcome + "\r\n" );
+        for ( std::map< std::string, std::string >::const_iterator it
+              = header.begin();
+              it != header.end();
+              it++ ) {
+            s += it->first + ": " + it->second + "\r\n";
+        }
+        return s + "\r\n" + content;
+    }
 };
 
+/* -------------------------------------------------------------------------- */
+
+class RequestHandler {
+    std::map< int, std::string > _responseStatus;
+
+    Request    _request;
+    ServerConf _conf;
+    Response   _response;
+
+    const ServerConf::Route &_route;
+
+    // std::string _route;
+    // std::string _root;
+    std::string _path;
+
+    // const ServerConf::Route &_route;
+
+    // //request
+    // std::string _methodRequest;
+    // std::string _version;
+    // std::string _rootPath;
+
+    // //serv
+    // std::string             _path;
+    // std::string             _root;
+    // std::set< std::string > _allowedMethod;
+    // std::string             _defaultPathError;
+    // std::string             _index;
+    // bool                    _dirListing;
+    // std::string             _redir;
+
+    // ServerConf _conf;
+
+public:
+    RequestHandler( const Request &request, const VirtualHostMapper &vhm );
+
+    // void
+    //      setInformation( Request httpRequest, int clientFd, const ServerConf &serv );
+    // void response( Request httpRequest, int clientFd, const ServerConf &serv );
+    // int  verifLocation( std::string                        path,
+    //                     std::vector< ServerConf::Route * > locs );
+
+    // void toRedir();
+    // void toDirListing();
+    void getMethod();
+    // void postMethod();
+    // void deleteMethod();
+
+    const Response &response() const { return _response; }
+
+    // std::string getContentType( std::string path );
+    // void        sendResponse( int nb, std::string page );
+private:
+    std::string _get_path() const {
+        std::string route( _conf.routes.lower_bound( _request.url ) );
+        std::string url( _request.url );
+        return _route.root
+               + url.substr( route.size(), url.size() - route.size() );
+    }
+};
 
 /* -------------------------------------------------------------------------- */
 

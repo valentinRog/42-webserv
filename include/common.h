@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <limits>
 #include <climits>
+#include <sys/stat.h>
 
 #ifdef __linux__
 #include <sys/epoll.h>

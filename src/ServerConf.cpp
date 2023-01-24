@@ -18,8 +18,6 @@ ServerConf::Route::Route( const JSON::Object &o ) : autoindex( false ) {
 
 /* -------------------------------------------------------------------------- */
 
-ServerConf::ServerConf() {}
-
 ServerConf::ServerConf( const JSON::Object &o ) {
     try {
         ::bzero( &addr, sizeof addr );
