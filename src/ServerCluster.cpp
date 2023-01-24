@@ -1,10 +1,13 @@
 #include "ServerCluster.hpp"
 
+ServerConf confTemp;
+
 /* -------------------------------------------------------------------------- */
 
 ServerCluster::ServerCluster() : _q( _max_events ) {}
 
 void ServerCluster::bind( const ServerConf &conf ) {
+    confTemp = conf;//temp
     uint16_t port( conf.addr.sin_port );
     uint32_t addr( conf.addr.sin_addr.s_addr );
     if ( !_vh.count( port ) ) {
@@ -67,10 +70,14 @@ void ServerCluster::ClientCallback::handle_read() {
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    // Request  request( _s, _vhm );
-    // Response response( request );
-    // send (reponse.get_str())
-    write( _fd, "yo", 2 );
+    HTTP::Response r;
+    std::cout << "L'ERREUR EST ICI";
+    std::string s = r.response(_http_parser.getRequest(), confTemp);
+    if (s.empty()) {
+        send( _fd, s.c_str(), s.size(), 0);
+    } else {
+        //error
+    }
     _server._q.remove( _fd );
 }
 

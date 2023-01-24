@@ -1,4 +1,6 @@
 #include "HTTP.hpp"
+#include <sys/stat.h>
+#include <unistd.h>
 
 /* -------------------------------------------------------------------------- */
 
@@ -56,6 +58,7 @@ void HTTP::DynamicParser::_parse_line() {
     case HEADER: {
         if ( !iss.str().size() ) {
             _step = CONTENT;
+            iss >> _request.content;
             break;
         }
         std::string k;
@@ -69,9 +72,11 @@ void HTTP::DynamicParser::_parse_line() {
     }
 }
 
+HTTP::Request HTTP::DynamicParser::getRequest() { return (_request); }
+
 /* -------------------------------------------------------------------------- */
 
-HTTP::Response::Response( const Request & ) {
+HTTP::Response::Response() {
     _responseStatus[200] = "OK";
     _responseStatus[201] = "Created";
     _responseStatus[400] = "Bad Request";
@@ -81,147 +86,100 @@ HTTP::Response::Response( const Request & ) {
     _responseStatus[505] = "Version Not Supported";
 }
 
-void HTTP::Response::response( Request           httpRequest,
-                                   int               clientFd,
-                                   const ServerConf &serv ) {
-    setInformation( httpRequest, clientFd, serv );
+std::string HTTP::Response::response( Request  httpRequest, const ServerConf &serv ) {
+    //verif HTTP et method qui existe 
+    std::map<std::string, ServerConf::Route>::const_iterator it;  
+    it = serv.routes_table.find(httpRequest.url);
+    if (it != serv.routes_table.end()) {
+        const ServerConf::Route route = it->second;
 
-    //si aucun error 405
-    if ( _redir != "" )
-        toRedir();
-    else if ( _methodRequest == "GET" && _allowedMethod.count( "GET" ) )
-        getMethod();
-    else if ( _methodRequest == "POST" && _allowedMethod.count( "POST" ) )
-        postMethod();
-    else if ( _methodRequest == "DELETE" && _allowedMethod.count( "DELETE" ) )
-        deleteMethod();
-    else
-        sendResponse( 403, _defaultPathError );
-}
-
-void HTTP::Response::setInformation( Request           httpRequest,
-                                         int               clientFd,
-                                         const ServerConf &serv ) {
-    _rootPath = std::getenv( "PWD" );        //A changer car pas c++98
-    _clientFd = clientFd;
-    // _version       = httpRequest.getVersion();
-    // _methodRequest = httpRequest.getMethod();
-
-    // _defaultPathError = serv.error_page;
-
-    // _allowedMethod = serv.getMethod();
-    // _dirListing    = serv.getDirListing();
-    // _index         = serv.getIndex();
-    // _path          = httpRequest.getPath();
-    // if ( ( _path.empty() || _path == "/" ) && _dirListing == false )
-    //     _path = _index;
-    // _root  = serv.getRoot();
-    // _redir = serv.getRedir();
-
-    // int pos;
-    // if ( ( pos = verifLocation( httpRequest.getPath(), serv.getLocation() ) )
-    //      >= 0 ) {
-    //     ServerConf::Location *loc = serv.getLocation()[pos];
-
-    //     _allowedMethod = loc->getMethod();
-    //     _dirListing    = loc->getDirListing();
-    //     _index         = loc->getIndex();
-    //     _path          = httpRequest.getPath().substr( loc->getPath().size(),
-    //                                           httpRequest.getPath().size() );
-    //     if ( ( _path.empty() || _path == "/" ) && _dirListing == false )
-    //         _path = _index;
-    //     _root  = loc->getRoot();
-    //     _redir = loc->getRedir();
-    // }
-}
-
-int HTTP::Response::verifLocation(
-    std::string                        path,
-    std::vector< ServerConf::Route * > locs ) {
-    if ( locs.size() <= 0 ) return ( -1 );
-    if ( path.find( "/", 1 ) != std::string::npos )
-        path = path.substr( 0, path.find( "/", 1 ) );
-    // for ( size_t i = 0; i < locs.size(); i++ ) {
-    //     if ( path == locs[i]->getPath() ) return ( i );
-    // }
-    return ( -1 );
-}
-
-void HTTP::Response::getMethod() {
-    try {
-        std::ifstream fd( ( _rootPath + _root + _path ).c_str() );
-        std::cout << "root = " << _root << " path " << _path << std::endl;
-        if ( fd )
-            sendResponse( 200, _path );
+        if (route.redir != "")
+            toRedir(httpRequest, route);
+        else if ( httpRequest.method == "GET" && route.methods.count( "GET" ) )
+            getMethod(httpRequest, route);
+        else if ( httpRequest.method == "POST" && route.methods.count( "POST" ) )
+            postMethod();
+        else if ( httpRequest.method == "DELETE" && route.methods.count( "DELETE" ) )
+            deleteMethod(httpRequest, route);
         else
-            sendResponse( 404, _defaultPathError );
-    } catch ( const std::ios_base::failure &fail ) {
-        std::cout << "puteeee" << std::endl;
-        if ( _dirListing == true )
-            toDirListing();
-        else
-            sendResponse( 200, _path );
+            setResponse( 403, _defaultPathError, httpRequest); //+ error dif si method mal écrite
+    } else {
+        //ERROR mauvais path 403 j pense;
+        return (NULL);
+    }
+    return (_res);
+}
+
+void HTTP::Response::getMethod(Request httpRequest, const ServerConf::Route & route) {
+    struct stat s;
+
+    if (stat((_rootPath + route.root + route.path).c_str(), &s) == 0) {
+        if (s.st_mode & S_IFDIR) {
+            if (route.autoindex == true)
+                toDirListing(httpRequest, route);
+            else {
+                //error 404 is a directory
+            }
+        } else {
+            //go send
+        }
+    } else {
+        //ENOENT: Le fichier ou répertoire spécifié n'existe pas.
     }
 }
 
 void HTTP::Response::postMethod() {}
 
-void HTTP::Response::deleteMethod() {
-    try {
-        std::ifstream fd( ( _rootPath + _root + _path ).c_str() );
-        if ( fd ) {
-            std::remove( ( _rootPath + _root + _path ).c_str() );
-            sendResponse(
-                200,
-                _defaultPathError );        //a check ce qu'il faut renvoyer
-        } else
-            sendResponse( 404, _defaultPathError );
-    } catch ( const std::ios_base::failure &fail ) {
-        sendResponse( 403, _defaultPathError );
+void HTTP::Response::deleteMethod(Request httpRequest, const ServerConf::Route & route) {
+    struct stat s;
+
+    if (stat((_rootPath + route.root + route.path).c_str(), &s) == 0) {
+        if (s.st_mode & S_IFDIR) {
+            //error is a direectory 403
+        } else {
+            std::remove((_rootPath + route.root + route.path).c_str());
+            //go send
+        }
+    } else {
+        //ERROR
     }
 }
 
-void HTTP::Response::toDirListing() {
+void HTTP::Response::toDirListing(Request httpRequest, const ServerConf::Route & route) {
     struct dirent *file;
-    std::string res = _version + " 200 OK\n\n<!DOCTYPE html><html><body><h1>";
+    std::string res = httpRequest.version + " 200 OK\n\n<!DOCTYPE html><html><body><h1>";
     std::string resEnd = "</h1></body></html>";
 
     DIR *dir;
-    dir = opendir( ( _rootPath + _root + _path ).c_str() );
+    dir = opendir( ( _rootPath + route.root + route.path ).c_str() );
     if ( !dir ) return;
     while ( ( file = readdir( dir ) ) != NULL )
         res += "<p>" + std::string( file->d_name ) + "</p>";
     res += resEnd;
-    //close(dir);
-    send( _clientFd, res.c_str(), res.size(), 0 );
+    closedir(dir);
     std::cout << "Dir listing finish" << std::endl;
 }
 
-void HTTP::Response::toRedir() {
+void HTTP::Response::toRedir(Request httpRequest, const ServerConf::Route & route) {
     std::string res
-        = _version
-          + " 200 OK\n\n<head><meta http-equiv=\"Refresh\" content=\"0;url="
-          + _redir + "\"/></head>";
-    send( _clientFd, res.c_str(), res.size(), 0 );
+        = httpRequest.version
+        + " 200 OK\n\n<head><meta http-equiv=\"Refresh\" content=\"0;url="
+        + route.redir + "\"/></head>";
 }
 
-void HTTP::Response::sendResponse( int nb, std::string path ) {
-    if ( nb >= 400 ) _root.clear();
-    std::ifstream fd( ( _rootPath + _root + path ).c_str() );
-    std::cout << _rootPath + _root + path << std::endl;
-    std::string        page( ( std::istreambuf_iterator< char >( fd ) ),
-                      std::istreambuf_iterator< char >() );
+void HTTP::Response::setResponse( int nb, std::string rPath, Request httpRequest) {
+    std::ifstream fd((_rootPath + rPath).c_str());
+    std::string        page( ( std::istreambuf_iterator< char >( fd ) ), std::istreambuf_iterator< char >() );
     std::ostringstream ss;
     ss << nb;
-    std::string res = _version + " " + ss.str() + " "
-                      + _responseStatus.find( nb )->second + "\r\n";
-    res = res + "Content-type:" + getContentType( path ) + "\r\n";
+    _res = httpRequest.version + " " + ss.str()
+            + " " + _responseStatus.find(nb)->second + "\r\n"
+            + "Content-type:" + getContentType( rPath ) + "\r\n";
     ss.clear();
     ss << ( page ).size();
-    res = res + "Content-length:" + ss.str() + "\r\n\r\n";
-    res = res + page + "\r\n";
-    std::cout << res << std::endl;
-    send( _clientFd, res.c_str(), res.size(), 0 );
+    _res = _res + "Content-length:" + ss.str() + "\r\n\r\n";
+    _res = _res + page + "\r\n";
+    std::cout << _res << std::endl;
 }
 
 std::string HTTP::Response::getContentType( std::string path ) {

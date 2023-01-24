@@ -13,6 +13,7 @@ struct Request {
     std::string                          url;
     std::string                          version;
     std::string                          host;
+    std::string                          content;
     std::map< std::string, std::string > header;
 };
 
@@ -30,6 +31,7 @@ class DynamicParser {
 
 public:
     DynamicParser();
+    Request getRequest();
 
     void operator<<( const std::string &s );
 
@@ -43,40 +45,26 @@ class Response {
     std::map< int, std::string > _responseStatus;
 
     //request
-    int         _clientFd;
     std::string _methodRequest;
     std::string _version;
     std::string _rootPath;
 
-    //serv
-    std::string             _path;
-    std::string             _root;
-    std::set< std::string > _allowedMethod;
-    std::string             _defaultPathError;
-    std::string             _index;
-    bool                    _dirListing;
-    std::string             _redir;
+    std::string _defaultPathError;
 
-    ServerConf _conf;
+    std::string _res;
 
 public:
-    Response( const Request &request );
-    void setInformation( Request       httpRequest,
-                         int               clientFd,
-                         const ServerConf &serv );
-    void
-    response( Request httpRequest, int clientFd, const ServerConf &serv );
-    int verifLocation( std::string                           path,
-                       std::vector< ServerConf::Route * > locs );
+    Response();
+    std::string response( Request httpRequest, const ServerConf &serv );
 
-    void toRedir();
-    void toDirListing();
-    void getMethod();
+    void toRedir(Request httpRequest, const ServerConf::Route & route);
+    void toDirListing(Request httpRequest, const ServerConf::Route & route);
+    void getMethod(Request httpRequest, const ServerConf::Route & route);
     void postMethod();
-    void deleteMethod();
+    void deleteMethod(Request httpRequest, const ServerConf::Route & route);
 
     std::string getContentType( std::string path );
-    void        sendResponse( int nb, std::string page );
+    void        setResponse( int nb, std::string page, Request httpRequest);
 };
 
 
