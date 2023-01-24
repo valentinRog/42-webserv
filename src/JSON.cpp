@@ -4,15 +4,17 @@
 
 JSON::Value::~Value() {}
 
+std::ostream &JSON::Value::repr(std::ostream &os) const {
+    return os << stringify();
+}
+
 /* -------------------------------------------------------------------------- */
 
 JSON::String::String( const std::string &s ) : _s( s ) {}
 
 JSON::Value *JSON::String::clone() const { return new JSON::String( *this ); }
 
-std::ostream &JSON::String::repr( std::ostream &os ) const {
-    return os << '"' << _s << '"';
-}
+std::string JSON::String::stringify() const { return '"' + _s + '"'; }
 
 JSON::String::operator std::string() const { return _s; }
 
@@ -22,7 +24,11 @@ JSON::Number::Number( double n ) : _n( n ) {}
 
 JSON::Value *JSON::Number::clone() const { return new JSON::Number( *this ); }
 
-std::ostream &JSON::Number::repr( std::ostream &os ) const { return os << _n; }
+std::string JSON::Number::stringify() const {
+    std::ostringstream oss;
+    oss << _n;
+    return oss.str();
+}
 
 JSON::Number::operator double() const { return _n; }
 
@@ -30,26 +36,28 @@ JSON::Number::operator double() const { return _n; }
 
 JSON::Value *JSON::Object::clone() const { return new JSON::Object( *this ); }
 
-std::ostream &JSON::Object::repr( std::ostream &os ) const {
-    os << "{";
+std::string JSON::Object::stringify() const {
+    std::string s;
+    s += '{';
     for ( const_iterator it( begin() ); it != end(); it++ ) {
-        if ( it != begin() ) { os << ", "; }
-        os << '"' << it->first << '"' << ": " << *it->second;
+        if ( it != begin() ) { s += ", "; }
+        s += '"' + it->first + "\": " + it->second->stringify();
     }
-    return os << "}";
+    return s + '}';
 }
 
 /* -------------------------------------------------------------------------- */
 
 JSON::Value *JSON::Array::clone() const { return new JSON::Array( *this ); }
 
-std::ostream &JSON::Array::repr( std::ostream &os ) const {
-    os << "[";
+std::string JSON::Array::stringify() const {
+    std::string s;
+    s += '[';
     for ( const_iterator it( begin() ); it != end(); it++ ) {
-        if ( it != begin() ) { os << ", "; }
-        os << **it;
+        if ( it != begin() ) { s += ", "; }
+        s += ( *it )->stringify();
     }
-    return os << "]";
+    return s + ']';
 }
 
 /* -------------------------------------------------------------------------- */
@@ -58,8 +66,10 @@ JSON::Boolean::Boolean( bool b ) : _b( b ) {}
 
 JSON::Value *JSON::Boolean::clone() const { return new JSON::Boolean( *this ); }
 
-std::ostream &JSON::Boolean::repr( std::ostream &os ) const {
-    return os << std::boolalpha << _b;
+std::string JSON::Boolean::stringify() const {
+    std::ostringstream oss;
+    oss << std::boolalpha << _b;
+    return oss.str();
 }
 
 JSON::Boolean::operator bool() const { return _b; }
@@ -68,9 +78,7 @@ JSON::Boolean::operator bool() const { return _b; }
 
 JSON::Value *JSON::Null::clone() const { return new JSON::Null( *this ); }
 
-std::ostream &JSON::Null::repr( std::ostream &os ) const {
-    return os << "null";
-}
+std::string JSON::Null::stringify() const { return "null"; }
 
 /* -------------------------------------------------------------------------- */
 
@@ -208,12 +216,6 @@ JSON::Wrapper JSON::Parse::from_file( const std::string &filename ) {
 
 const char *JSON::Parse::ParsingError::what() const throw() {
     return "Error while parsing JSON";
-}
-
-/* -------------------------------------------------------------------------- */
-
-std::ostream &operator<<( std::ostream &os, const JSON::Value &v ) {
-    return v.repr( os );
 }
 
 /* -------------------------------------------------------------------------- */

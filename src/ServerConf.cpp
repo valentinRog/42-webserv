@@ -4,6 +4,13 @@
 
 ServerConf::Route::Route( const JSON::Object &o ) : autoindex( false ) {
     root = o.at( "root" ).unwrap< JSON::String >();
+    if ( o.count( "index" ) ) {
+        JSON::Array a( o.at( "index" ).unwrap< JSON::Array >() );
+        for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
+              it++ ) {
+            index.push_back( it->unwrap< JSON::String >() );
+        }
+    }
     if ( o.count( "autoindex" ) ) {
         autoindex = o.at( "autoindex" ).unwrap< JSON::Boolean >();
     }

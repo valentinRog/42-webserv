@@ -2,12 +2,6 @@
 
 /* -------------------------------------------------------------------------- */
 
-template < typename T > struct CloneTraitCRTP {
-    virtual T *clone() const = 0;
-};
-
-/* -------------------------------------------------------------------------- */
-
 template < typename T > class PolymorphicWrapper {
     T *_p;
 

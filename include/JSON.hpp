@@ -1,16 +1,20 @@
 #pragma once
 
-#include "common.h"
+#include "Traits.hpp"
 #include "Wrapper.hpp"
+#include "common.h"
 
 namespace JSON {
 
 /* -------------------------------------------------------------------------- */
 
-struct Value : public CloneTraitCRTP< Value > {
+struct Value : public Trait::CloneCRTP< Value >,
+               public Trait::Stringify,
+               public Trait::Repr {
     virtual ~Value();
-    virtual std::ostream &repr( std::ostream &os ) const = 0;
-    virtual Value        *clone() const                  = 0;
+    virtual Value *     clone() const     = 0;
+    virtual std::string stringify() const = 0;
+    std::ostream &      repr( std::ostream &os ) const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -24,8 +28,8 @@ class String : public Value {
 
 public:
     String( const std::string &s );
-    Value        *clone() const;
-    std::ostream &repr( std::ostream &os ) const;
+    Value *     clone() const;
+    std::string stringify() const;
 
     operator std::string() const;
 };
@@ -37,8 +41,8 @@ class Number : public Value {
 
 public:
     Number( double n );
-    Value        *clone() const;
-    std::ostream &repr( std::ostream &os ) const;
+    Value *     clone() const;
+    std::string stringify() const;
 
     operator double() const;
 };
@@ -46,15 +50,15 @@ public:
 /* -------------------------------------------------------------------------- */
 
 struct Object : public Value, public std::map< std::string, Wrapper > {
-    Value        *clone() const;
-    std::ostream &repr( std::ostream &os ) const;
+    Value *     clone() const;
+    std::string stringify() const;
 };
 
 /* -------------------------------------------------------------------------- */
 
 struct Array : public Value, public std::vector< Wrapper > {
-    Value        *clone() const;
-    std::ostream &repr( std::ostream &os ) const;
+    Value *     clone() const;
+    std::string stringify() const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -64,8 +68,8 @@ class Boolean : public Value {
 
 public:
     Boolean( bool b );
-    Value        *clone() const;
-    std::ostream &repr( std::ostream &os ) const;
+    Value *     clone() const;
+    std::string stringify() const;
 
     operator bool() const;
 };
@@ -74,8 +78,8 @@ public:
 
 class Null : public Value {
 public:
-    Value        *clone() const;
-    std::ostream &repr( std::ostream &os ) const;
+    Value *     clone() const;
+    std::string stringify() const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -108,7 +112,3 @@ public:
 }
 
 /* ------------------------------------------------------------------------- */
-
-std::ostream &operator<<( std::ostream &os, const JSON::Value &v );
-
-/* -------------------------------------------------------------------------- */

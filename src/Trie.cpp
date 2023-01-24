@@ -59,33 +59,4 @@ std::string Trie::lower_bound( const std::string &s ) const {
     return prefix;
 }
 
-std::ostream &Trie::repr( std::ostream &os ) const {
-    bool first( true );
-    return os << "{", _repr_dfs( os, this, first ) << "}";
-}
-
-std::ostream &Trie::_repr_dfs( std::ostream &os,
-                               const Trie *  t,
-                               bool &        first,
-                               std::string   buff ) const {
-    if ( t->_eow ) {
-        if ( !first ) { os << ", "; }
-        first = false;
-        os << '"' << buff << '"';
-    }
-    for ( size_t i = 0; i < UCHAR_MAX; i++ ) {
-        if ( t->_children[i] ) {
-            _repr_dfs( os,
-                       t->_children[i],
-                       first,
-                       buff + static_cast< char >( i ) );
-        }
-    }
-    return os;
-}
-
-std::ostream &operator<<( std::ostream &os, const Trie &t ) {
-    return t.repr( os );
-}
-
 /* -------------------------------------------------------------------------- */

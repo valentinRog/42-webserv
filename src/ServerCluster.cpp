@@ -24,18 +24,25 @@ void ServerCluster::run() {
 }
 
 void ServerCluster::_bind( uint16_t port ) {
-    int         fd = ::socket( AF_INET, SOCK_STREAM, 0 );
+    int fd = ::socket( AF_INET, SOCK_STREAM, 0 );
+    if ( fd < 0 ) { throw std::runtime_error( "socket" ); }
     sockaddr_in addr;
     ::bzero( &addr, sizeof( addr ) );
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons( port );
     addr.sin_addr.s_addr = htonl( INADDR_ANY );
+    int ra               = 1;
+    if ( ::setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &ra, sizeof( ra ) ) < 0 ) {
+        throw std::runtime_error( "setsockopt" );
+    }
     std::cout << "binding " << port << std::endl;
     if ( ::bind( fd, reinterpret_cast< sockaddr * >( &addr ), sizeof( addr ) )
          == -1 ) {
         throw std::runtime_error( "bind" );
     }
-    ::listen( fd, SOMAXCONN );
+    if ( ::listen( fd, SOMAXCONN ) < 0 ) {
+        throw std::runtime_error( "listen" );
+    }
     _q.add( fd, SocketCallback( fd, addr, *this ) );
 }
 

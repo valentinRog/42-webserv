@@ -8,12 +8,12 @@
 
 struct ServerConf {
     struct Route {
-        std::string             path;
-        std::string             root;
-        std::string             index;
-        std::set< std::string > methods;
-        bool                    autoindex;
-        std::string             redir;
+        std::string              path;
+        std::string              root;
+        std::list< std::string > index;
+        std::set< std::string >  methods;
+        bool                     autoindex;
+        std::string              redir;
 
         Route( const JSON::Object &o );
     };

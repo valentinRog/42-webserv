@@ -3,9 +3,7 @@
     "listen": ["0.0.0.0", 80],
     "server_names": ["yo.org"],
     "routes": {
-      "/": { "root": "./" },
-      "/i/": { "root": "./include/" },
-      "/s/": { "root": "./src/" }
+      "/": { "root": "./html/", "index": ["index.html"] }
     }
   }
 ]

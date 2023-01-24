@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Traits.hpp"
 #include "Wrapper.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
 
-class CallbackBase : public CloneTraitCRTP< CallbackBase > {
+class CallbackBase : public Trait::CloneCRTP< CallbackBase > {
     time_t _con_to;
     time_t _t0;
     time_t _idle_to;

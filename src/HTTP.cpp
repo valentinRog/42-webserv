@@ -17,7 +17,7 @@ std::ostream &operator<<( std::ostream &os, const HTTP::Request &r ) {
         o2.insert( std::make_pair( it->first, JSON::String( it->second ) ) );
     }
     o.at( "header" ) = o2;
-    return o.repr( os );
+    return os << o.stringify();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -160,17 +160,27 @@ HTTP::RequestHandler::RequestHandler( const Request &          request,
 // }
 
 void HTTP::RequestHandler::getMethod() {
-    std::cout << _get_path() << std::endl;
-    std::ifstream f( _get_path().c_str() );
     struct stat   st;
+    std::ifstream f;
     ::stat( _get_path().c_str(), &st );
-    if ( f.is_open() && !( st.st_mode & S_IFDIR ) ) {
+    if ( st.st_mode & S_IFDIR ) {
+        for ( std::list< std::string >::const_iterator it(
+                  _route.index.begin() );
+              it != _route.index.end();
+              it++ ) {
+            std::cout << _get_path() + *it << std::endl;
+            f.open( ( _get_path() + *it ).c_str() );
+            if ( f.is_open() ) { break; }
+        }
+    } else {
+        f.open( _get_path().c_str() );
+    }
+    if ( f.is_open() ) {
         std::ostringstream oss;
         oss << f.rdbuf();
         _response.content = oss.str();
-        std::ostringstream oss2;
-        oss2 << oss.str().size();
-        _response.header["Content-Length"] = oss2.str();
+        _response.header["Content-Length"]
+            = JSON::Number( oss.str().size() ).stringify();
     } else {
         _response.code                     = "404";
         _response.content                  = "404\n";
