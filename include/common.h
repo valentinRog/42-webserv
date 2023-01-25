@@ -26,6 +26,7 @@
 #include <limits>
 #include <climits>
 #include <sys/stat.h>
+#include <cerrno>
 
 #ifdef __linux__
 #include <sys/epoll.h>

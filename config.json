@@ -1,9 +1,10 @@
 [
   {
-    "listen": ["0.0.0.0", 80],
+    "listen": ["0.0.0.0", 8000],
     "server_names": ["yo.org"],
     "routes": {
-      "/": { "root": "./html/", "index": ["index.html"] }
+      "/": { "root": "/html/", "index": ["index.html"], "methods": ["GET"] },
+      "/trucadelete": { "root": "/html/delete/", "index": ["test1.html"], "methods": ["GET", "DELETE"] }
     }
   }
 ]

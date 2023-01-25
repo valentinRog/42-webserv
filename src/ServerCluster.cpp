@@ -76,7 +76,7 @@ void ServerCluster::ClientCallback::handle_read() {
 void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::DynamicParser::DONE ) {
         HTTP::RequestHandler rh( _http_parser.request(), _vhm );
-        std::string          response = rh.response();
+        std::string          response = rh.getResponse().stringify();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );
     }
