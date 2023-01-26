@@ -21,6 +21,10 @@ ServerConf::Route::Route( const JSON::Object &o ) : autoindex( false ) {
             methods.insert( it->unwrap< JSON::String >() );
         }
     }
+    if (o.count("redir")) {
+        redir = o.at("redir").unwrap<JSON::String>();
+
+    }
 }
 
 /* -------------------------------------------------------------------------- */

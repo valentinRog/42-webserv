@@ -8,7 +8,9 @@ int main( int argc, char **argv ) {
         std::cerr << "usage: ./webserv config.json" << std::endl;
         return EXIT_FAILURE;
     }
+    HTTP::ErrorCodes();
     ServerCluster s;
+    
     {
         JSON::Array a(
             JSON::Parse::from_file( argv[1] ).unwrap< JSON::Array & >() );

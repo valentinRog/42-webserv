@@ -6,6 +6,26 @@
 
 namespace HTTP {
 
+struct ErrorCodes {
+    static const std::map<int, std::string> messages;
+
+  private:
+    static std::map<int, std::string> _init_messages() {
+    std::map<int, std::string> m;
+    m[200] = "OK";
+    m[301] = "Move Permanently";
+    m[400] = "Bad Request";
+    m[403] = "Forbidden";
+    m[404] = "Not Found";
+    m[405] = "Method Not Allowed";
+    m[408] = "Request Timeout";
+    m[500] = "InternalServer Error";
+    m[502] = "Bad Gateway";
+    m[505] = "Version Not Supported";
+    return m;
+  }
+};
+
 /* -------------------------------------------------------------------------- */
 
 struct Request {
@@ -83,6 +103,7 @@ public:
     void postMethod();
     void deleteMethod();
 
+    std::string errorMessage(int nb);
     HTTP::Response getResponse();
     std::string getContentType( std::string path );
     void        setResponse( int nb, std::string content);
