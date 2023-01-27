@@ -11,14 +11,31 @@ public:
     ~PolymorphicWrapper();
     PolymorphicWrapper &operator=( const PolymorphicWrapper &other );
 
-    T       &operator*();
+    T &      operator*();
     const T &operator*() const;
 
-    T       *operator->();
+    T *      operator->();
     const T *operator->() const;
 
-    template < typename U > U       &unwrap();
+    template < typename U > U &      unwrap();
     template < typename U > const U &unwrap() const;
+};
+
+/* -------------------------------------------------------------------------- */
+
+class RunOnce {
+private:
+    bool _ran;
+
+public:
+    RunOnce() : _ran( false ) {}
+
+    template < typename F > void run( F &fn ) {
+        if ( !_ran ) {
+            fn();
+            _ran = true;
+        }
+    }
 };
 
 /* -------------------------------------------------------------------------- */

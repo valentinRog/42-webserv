@@ -4,7 +4,7 @@
 
 JSON::Value::~Value() {}
 
-std::ostream &JSON::Value::repr(std::ostream &os) const {
+std::ostream &JSON::Value::repr( std::ostream &os ) const {
     return os << stringify();
 }
 
@@ -82,9 +82,25 @@ std::string JSON::Null::stringify() const { return "null"; }
 
 /* -------------------------------------------------------------------------- */
 
-const std::string JSON::Parse::whitespaces = " \t\n\r";
-const std::string JSON::Parse::tokens      = "{}[],:";
-const char        JSON::Parse::quote       = '"';
+const std::set< char > &JSON::Parse::whitespaces() {
+    static std::set< char > st;
+    static RunOnce f;
+    struct Init {
+        void operator()() {
+            std::string s( " \t\n\r" );
+            st.insert( s.begin(), s.end() );
+        }
+    };
+    Init i;
+    f.run(i);
+    return st;
+}
+
+const std::set< char > &JSON::Parse::tokens() {
+    std::string             s( "{}[],:" );
+    static std::set< char > st( s.begin(), s.end() );
+    return st;
+}
 
 std::queue< std::string > JSON::Parse::_lexer( const std::string &s ) {
     std::queue< std::string > q;
@@ -101,11 +117,11 @@ std::queue< std::string > JSON::Parse::_lexer( const std::string &s ) {
             in_quote = false;
         } else if ( in_quote ) {
             acc += *it;
-        } else if ( tokens.find( *it ) != std::string::npos ) {
+        } else if ( tokens().count( *it ) ) {
             if ( acc.size() ) { q.push( acc ); }
             q.push( std::string( 1, *it ) );
             acc.clear();
-        } else if ( whitespaces.find( *it ) == std::string::npos ) {
+        } else if ( !whitespaces().count( *it ) ) {
             acc += *it;
         }
     }

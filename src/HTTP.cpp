@@ -1,6 +1,13 @@
 #include "HTTP.hpp"
 
+/* -------------------------------------------------------------------------- */
+
 const std::map<int, std::string> HTTP::ErrorCodes::messages = ErrorCodes::_init_messages();
+
+const std::map<std::string, std::string> &HTTP::ErrorCodes::mime() {
+    static std::map<std::string, std::string> m;
+    return m;
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -74,8 +81,6 @@ void HTTP::DynamicParser::_parse_line() {
     case CONTENT: _step = DONE; break;
     }
 }
-
-/* -------------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
 

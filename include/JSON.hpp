@@ -85,9 +85,9 @@ public:
 /* -------------------------------------------------------------------------- */
 
 class Parse {
-    static const std::string whitespaces;
-    static const std::string tokens;
-    static const char        quote;
+    static const char                     quote = '"';
+    static const std::set< char > &whitespaces();
+    static const std::set< char > &tokens();
 
     static std::queue< std::string > _lexer( const std::string &s );
     static Wrapper                   _parse( std::queue< std::string > &q );
