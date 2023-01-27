@@ -14,9 +14,10 @@ public:
     Trie &operator=( const Trie &other );
     ~Trie();
 
-    void          insert( const std::string &s );
-    bool          search( const std::string &s ) const;
-    std::string   lower_bound( const std::string &s ) const;
+    void        insert( const std::string &s );
+    bool        search( const std::string &s ) const;
+    std::string lower_bound( const std::string &s ) const;
+    std::string remove_prefix( const std::string &s ) const;
 };
 
 /* -------------------------------------------------------------------------- */

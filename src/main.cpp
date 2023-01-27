@@ -8,7 +8,7 @@ int main( int argc, char **argv ) {
         std::cerr << "usage: ./webserv config.json" << std::endl;
         return EXIT_FAILURE;
     }
-    HTTP::ErrorCodes();
+    HTTP::Values();
     ServerCluster s;
     
     {

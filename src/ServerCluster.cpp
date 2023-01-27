@@ -49,14 +49,12 @@ void ServerCluster::_bind( uint16_t port ) {
 /* -------------------------------------------------------------------------- */
 
 ServerCluster::ClientCallback::ClientCallback( int                      fd,
-                                               const sockaddr_in &      addr,
-                                               ServerCluster &          server,
+                                               ServerCluster           &server,
                                                const VirtualHostMapper &vhm,
                                                time_t                   con_to,
                                                time_t idle_to )
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
-      _addr( addr ),
       _server( server ),
       _vhm( vhm ) {}
 
@@ -90,7 +88,7 @@ void ServerCluster::ClientCallback::handle_timeout() {
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster &    server )
+                                               ServerCluster     &server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -106,13 +104,13 @@ void ServerCluster::SocketCallback::handle_read() {
     int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type &         m( _server._vh.at( addr.sin_port ) );
+    const map_type          &m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {
         close( fd );
     } else {
-        _server._q.add( fd, ClientCallback( fd, addr, _server, it->second ) );
+        _server._q.add( fd, ClientCallback( fd, _server, it->second ) );
     }
 }
 

@@ -83,23 +83,25 @@ std::string JSON::Null::stringify() const { return "null"; }
 /* -------------------------------------------------------------------------- */
 
 const std::set< char > &JSON::Parse::whitespaces() {
-    static std::set< char > st;
-    static RunOnce f;
-    struct Init {
-        void operator()() {
+    struct f {
+        static std::set< char > init() {
             std::string s( " \t\n\r" );
-            st.insert( s.begin(), s.end() );
+            return std::set< char >( s.begin(), s.end() );
         }
     };
-    Init i;
-    f.run(i);
-    return st;
+    static const std::set< char > s( f::init() );
+    return s;
 }
 
 const std::set< char > &JSON::Parse::tokens() {
-    std::string             s( "{}[],:" );
-    static std::set< char > st( s.begin(), s.end() );
-    return st;
+    struct f {
+        static std::set< char > init() {
+            std::string s( "{}[],:" );
+            return std::set< char >( s.begin(), s.end() );
+        }
+    };
+    static const std::set< char > s( f::init() );
+    return s;
 }
 
 std::queue< std::string > JSON::Parse::_lexer( const std::string &s ) {

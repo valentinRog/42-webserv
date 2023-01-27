@@ -6,38 +6,24 @@
 
 namespace HTTP {
 
-struct ErrorCodes {
-    static const std::map< int, std::string >          messages;
-    static const std::map< std::string, std::string > &mime();
+/* -------------------------------------------------------------------------- */
 
-private:
-    static std::map< int, std::string > _init_messages() {
-        std::map< int, std::string > m;
-        m[200] = "OK";
-        m[301] = "Move Permanently";
-        m[400] = "Bad Request";
-        m[403] = "Forbidden";
-        m[404] = "Not Found";
-        m[405] = "Method Not Allowed";
-        m[408] = "Request Timeout";
-        m[500] = "InternalServer Error";
-        m[502] = "Bad Gateway";
-        m[505] = "Version Not Supported";
-        return m;
-    }
+struct Values {
+    static const std::map< int, std::string >         &error_code_to_message();
+    static const std::map< std::string, std::string > &extension_to_mime();
 };
 
 /* -------------------------------------------------------------------------- */
 
-struct Request {
+struct Request : public Trait::Repr {
     std::string                          method;
     std::string                          url;
     std::string                          version;
     std::string                          host;
     std::map< std::string, std::string > header;
-};
 
-std::ostream &operator<<( std::ostream &os, const Request &r );
+    std::ostream &repr( std::ostream &os ) const;
+};
 
 /* -------------------------------------------------------------------------- */
 

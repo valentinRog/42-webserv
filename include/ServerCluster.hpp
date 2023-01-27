@@ -17,14 +17,12 @@ class ServerCluster {
 
     class ClientCallback : public CallbackBase {
         int                      _fd;
-        sockaddr_in              _addr;
         ServerCluster &          _server;
         HTTP::DynamicParser      _http_parser;
         const VirtualHostMapper &_vhm;
 
     public:
         ClientCallback( int                      fd,
-                        const sockaddr_in &      addr,
                         ServerCluster &          server,
                         const VirtualHostMapper &vhm,
                         time_t                   con_to  = 0,

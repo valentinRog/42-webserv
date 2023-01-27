@@ -1,11 +1,24 @@
 [
   {
-    "listen": ["0.0.0.0", 8000],
+    "listen": ["0.0.0.0", 80],
     "server_names": ["yo.org"],
     "routes": {
-      "/": { "root": "/html", "index": ["index.html"], "methods": ["GET"]},
-      "/trucadelete": { "root": "/html/delete/", "index": ["test1.html"], "methods": ["GET", "DELETE"] },
-      "/redir": { "root": "/html/redir/", "index": ["test1.html"], "methods": ["GET"], "redir": "https://www.google.be/" }
+      "/": {
+        "root": "./html/",
+        "index": ["index.html"],
+        "methods": ["GET"]
+      },
+      "/trucadelete/": {
+        "root": "./html/delete/",
+        "index": ["test1.html"],
+        "methods": ["GET", "DELETE"]
+      },
+      "/redir/": {
+        "root": "./html/redir/",
+        "index": ["test1.html"],
+        "methods": ["GET"],
+        "redir": "http://noboardchess.org"
+      }
     }
   }
 ]
