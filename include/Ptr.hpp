@@ -10,25 +10,16 @@ template < typename T > class unique {
     T *ptr;
 
 public:
-    unique() : ptr( 0 ) {}
-    explicit unique( T *p ) : ptr( p ) {}
-    ~unique() {  delete ptr; }
+    unique();
+    explicit unique( T *p );
+    ~unique();
 
-    T *release() {
-        T *tmp = ptr;
-        ptr    = 0;
-        return tmp;
-    }
+    T *release();
 
-    void reset( T *p = 0 ) {
-        if ( ptr != p ) {
-            delete ptr;
-            ptr = p;
-        }
-    }
+    void reset( T *p = 0 );
 
-    T &operator*() const { return *ptr; }
-    T *operator->() const { return ptr; }
+    T &operator*() const;
+    T *operator->() const;
 
     private:
         unique(const unique&);
@@ -42,38 +33,15 @@ template < typename T > class shared {
     int *ref_count;
 
 public:
-    shared( T *p = 0 ) : ptr( p ) {
-        if ( ptr ) {
-            ref_count  = new int;
-            *ref_count = 1;
-        } else
-            ref_count = 0;
-    }
+    shared( T *p = 0 );
 
-    shared( const shared< T > &p ) : ptr( p.ptr ), ref_count( p.ref_count ) {
-        if ( ptr ) ( *ref_count )++;
-    }
+    shared( const shared< T > &p );
 
-    ~shared() {
-        if ( ptr && ( --*ref_count == 0 ) ) {
-            delete ptr;
-            delete ref_count;
-        }
-    }
+    ~shared();
 
-    shared< T > &operator=( const shared< T > &p ) {
-        if ( ptr == p.ptr ) return *this;
-        if ( ptr && ( --*ref_count == 0 ) ) {
-            delete ptr;
-            delete ref_count;
-        }
-        ptr       = p.ptr;
-        ref_count = p.ref_count;
-        if ( ptr ) ( *ref_count )++;
-        return *this;
-    }
-    T &operator*() const { return *ptr; }
-    T *operator->() const { return ptr; }
+    shared< T > &operator=( const shared< T > &p );
+    T &operator*() const;
+    T *operator->() const;
 };
 
 /* -------------------------------------------------------------------------- */
