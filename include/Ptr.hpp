@@ -21,9 +21,9 @@ public:
     T &operator*() const;
     T *operator->() const;
 
-    private:
-        unique(const unique&);
-        unique& operator=(const unique&);
+private:
+    unique( const unique & );
+    unique &operator=( const unique & );
 };
 
 /* -------------------------------------------------------------------------- */
@@ -40,8 +40,8 @@ public:
     ~shared();
 
     shared< T > &operator=( const shared< T > &p );
-    T &operator*() const;
-    T *operator->() const;
+    T           &operator*() const;
+    T           *operator->() const;
 };
 
 /* -------------------------------------------------------------------------- */

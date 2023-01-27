@@ -2,6 +2,27 @@
 
 /* -------------------------------------------------------------------------- */
 
+ServerCluster::VirtualHostMapper::VirtualHostMapper(
+    const ServerConf &default_conf )
+    : _default( new ServerConf( default_conf ) ) {}
+
+Ptr::shared< ServerConf >
+ServerCluster::VirtualHostMapper::operator[]( const std::string &s ) const {
+    std::map< std::string, Ptr::shared< ServerConf > >::const_iterator it(
+        _names_map.find( s ) );
+    return it == _names_map.end() ? _default : it->second;
+}
+
+void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
+    for ( std::set< std::string >::const_iterator it( conf.names.begin() );
+          it != conf.names.end();
+          it++ ) {
+        _names_map[*it] = new ServerConf( conf );
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+
 ServerCluster::ServerCluster() : _q( _max_events ) {}
 
 void ServerCluster::bind( const ServerConf &conf ) {
@@ -73,8 +94,9 @@ void ServerCluster::ClientCallback::handle_read() {
 
 void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::DynamicParser::DONE ) {
-        HTTP::RequestHandler rh( _http_parser.request(), _vhm );
-        std::string          response = rh.getResponse().stringify();
+        Ptr::shared< HTTP::Request > request( _http_parser.request() );
+        HTTP::RequestHandler         rh( request, _vhm[request->host] );
+        std::string                  response = rh.getResponse().stringify();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );
     }

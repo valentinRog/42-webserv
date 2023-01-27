@@ -1,24 +1,60 @@
 [
   {
-    "listen": ["0.0.0.0", 80],
-    "server_names": ["yo.org"],
+    "listen": [
+      "0.0.0.0",
+      80
+    ],
+    "server_names": [
+      "yo.org"
+    ],
     "routes": {
       "/": {
         "root": "./html/",
-        "index": ["index.html"],
+        "index": [
+          "index.html"
+        ],
         "autoindex": true,
-        "methods": ["GET"]
+        "methods": [
+          "GET"
+        ]
       },
       "/trucadelete/": {
         "root": "./html/delete/",
-        "index": ["test1.html"],
-        "methods": ["GET", "DELETE"]
+        "index": [
+          "test1.html"
+        ],
+        "methods": [
+          "GET",
+          "DELETE"
+        ]
       },
       "/redir/": {
         "root": "./html/redir/",
-        "index": ["test1.html"],
-        "methods": ["GET"],
+        "index": [
+          "test1.html"
+        ],
+        "methods": [
+          "GET"
+        ],
         "redir": "http://noboardchess.org"
+      }
+    }
+  },
+  {
+    "listen": [
+      "0.0.0.0",
+      80
+    ],
+    "server_names": [
+      "localhost"
+    ],
+    "routes": {
+      "/": {
+        "root": "./",
+        "autoindex": true,
+        "methods": [
+          "GET"
+        ]
       }
     }
   }

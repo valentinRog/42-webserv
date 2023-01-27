@@ -67,7 +67,9 @@ std::ostream &HTTP::Request::repr( std::ostream &os ) const {
 
 /* -------------------------------------------------------------------------- */
 
-HTTP::DynamicParser::DynamicParser() : _step( REQUEST ) {}
+HTTP::DynamicParser::DynamicParser()
+    : _step( REQUEST ),
+      _request( new Request() ) {}
 
 void HTTP::DynamicParser::operator<<( const std::string &s ) {
     for ( std::string::const_iterator it( s.begin() ); it != s.end(); ++it ) {
@@ -86,23 +88,23 @@ void HTTP::DynamicParser::operator<<( const std::string &s ) {
 
 HTTP::DynamicParser::e_step HTTP::DynamicParser::step() const { return _step; }
 
-const HTTP::Request &HTTP::DynamicParser::request() const { return _request; }
+Ptr::shared< HTTP::Request > HTTP::DynamicParser::request() { return _request; }
 
 void HTTP::DynamicParser::_parse_line() {
     std::istringstream iss( _line );
     switch ( _step ) {
     case REQUEST:
-        iss >> _request.method;
-        iss >> _request.url;
-        iss >> _request.version;
-        if ( !_request.url.size() || *_request.url.rbegin() != '/' ) {
-            _request.url += '/';
+        iss >> _request->method;
+        iss >> _request->url;
+        iss >> _request->version;
+        if ( !_request->url.size() || *_request->url.rbegin() != '/' ) {
+            _request->url += '/';
         }
         _step = HOST;
         break;
     case HOST:
         iss.ignore( std::numeric_limits< std::streamsize >::max(), ' ' );
-        iss >> _request.host;
+        iss >> _request->host;
         _step = HEADER;
         break;
     case HEADER: {
@@ -112,40 +114,40 @@ void HTTP::DynamicParser::_parse_line() {
             std::string k;
             std::string v;
             iss >> k >> v;
-            k                  = k.substr( 0, k.size() - 1 );
-            _request.header[k] = v;
+            k                   = k.substr( 0, k.size() - 1 );
+            _request->header[k] = v;
             break;
         }
     }
     case CONTENT: _step = DONE;
-    case DONE: std::cout << _request << std::endl;
+    case DONE: std::cout << *_request << std::endl;
     }
 }
 
 /* -------------------------------------------------------------------------- */
 
-HTTP::RequestHandler::RequestHandler( const Request           &request,
-                                      const VirtualHostMapper &vhm )
+HTTP::RequestHandler::RequestHandler( Ptr::shared< Request >    request,
+                                      Ptr::shared< ServerConf > conf )
     : _request( request ),
-      _conf( vhm[request.host] ),
-      _route(
-          _conf.routes_table.at( _conf.routes.lower_bound( _request.url ) ) ),
+      _conf( conf ),
+      _route( _conf->routes_table.at(
+          _conf->routes.lower_bound( _request->url ) ) ),
       _contentType( getContentType( _route.path ) ) {
     response();
 }
 
 void HTTP::RequestHandler::response() {
-    if ( _request.version != "HTTP/1.1" ) {
+    if ( _request->version != "HTTP/1.1" ) {
         setResponse( 505, errorMessage( 505 ) );
         return;
     }
     if ( _route.redir != "" )
         toRedir();
-    else if ( _request.method == "GET" && _route.methods.count( "GET" ) )
+    else if ( _request->method == "GET" && _route.methods.count( "GET" ) )
         getMethod();
-    else if ( _request.method == "POST" && _route.methods.count( "POST" ) )
+    else if ( _request->method == "POST" && _route.methods.count( "POST" ) )
         postMethod();
-    else if ( _request.method == "DELETE" && _route.methods.count( "DELETE" ) )
+    else if ( _request->method == "DELETE" && _route.methods.count( "DELETE" ) )
         deleteMethod();
     else { setResponse( 405, errorMessage( 405 ) ); }
 }
@@ -231,7 +233,7 @@ void HTTP::RequestHandler::toRedir() {
 void HTTP::RequestHandler::setResponse( int nb, std::string content ) {
     _response.code    = JSON::Number( nb ).stringify();
     _response.outcome = HTTP::Values::error_code_to_message().at( nb );
-    _response.version = _request.version;
+    _response.version = _request->version;
     _response.content = content;
 
     if ( _route.redir.empty() )
