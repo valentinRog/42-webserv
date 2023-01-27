@@ -1,6 +1,7 @@
 #pragma once
 
 #include "JSON.hpp"
+#include "Ptr.hpp"
 #include "VirtualHostMapper.hpp"
 #include "common.h"
 
@@ -99,8 +100,10 @@ private:
     std::string _get_path() const {
         std::string route( _conf.routes.lower_bound( _request.url ) );
         std::string url( _request.url );
-        return _route.root
-               + url.substr( route.size(), url.size() - route.size() );
+        if ( url.size() && *url.rbegin() == '/' ) {
+            url.erase( url.size() - 1 );
+        }
+        return _route.root + url;
     }
 };
 

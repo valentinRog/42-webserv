@@ -6,6 +6,7 @@
       "/": {
         "root": "./html/",
         "index": ["index.html"],
+        "autoindex": true,
         "methods": ["GET"]
       },
       "/trucadelete/": {

@@ -174,9 +174,10 @@ void HTTP::RequestHandler::getMethod() {
                 }
             }
             if ( path.empty() ) setResponse( 404, errorMessage( 404 ) );
-            std::ifstream fd( ( _route.root + path ).c_str() );
-            std::string   page( ( std::istreambuf_iterator< char >( fd ) ),
-                              std::istreambuf_iterator< char >() );
+            std::ifstream      fd( ( _route.root + path ).c_str() );
+            std::ostringstream oss;
+            oss << fd.rdbuf();
+            std::string page( oss.str() );
             setResponse( 200, page );
         }
     } else {
@@ -190,11 +191,11 @@ void HTTP::RequestHandler::postMethod() {}
 
 void HTTP::RequestHandler::deleteMethod() {
     struct stat s;
-    if ( stat( ( getenv( "PWD" ) + _get_path() ).c_str(), &s ) == 0 ) {
+    if ( stat( _get_path().c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR ) {
             setResponse( 400, errorMessage( 400 ) );
         } else {
-            std::remove( ( getenv( "PWD" ) + _get_path() ).c_str() );
+            std::remove( _get_path().c_str() );
             setResponse( 200, "" );
         }
     } else {
@@ -210,7 +211,7 @@ void HTTP::RequestHandler::toDirListing() {
     std::string    contentEnd = "</h1></body></html>";
 
     DIR *dir;
-    dir = opendir( ( getenv( "PWD" ) + _get_path() ).c_str() );
+    dir = opendir( _get_path().c_str() );
     if ( !dir ) return;
     while ( ( file = readdir( dir ) ) != NULL )
         content += "<p>" + std::string( file->d_name ) + "</p>";
