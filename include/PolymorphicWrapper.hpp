@@ -1,14 +1,16 @@
 #pragma once
 
+#include "Ptr.hpp"
+#include "common.h"
+
 /* -------------------------------------------------------------------------- */
 
 template < typename T > class PolymorphicWrapper {
-    T *_p;
+    Ptr::unique< T > _p;
 
 public:
     PolymorphicWrapper( const T &v );
     PolymorphicWrapper( const PolymorphicWrapper &other );
-    ~PolymorphicWrapper();
     PolymorphicWrapper &operator=( const PolymorphicWrapper &other );
 
     T       &operator*();
@@ -23,4 +25,4 @@ public:
 
 /* -------------------------------------------------------------------------- */
 
-#include "Wrapper.tpp"
+#include "PolymorphicWrapper.tpp"

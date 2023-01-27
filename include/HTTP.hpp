@@ -2,8 +2,8 @@
 
 #include "JSON.hpp"
 #include "Ptr.hpp"
-#include "common.h"
 #include "ServerConf.hpp"
+#include "common.h"
 
 namespace HTTP {
 
@@ -16,16 +16,12 @@ struct Values {
 
 /* -------------------------------------------------------------------------- */
 
-struct Request : public Trait::Repr {
+struct Request {
     std::string                          method;
     std::string                          url;
     std::string                          version;
     std::string                          host;
     std::map< std::string, std::string > header;
-
-    virtual ~Request() {}
-
-    std::ostream &repr( std::ostream &os ) const;
 };
 
 /* -------------------------------------------------------------------------- */

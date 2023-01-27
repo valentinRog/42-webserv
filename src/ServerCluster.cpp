@@ -89,7 +89,7 @@ void ServerCluster::ClientCallback::handle_read() {
     std::string s;
     s.append( buff, n );
     _http_parser << s;
-    update_last_t();
+    // update_last_t();
 }
 
 void ServerCluster::ClientCallback::handle_write() {

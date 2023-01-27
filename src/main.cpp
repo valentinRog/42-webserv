@@ -1,6 +1,5 @@
 #include "JSON.hpp"
 #include "ServerCluster.hpp"
-#include "Wrapper.hpp"
 #include "common.h"
 
 int main( int argc, char **argv ) {
@@ -8,9 +7,7 @@ int main( int argc, char **argv ) {
         std::cerr << "usage: ./webserv config.json" << std::endl;
         return EXIT_FAILURE;
     }
-    HTTP::Values();
     ServerCluster s;
-    
     {
         JSON::Array a(
             JSON::Parse::from_file( argv[1] ).unwrap< JSON::Array & >() );

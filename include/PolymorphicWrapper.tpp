@@ -1,4 +1,4 @@
-#include "Wrapper.hpp"
+#include "PolymorphicWrapper.hpp"
 
 /* -------------------------------------------------------------------------- */
 
@@ -9,16 +9,10 @@ template < typename T >
 PolymorphicWrapper< T >::PolymorphicWrapper( const PolymorphicWrapper &other )
     : _p( other._p->clone() ) {}
 
-template < typename T > PolymorphicWrapper< T >::~PolymorphicWrapper() {
-    if ( _p ) { delete _p; }
-}
-
 template < class T >
 PolymorphicWrapper< T > &
 PolymorphicWrapper< T >::operator=( const PolymorphicWrapper< T > &other ) {
-    T *tmp( other._p->clone() );
-    if ( _p ) { delete _p; }
-    _p = tmp;
+    _p.reset( other._p->clone() );
     return *this;
 }
 
@@ -28,10 +22,12 @@ template < typename T > const T &PolymorphicWrapper< T >::operator*() const {
     return *_p;
 }
 
-template < typename T > T *PolymorphicWrapper< T >::operator->() { return _p; }
+template < typename T > T *PolymorphicWrapper< T >::operator->() {
+    return _p.operator->();
+}
 
 template < typename T > const T *PolymorphicWrapper< T >::operator->() const {
-    return _p;
+    return _p.operator->();
 }
 
 template < typename T >

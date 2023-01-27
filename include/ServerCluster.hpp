@@ -8,8 +8,10 @@
 /* -------------------------------------------------------------------------- */
 
 class ServerCluster {
-    static const int    _max_events  = 4000;
-    static const size_t _buffer_size = 1024;
+    static const int    _max_events         = 4000;
+    static const size_t _buffer_size        = 1024;
+    static const time_t _connection_timeout = 30;
+    static const time_t _idle_timeout       = 5;
 
     class VirtualHostMapper {
         Ptr::shared< ServerConf >                          _default;
@@ -35,8 +37,8 @@ class ServerCluster {
         ClientCallback( int                      fd,
                         ServerCluster           &server,
                         const VirtualHostMapper &vhm,
-                        time_t                   con_to  = 0,
-                        time_t                   idle_to = 0 );
+                        time_t                   con_to  = _connection_timeout,
+                        time_t                   idle_to = _idle_timeout );
         CallbackBase *clone() const;
         void          handle_read();
         void          handle_write();

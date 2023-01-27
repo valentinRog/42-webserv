@@ -10,10 +10,10 @@ CallbackBase::CallbackBase( time_t con_to, time_t idle_to )
 
 CallbackBase::~CallbackBase() {}
 
-time_t CallbackBase::get_con_to() const { return _con_to; }
-time_t CallbackBase::get_t0() const { return _t0; }
-time_t CallbackBase::get_idle_to() const { return _idle_to; }
-time_t CallbackBase::get_last_t() const { return _last_t; }
+time_t CallbackBase::con_to() const { return _con_to; }
+time_t CallbackBase::t0() const { return _t0; }
+time_t CallbackBase::idle_to() const { return _idle_to; }
+time_t CallbackBase::last_t() const { return _last_t; }
 void   CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
 /* -------------------------------------------------------------------------- */
@@ -75,11 +75,9 @@ void EventQueue::wait() {
         std::map< int, PolymorphicWrapper< CallbackBase > >::iterator tmp( it );
         tmp++;
         if ( ( it->second->get_idle_to()
-               && time( 0 ) - it->second->get_last_t()
-                      > it->second->get_idle_to() )
-             || ( it->second->get_con_to()
-                  && time( 0 ) - it->second->get_t0()
-                         > it->second->get_con_to() ) ) {
+               && time( 0 ) - it->second->last_t() > it->second->idle_to() )
+             || ( it->second->con_to()
+                  && time( 0 ) - it->second->t0() > it->second->con_to() ) ) {
             it->second->handle_timeout();
         }
         it = tmp;
@@ -147,12 +145,10 @@ void EventQueue::wait() {
           it != _callbacks.end(); ) {
         std::map< int, PolymorphicWrapper< CallbackBase > >::iterator tmp( it );
         tmp++;
-        if ( ( it->second->get_idle_to()
-               && time( 0 ) - it->second->get_last_t()
-                      > it->second->get_idle_to() )
-             || ( it->second->get_con_to()
-                  && time( 0 ) - it->second->get_t0()
-                         > it->second->get_con_to() ) ) {
+        if ( ( it->second->idle_to()
+               && time( 0 ) - it->second->last_t() > it->second->idle_to() )
+             || ( it->second->con_to()
+                  && time( 0 ) - it->second->t0() > it->second->con_to() ) ) {
             it->second->handle_timeout();
         }
         it = tmp;

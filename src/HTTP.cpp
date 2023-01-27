@@ -47,26 +47,6 @@ const std::map< std::string, std::string > &HTTP::Values::extension_to_mime() {
 
 /* -------------------------------------------------------------------------- */
 
-std::ostream &HTTP::Request::repr( std::ostream &os ) const {
-    JSON::Object o;
-    o.insert( std::make_pair( "method", JSON::String( method ) ) );
-    o.insert( std::make_pair( "url", JSON::String( url ) ) );
-    o.insert( std::make_pair( "version", JSON::String( version ) ) );
-    o.insert( std::make_pair( "host", JSON::String( host ) ) );
-    o.insert( std::make_pair( "header", JSON::Object() ) );
-    JSON::Object o2( o.at( "header" ).unwrap< JSON::Object >() );
-    for ( std::map< std::string, std::string >::const_iterator it(
-              header.begin() );
-          it != header.end();
-          it++ ) {
-        o2.insert( std::make_pair( it->first, JSON::String( it->second ) ) );
-    }
-    o.at( "header" ) = o2;
-    return os << o.stringify();
-}
-
-/* -------------------------------------------------------------------------- */
-
 HTTP::DynamicParser::DynamicParser()
     : _step( REQUEST ),
       _request( new Request() ) {}
@@ -120,7 +100,7 @@ void HTTP::DynamicParser::_parse_line() {
         }
     }
     case CONTENT: _step = DONE;
-    case DONE: std::cout << *_request << std::endl;
+    case DONE: break;
     }
 }
 
@@ -153,7 +133,6 @@ void HTTP::RequestHandler::response() {
 }
 
 void HTTP::RequestHandler::getMethod() {
-    std::cout << "path=" << _get_path() << std::endl;
     struct stat s;
     if ( stat( _get_path().c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR
@@ -168,7 +147,7 @@ void HTTP::RequestHandler::getMethod() {
                   = _route.index.begin();
                   it != _route.index.end();
                   it++ ) {
-                std::cout << _route.root + *it << std::endl;
+                // std::cout << _route.root + *it << std::endl;
                 if ( stat( ( _route.root + *it ).c_str(), &s ) == 0 ) {
                     path         = *it;
                     _contentType = getContentType( path );
@@ -245,7 +224,7 @@ void HTTP::RequestHandler::setResponse( int nb, std::string content ) {
         ss << content.size();
         _response.header["Content-Length"] = ss.str();
     }
-    std::cout << _response.stringify();
+    // std::cout << _response.stringify();
 }
 
 std::string HTTP::RequestHandler::errorMessage( int nb ) {

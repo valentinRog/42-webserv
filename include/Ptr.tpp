@@ -2,77 +2,82 @@
 
 /* -------------------------------------------------------------------------- */
 
-template < class T > inline Ptr::unique< T >::unique() : ptr( 0 ) {}
+template < class T > Ptr::unique< T >::unique() : _p( 0 ) {}
 
-template < class T > Ptr::unique< T >::unique( T *p ) : ptr( p ) {}
+template < class T > Ptr::unique< T >::unique( T *p ) : _p( p ) {}
 
-template < class T > inline Ptr::unique< T >::~unique() { delete ptr; }
+template < class T > Ptr::unique< T >::~unique() { delete _p; }
 
-template < class T > inline T *Ptr::unique< T >::release() {
-    T *tmp = ptr;
-    ptr    = 0;
+template < class T > T *Ptr::unique< T >::release() {
+    T *tmp( _p );
+    _p = 0;
     return tmp;
 }
 
-template < class T > inline void Ptr::unique< T >::reset( T *p ) {
-    if ( ptr != p ) {
-        delete ptr;
-        ptr = p;
+template < class T > void Ptr::unique< T >::reset( T *p ) {
+    if ( _p != p ) {
+        delete _p;
+        _p = p;
     }
 }
-template < class T > inline T &Ptr::unique< T >::operator*() const {
-    return *ptr;
+template < class T > T &Ptr::unique< T >::operator*() { return *_p; }
+
+template < class T > const T &Ptr::unique< T >::operator*() const {
+    return *_p;
 }
 
-template < class T > inline T *Ptr::unique< T >::operator->() const {
-    return ptr;
-}
+template < class T > T *Ptr::unique< T >::operator->() { return _p; }
 
+template < class T > const T *Ptr::unique< T >::operator->() const {
+    return _p;
+}
 /* -------------------------------------------------------------------------- */
 
-template < class T > inline Ptr::shared< T >::shared( T *p ) : ptr( p ) {
-    if ( ptr ) {
-        ref_count  = new int;
-        *ref_count = 1;
-    } else
-        ref_count = 0;
-}
-
-template < class T >
-inline Ptr::shared< T >::shared( const Ptr::shared< T > &p )
-    : ptr( p.ptr ),
-      ref_count( p.ref_count ) {
-
-    if ( ptr ) ( *ref_count )++;
-}
-
-template < class T > inline Ptr::shared< T >::~shared() {
-    if ( ptr && ( --*ref_count == 0 ) ) {
-        delete ptr;
-        delete ref_count;
+template < class T > Ptr::shared< T >::shared( T *p ) : _p( p ) {
+    if ( _p ) {
+        _n_ref = new int( 1 );
+    } else {
+        _n_ref = 0;
     }
 }
 
 template < class T >
-inline Ptr::shared< T > &
-Ptr::shared< T >::operator=( const Ptr::shared< T > &p ) {
-    if ( ptr == p.ptr ) return *this;
-    if ( ptr && ( --*ref_count == 0 ) ) {
-        delete ptr;
-        delete ref_count;
+Ptr::shared< T >::shared( const Ptr::shared< T > &p )
+    : _p( p._p ),
+      _n_ref( p._n_ref ) {
+    if ( _p ) { ( *_n_ref )++; }
+}
+
+template < class T > Ptr::shared< T >::~shared() {
+    if ( _p && ( --*_n_ref == 0 ) ) {
+        delete _p;
+        delete _n_ref;
     }
-    ptr       = p.ptr;
-    ref_count = p.ref_count;
-    if ( ptr ) ( *ref_count )++;
+}
+
+template < class T >
+Ptr::shared< T > &Ptr::shared< T >::operator=( const Ptr::shared< T > &p ) {
+    if ( _p == p._p ) { return *this; }
+    if ( _p && !--*_n_ref ) {
+        delete _p;
+        delete _n_ref;
+    }
+    _p     = p._p;
+    _n_ref = p._n_ref;
+    if ( _p ) { ( *_n_ref )++; }
     return *this;
 }
 
-template < class T > inline T &Ptr::shared< T >::operator*() const {
-    return *ptr;
+template < class T > T &Ptr::shared< T >::operator*() { return *_p; }
+
+template < class T > const T &Ptr::shared< T >::operator*() const {
+    return *_p;
 }
 
-template < class T > inline T *Ptr::shared< T >::operator->() const {
-    return ptr;
+template < class T > T *Ptr::shared< T >::operator->() { return _p; }
+
+template < class T > const T *Ptr::shared< T >::operator->() const {
+    return _p;
 }
 
 /* -------------------------------------------------------------------------- */

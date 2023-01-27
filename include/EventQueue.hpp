@@ -1,7 +1,7 @@
 #pragma once
 
+#include "PolymorphicWrapper.hpp"
 #include "Traits.hpp"
-#include "Wrapper.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
@@ -15,14 +15,17 @@ class CallbackBase : public Trait::CloneCRTP< CallbackBase > {
 public:
     CallbackBase( time_t con_to, time_t idle_to );
     virtual ~CallbackBase();
-    virtual void          handle_read()    = 0;
-    virtual void          handle_write()   = 0;
-    virtual void          handle_timeout() = 0;
-    virtual CallbackBase *clone() const    = 0;
-    time_t                get_con_to() const;
-    time_t                get_t0() const;
-    time_t                get_idle_to() const;
-    time_t                get_last_t() const;
+
+    virtual void handle_read()    = 0;
+    virtual void handle_write()   = 0;
+    virtual void handle_timeout() = 0;
+
+    virtual CallbackBase *clone() const = 0;
+
+    time_t con_to() const;
+    time_t t0() const;
+    time_t idle_to() const;
+    time_t last_t() const;
 
 protected:
     void update_last_t();

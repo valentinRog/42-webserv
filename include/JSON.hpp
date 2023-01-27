@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Traits.hpp"
-#include "Wrapper.hpp"
+#include "PolymorphicWrapper.hpp"
 #include "common.h"
 
 namespace JSON {
