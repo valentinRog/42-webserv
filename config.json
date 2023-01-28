@@ -28,7 +28,6 @@
     "routes": {
       "/": {
         "root": "./",
-        "autoindex": true,
         "methods": ["GET"]
       }
     }

@@ -10,7 +10,7 @@ namespace HTTP {
 /* -------------------------------------------------------------------------- */
 
 struct Values {
-    static const std::map< int, std::string >         &error_code_to_message();
+    static const std::map< int, std::string > &        error_code_to_message();
     static const std::map< std::string, std::string > &extension_to_mime();
 };
 
@@ -97,12 +97,11 @@ public:
 
 private:
     std::string _get_path() const {
-        std::string route( _conf->routes.lower_bound( _request->url ) );
-        std::string url( _request->url );
-        if ( url.size() and *url.rbegin() == '/' ) {
-            url.erase( url.size() - 1 );
+        std::string s = _route.root + _conf->routes.remove_prefix( _request->url );
+        while (*s.rbegin() == '/') {
+            s.erase(s.size() - 1);
         }
-        return _route.root + url;
+        return s;
     }
 };
 

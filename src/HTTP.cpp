@@ -76,10 +76,8 @@ void HTTP::DynamicParser::_parse_line() {
     case REQUEST:
         iss >> _request->method;
         iss >> _request->url;
+        _request->url += '/';
         iss >> _request->version;
-        if ( !_request->url.size() || *_request->url.rbegin() != '/' ) {
-            _request->url += '/';
-        }
         _step = HOST;
         break;
     case HOST:
@@ -111,7 +109,7 @@ HTTP::RequestHandler::RequestHandler( Ptr::shared< Request >    request,
     : _request( request ),
       _conf( conf ),
       _route( _conf->routes_table.at(
-          _conf->routes.lower_bound( _request->url ) ) ),
+          _conf->routes.lower_bound( _request->url) ) ),
       _contentType( getContentType( _route.path ) ) {
     response();
 }
@@ -134,6 +132,7 @@ void HTTP::RequestHandler::response() {
 
 void HTTP::RequestHandler::getMethod() {
     struct stat s;
+    std::cout << "path = " << _get_path() << std::endl;
     if ( stat( _get_path().c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR
              && ( _route.root != _get_path() || _route.autoindex ) ) {
@@ -142,20 +141,20 @@ void HTTP::RequestHandler::getMethod() {
             else
                 setResponse( 404, errorMessage( 404 ) );
         } else {
-            std::string path;
-            for ( std::list< std::string >::const_iterator it
-                  = _route.index.begin();
-                  it != _route.index.end();
-                  it++ ) {
-                // std::cout << _route.root + *it << std::endl;
-                if ( stat( ( _route.root + *it ).c_str(), &s ) == 0 ) {
-                    path         = *it;
-                    _contentType = getContentType( path );
-                    break;
-                }
-            }
-            if ( path.empty() ) setResponse( 404, errorMessage( 404 ) );
-            std::ifstream      fd( ( _route.root + path ).c_str() );
+            // std::string path;
+            // for ( std::list< std::string >::const_iterator it
+            //       = _route.index.begin();
+            //       it != _route.index.end();
+            //       it++ ) {
+            //     // std::cout << _route.root + *it << std::endl;
+            //     if ( stat( ( _route.root + *it ).c_str(), &s ) == 0 ) {
+            //         path         = *it;
+            //         _contentType = getContentType( path );
+            //         break;
+            //     }
+            // }
+            // if ( path.empty() ) setResponse( 404, errorMessage( 404 ) );
+            std::ifstream      fd( ( _get_path() ).c_str() );
             std::ostringstream oss;
             oss << fd.rdbuf();
             std::string page( oss.str() );
@@ -224,7 +223,7 @@ void HTTP::RequestHandler::setResponse( int nb, std::string content ) {
         ss << content.size();
         _response.header["Content-Length"] = ss.str();
     }
-    // std::cout << _response.stringify();
+    std::cout << _response.stringify();
 }
 
 std::string HTTP::RequestHandler::errorMessage( int nb ) {

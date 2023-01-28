@@ -74,7 +74,7 @@ void EventQueue::wait() {
           it != _callbacks.end(); ) {
         std::map< int, PolymorphicWrapper< CallbackBase > >::iterator tmp( it );
         tmp++;
-        if ( ( it->second->get_idle_to()
+        if ( ( it->second->idle_to()
                && time( 0 ) - it->second->last_t() > it->second->idle_to() )
              || ( it->second->con_to()
                   && time( 0 ) - it->second->t0() > it->second->con_to() ) ) {
