@@ -108,9 +108,14 @@ HTTP::RequestHandler::RequestHandler( Ptr::shared< Request >    request,
                                       Ptr::shared< ServerConf > conf )
     : _request( request ),
       _conf( conf ),
-      _route( _conf->routes_table.at(
-          _conf->routes.lower_bound( _request->url) ) ),
-      _contentType( getContentType( _route.path ) ) {
+      _route( _conf->route_mapper.at( _request->url ) ),
+      _path( _route.root + _conf->route_mapper.suffix( _request->url ) ),
+      _contentType( getContentType( _path ) ) {
+    std::cout << _path << std::endl;
+    while ( _path.size() && *_path.rbegin() == '/' ) {
+        _path.erase( _path.size() - 1 );
+    }
+    std::cout << _path.size() << std::endl;
     response();
 }
 
@@ -127,61 +132,60 @@ void HTTP::RequestHandler::response() {
         postMethod();
     else if ( _request->method == "DELETE" && _route.methods.count( "DELETE" ) )
         deleteMethod();
-    else { setResponse( 405, errorMessage( 405 ) ); }
+    else {
+        setResponse( 405, errorMessage( 405 ) );
+    }
+    std::cout << "???? " << _path.size() << std::endl;
 }
 
 void HTTP::RequestHandler::getMethod() {
+    std::cout << "???? " << _path.size() << std::endl;
     struct stat s;
-    std::cout << "path = " << _get_path() << std::endl;
-    if ( stat( _get_path().c_str(), &s ) == 0 ) {
-        if ( s.st_mode & S_IFDIR
-             && ( _route.root != _get_path() || _route.autoindex ) ) {
-            if ( _route.autoindex )
-                toDirListing();
-            else
-                setResponse( 404, errorMessage( 404 ) );
-        } else {
-            // std::string path;
-            // for ( std::list< std::string >::const_iterator it
-            //       = _route.index.begin();
-            //       it != _route.index.end();
-            //       it++ ) {
-            //     // std::cout << _route.root + *it << std::endl;
-            //     if ( stat( ( _route.root + *it ).c_str(), &s ) == 0 ) {
-            //         path         = *it;
-            //         _contentType = getContentType( path );
-            //         break;
-            //     }
-            // }
-            // if ( path.empty() ) setResponse( 404, errorMessage( 404 ) );
-            std::ifstream      fd( ( _get_path() ).c_str() );
-            std::ostringstream oss;
-            oss << fd.rdbuf();
-            std::string page( oss.str() );
-            setResponse( 200, page );
-        }
-    } else {
-        if ( errno == ENOENT )
-            setResponse( 404, errorMessage( 404 ) );
-        else { setResponse( 500, errorMessage( 500 ) ); }
+    if ( stat( _path.c_str(), &s ) ) {
+        return errno == ENOENT ? setResponse( 404, errorMessage( 404 ) )
+                               : setResponse( 500, errorMessage( 500 ) );
     }
+    if ( s.st_mode & S_IFDIR ) {
+        for ( std::list< std::string >::const_iterator it(
+                  _route.index.begin() );
+              it != _route.index.end();
+              it++ ) {
+            std::cout << _path + '/' + *it << std::endl;
+            std::ifstream f( ( _path + '/' + *it ).c_str() );
+            if ( f.is_open() ) {
+                std::cout << "yo" << std::endl;
+                std::ostringstream oss;
+                oss << f.rdbuf();
+                return setResponse( 200, oss.str() );
+            }
+        }
+        if ( _route.autoindex ) { return toDirListing(); }
+        return setResponse( 404, errorMessage( 404 ) );
+    }
+    std::ifstream f( _path.c_str() );
+    if ( !f.is_open() ) { return setResponse( 404, errorMessage( 404 ) ); }
+    std::ostringstream oss;
+    oss << f.rdbuf();
+    setResponse( 200, oss.str() );
 }
 
 void HTTP::RequestHandler::postMethod() {}
 
 void HTTP::RequestHandler::deleteMethod() {
     struct stat s;
-    if ( stat( _get_path().c_str(), &s ) == 0 ) {
+    if ( stat( _path.c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR ) {
             setResponse( 400, errorMessage( 400 ) );
         } else {
-            std::remove( _get_path().c_str() );
+            std::remove( _path.c_str() );
             setResponse( 200, "" );
         }
     } else {
         if ( errno == ENOENT )
             setResponse( 404, errorMessage( 404 ) );
-        else { setResponse( 500, errorMessage( 500 ) ); }
+        else {
+            setResponse( 500, errorMessage( 500 ) );
+        }
     }
 }
 
@@ -191,7 +195,7 @@ void HTTP::RequestHandler::toDirListing() {
     std::string    contentEnd = "</h1></body></html>";
 
     DIR *dir;
-    dir = opendir( _get_path().c_str() );
+    dir = opendir( _path.c_str() );
     if ( !dir ) return;
     while ( ( file = readdir( dir ) ) != NULL )
         content += "<p>" + std::string( file->d_name ) + "</p>";
@@ -216,7 +220,9 @@ void HTTP::RequestHandler::setResponse( int nb, std::string content ) {
 
     if ( _route.redir.empty() )
         _response.header["Content-Type"] = _contentType;
-    else { _response.header["Location"] = _route.redir; }
+    else {
+        _response.header["Location"] = _route.redir;
+    }
     _response.header["Host"] = "ddfdfdfd";
     if ( !content.empty() ) {
         std::stringstream ss;
@@ -242,7 +248,8 @@ HTTP::Response HTTP::RequestHandler::getResponse() { return ( _response ); }
 std::string HTTP::RequestHandler::getContentType( std::string path ) {
     size_t found = path.find_last_of( '.' );
     if ( found == std::string::npos ) return ( "text/plain" );
-    std::string last( path, found );
+    std::string last( path, found + 1 );
+    std::cout << "last = " << last << std::endl;
     if ( last.size() ) { last = last.substr( 1, last.size() - 1 ); }
     if ( !Values::extension_to_mime().count( last ) ) { return "text/plain"; }
     return Values::extension_to_mime().at( last );

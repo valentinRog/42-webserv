@@ -78,7 +78,9 @@ class RequestHandler {
     Response                  _response;
 
     const ServerConf::Route &_route;
+    std::string _path;
     std::string              _contentType;
+
 
 public:
     RequestHandler( Ptr::shared< Request >    request,
@@ -94,15 +96,6 @@ public:
     HTTP::Response getResponse();
     std::string    getContentType( std::string path );
     void           setResponse( int nb, std::string content );
-
-private:
-    std::string _get_path() const {
-        std::string s = _route.root + _conf->routes.remove_prefix( _request->url );
-        while (*s.rbegin() == '/') {
-            s.erase(s.size() - 1);
-        }
-        return s;
-    }
 };
 
 /* -------------------------------------------------------------------------- */

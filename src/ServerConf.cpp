@@ -21,9 +21,8 @@ ServerConf::Route::Route( const JSON::Object &o ) : autoindex( false ) {
             methods.insert( it->unwrap< JSON::String >() );
         }
     }
-    if (o.count("redir")) {
-        redir = o.at("redir").unwrap<JSON::String>();
-
+    if ( o.count( "redir" ) ) {
+        redir = o.at( "redir" ).unwrap< JSON::String >();
     }
 }
 
@@ -51,10 +50,7 @@ ServerConf::ServerConf( const JSON::Object &o ) {
         for ( JSON::Object::const_iterator it( routes_o.begin() );
               it != routes_o.end();
               it++ ) {
-            routes.insert( it->first );
-            routes_table.insert(
-                std::make_pair( it->first,
-                                it->second.unwrap< JSON::Object >() ) );
+            route_mapper[it->first] = it->second.unwrap< JSON::Object >();
         }
     } catch ( const std::out_of_range & ) {
         throw ConfigError();
