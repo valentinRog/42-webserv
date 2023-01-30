@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Traits.hpp"
+#include "Trait.hpp"
 #include "PolymorphicWrapper.hpp"
 #include "common.h"
 

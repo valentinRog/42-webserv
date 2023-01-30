@@ -1,35 +1,48 @@
-[
-  {
-    "listen": ["0.0.0.0", 80],
-    "server_names": ["yo.org"],
-    "routes": {
-      "/": {
-        "root": "./html/",
-        "index": ["index.html"],
-        "autoindex": true,
-        "methods": ["GET"]
-      },
-      "/trucadelete/": {
-        "root": "./html/delete/",
-        "index": ["test1.html"],
-        "methods": ["GET", "DELETE"]
-      },
-      "/redir/": {
-        "root": "./html/redir/",
-        "index": ["test1.html"],
-        "methods": ["GET"],
-        "redir": "http://noboardchess.org"
+{
+  "mime_file": "mime.json",
+  "servers": [
+    {
+      "listen": ["0.0.0.0", 80],
+      "server_names": ["yo.org"],
+      "routes": {
+        "/": {
+          "root": "html",
+          "index": ["index.html"],
+          "autoindex": true,
+          "methods": ["GET"]
+        },
+        "/trucadelete/": {
+          "root": "./html/delete/",
+          "index": ["test1.html"],
+          "methods": ["GET", "DELETE"]
+        },
+        "/redir/": {
+          "root": "./html/redir/",
+          "index": ["test1.html"],
+          "methods": ["GET"],
+          "redir": "http://noboardchess.org"
+        }
+      }
+    },
+    {
+      "listen": ["0.0.0.0", 80],
+      "server_names": ["localhost"],
+      "routes": {
+        "/": {
+          "root": "./",
+          "methods": ["GET"]
+        }
+      }
+    },
+    {
+      "listen": ["0.0.0.0", 5000],
+      "routes": {
+        "/yo": {
+          "root": "html",
+          "methods": ["GET"],
+          "index": ["index.html"]
+        }
       }
     }
-  },
-  {
-    "listen": ["0.0.0.0", 80],
-    "server_names": ["localhost"],
-    "routes": {
-      "/": {
-        "root": "./",
-        "methods": ["GET"]
-      }
-    }
-  }
-]
+  ]
+}

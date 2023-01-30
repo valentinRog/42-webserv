@@ -59,9 +59,4 @@ std::string Trie::lower_bound( const std::string &s ) const {
     return prefix;
 }
 
-std::string Trie::remove_prefix( const std::string &s ) const {
-    std::string prefix( lower_bound( s ) );
-    return s.substr( prefix.size(), s.size() - prefix.size() );
-}
-
 /* -------------------------------------------------------------------------- */

@@ -1,22 +1,30 @@
 #pragma once
 
 #include "JSON.hpp"
+#include "Ptr.hpp"
+#include "Str.hpp"
 #include "Trie.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */
 
-struct ServerConf {
-    struct Route {
-        std::string              path;
-        std::string              root;
-        std::list< std::string > index;
-        std::set< std::string >  methods;
-        bool                     autoindex;
-        std::string              redir;
+class ServerConf {
+public:
+    class Route {
+        std::string              _root;
+        std::list< std::string > _index;
+        std::set< std::string >  _methods;
+        bool                     _autoindex;
+        std::string              _redir;
 
-        Route() {}
+    public:
         Route( const JSON::Object &o );
+
+        const std::string &             root() const;
+        const std::list< std::string > &index() const;
+        const std::set< std::string > & methods() const;
+        bool                            autoindex() const;
+        const std::string &             redir() const;
     };
 
     class RouteMapper {
@@ -26,36 +34,31 @@ struct ServerConf {
     public:
         typedef std::map< std::string, Route >::const_iterator const_iterator;
 
-        Route &operator[]( const std::string &s ) {
-            _routes.insert( s );
-            return _routes_table[_routes.lower_bound( s )];
-        }
-        const Route &at( const std::string &s ) const {
-            return _routes_table.at( _routes.lower_bound( s ) );
-        }
-        const_iterator find( const std::string &s ) const {
-            return _routes_table.find( _routes.lower_bound( s ) );
-        }
-        std::string route_name( const std::string &s ) const {
-            return _routes.lower_bound( s );
-        }
-        std::string suffix( const std::string &s ) const {
-            std::string::size_type l( _routes.lower_bound( s ).size() );
-            return s.substr( l, s.size() - l );
-        }
+        void         insert( const std::pair< std::string, Route > &v );
+        const Route &at( const std::string &s ) const;
+        std::map< std::string, Route >::size_type
+                    count( const std::string &s ) const;
+        std::string suffix( const std::string &s ) const;
     };
-
-    sockaddr_in             addr;
-    std::set< std::string > names;
-    std::string             error_page;
-    RouteMapper             route_mapper;
-
-    ServerConf() {}
-    ServerConf( const JSON::Object &o );
 
     class ConfigError : public std::exception {
         virtual const char *what() const throw();
     };
+
+private:
+    sockaddr_in                                         _addr;
+    std::set< std::string >                             _names;
+    RouteMapper                                         _route_mapper;
+    Ptr::shared< std::map< std::string, std::string > > _mime;
+
+public:
+    ServerConf( const JSON::Object &                                o,
+                Ptr::shared< std::map< std::string, std::string > > mime );
+
+    const sockaddr_in &                         addr() const;
+    const std::set< std::string > &             names() const;
+    const RouteMapper &                         route_mapper() const;
+    const std::map< std::string, std::string > &mime() const;
 };
 
 /* -------------------------------------------------------------------------- */

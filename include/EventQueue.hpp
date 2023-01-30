@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PolymorphicWrapper.hpp"
-#include "Traits.hpp"
+#include "Trait.hpp"
 #include "common.h"
 
 /* -------------------------------------------------------------------------- */

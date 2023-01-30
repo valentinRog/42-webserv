@@ -7,20 +7,6 @@ int main( int argc, char **argv ) {
         std::cerr << "usage: ./webserv config.json" << std::endl;
         return EXIT_FAILURE;
     }
-    ServerCluster s;
-    {
-        JSON::Array a(
-            JSON::Parse::from_file( argv[1] ).unwrap< JSON::Array & >() );
-        std::vector< ServerConf > v;
-        for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
-              it++ ) {
-            v.push_back( it->unwrap< JSON::Object >() );
-        }
-        for ( std::vector< ServerConf >::const_iterator it = v.begin();
-              it != v.end();
-              it++ ) {
-            s.bind( *it );
-        }
-    }
-    s.run();
+    ServerCluster( JSON::Parse::from_file( argv[1] ).unwrap< JSON::Object >() )
+        .run();
 }

@@ -14,8 +14,8 @@ ServerCluster::VirtualHostMapper::operator[]( const std::string &s ) const {
 }
 
 void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
-    for ( std::set< std::string >::const_iterator it( conf.names.begin() );
-          it != conf.names.end();
+    for ( std::set< std::string >::const_iterator it( conf.names().begin() );
+          it != conf.names().end();
           it++ ) {
         _names_map[*it] = new ServerConf( conf );
     }
@@ -23,11 +23,35 @@ void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
 
 /* -------------------------------------------------------------------------- */
 
-ServerCluster::ServerCluster() : _q( _max_events ) {}
+ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
+    Ptr::shared< std::map< std::string, std::string > > mime(
+        new std::map< std::string, std::string > );
+    JSON::Object mime_o(
+        JSON::Parse::from_file( o.at( "mime_file" ).unwrap< JSON::String >() )
+            .unwrap< JSON::Object >() );
+    for ( JSON::Object::const_iterator it( mime_o.begin() ); it != mime_o.end();
+          it++ ) {
+        JSON::Array a( it->second.unwrap< JSON::Array >() );
+        for ( JSON::Array::const_iterator nit( a.begin() ); nit != a.end();
+              nit++ ) {
+            ( *mime )[nit->unwrap< JSON::String >()] = it->first;
+        }
+    }
+    JSON::Array               a( o.at( "servers" ).unwrap< JSON::Array >() );
+    std::vector< ServerConf > v;
+    for ( JSON::Array::const_iterator it( a.begin() ); it != a.end(); it++ ) {
+        v.push_back( ServerConf( it->unwrap< JSON::Object >(), mime ) );
+    }
+    for ( std::vector< ServerConf >::const_iterator it = v.begin();
+          it != v.end();
+          it++ ) {
+        bind( *it );
+    }
+}
 
 void ServerCluster::bind( const ServerConf &conf ) {
-    uint16_t port( conf.addr.sin_port );
-    uint32_t addr( conf.addr.sin_addr.s_addr );
+    uint16_t port( conf.addr().sin_port );
+    uint32_t addr( conf.addr().sin_addr.s_addr );
     if ( !_vh.count( port ) ) {
         _bind( ntohs( port ) );
         _vh[port];
@@ -70,7 +94,7 @@ void ServerCluster::_bind( uint16_t port ) {
 /* -------------------------------------------------------------------------- */
 
 ServerCluster::ClientCallback::ClientCallback( int                      fd,
-                                               ServerCluster           &server,
+                                               ServerCluster &          server,
                                                const VirtualHostMapper &vhm,
                                                time_t                   con_to,
                                                time_t idle_to )
@@ -93,7 +117,7 @@ void ServerCluster::ClientCallback::handle_read() {
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    if ( _http_parser.step() == HTTP::DynamicParser::DONE ) {
+    if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::shared< HTTP::Request > request( _http_parser.request() );
         HTTP::RequestHandler         rh( request, _vhm[request->host] );
         std::string                  response = rh.getResponse().stringify();
@@ -110,7 +134,7 @@ void ServerCluster::ClientCallback::handle_timeout() {
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster     &server )
+                                               ServerCluster &    server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -126,7 +150,7 @@ void ServerCluster::SocketCallback::handle_read() {
     int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type          &m( _server._vh.at( addr.sin_port ) );
+    const map_type &         m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {

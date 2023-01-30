@@ -10,8 +10,7 @@ namespace HTTP {
 /* -------------------------------------------------------------------------- */
 
 struct Values {
-    static const std::map< int, std::string > &        error_code_to_message();
-    static const std::map< std::string, std::string > &extension_to_mime();
+    static const std::map< int, std::string > &error_code_to_message();
 };
 
 /* -------------------------------------------------------------------------- */
@@ -22,69 +21,59 @@ struct Request {
     std::string                          version;
     std::string                          host;
     std::map< std::string, std::string > header;
-};
 
-/* -------------------------------------------------------------------------- */
+    class DynamicParser {
+    public:
+        enum e_step { REQUEST, HOST, HEADER, CONTENT, DONE };
 
-class DynamicParser {
-public:
-    enum e_step { REQUEST, HOST, HEADER, CONTENT, DONE };
+    private:
+        std::string            _line;
+        std::string            _sep;
+        e_step                 _step;
+        Ptr::shared< Request > _request;
 
-private:
-    std::string            _line;
-    std::string            _sep;
-    e_step                 _step;
-    Ptr::shared< Request > _request;
+    public:
+        DynamicParser();
 
-public:
-    DynamicParser();
+        void                   operator<<( const std::string &s );
+        e_step                 step() const;
+        Ptr::shared< Request > request();
 
-    void                   operator<<( const std::string &s );
-    e_step                 step() const;
-    Ptr::shared< Request > request();
-
-private:
-    void _parse_line();
+    private:
+        void _parse_line();
+    };
 };
 
 /* -------------------------------------------------------------------------- */
 
 struct Response : public Trait::Stringify {
-    std::string                          version;
-    std::string                          code;
-    std::string                          outcome;
-    std::map< std::string, std::string > header;
-    std::string                          content;
+    enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION };
 
-    std::string stringify() const {
-        std::string s( version + ' ' + code + ' ' + outcome + "\r\n" );
-        for ( std::map< std::string, std::string >::const_iterator it
-              = header.begin();
-              it != header.end();
-              it++ ) {
-            s += it->first + ": " + it->second + "\r\n";
-        }
-        return s + "\r\n" + content;
-    }
+    std::string                           version;
+    std::string                           code;
+    std::string                           outcome;
+    std::map< e_header_key, std::string > header;
+    std::string                           content;
+
+    std::string stringify() const;
+
+private:
+    static const std::map< e_header_key, std::string > &_header_key_name();
 };
 
 /* -------------------------------------------------------------------------- */
 
 class RequestHandler {
-    std::map< int, std::string > _responseStatus;
-
     Ptr::shared< Request >    _request;
     Ptr::shared< ServerConf > _conf;
     Response                  _response;
-
-    const ServerConf::Route &_route;
-    std::string _path;
-    std::string              _contentType;
-
+    const ServerConf::Route * _route;
+    std::string               _path;
 
 public:
     RequestHandler( Ptr::shared< Request >    request,
                     Ptr::shared< ServerConf > conf );
+
     void response();
     void toRedir();
     void toDirListing();
@@ -94,7 +83,7 @@ public:
 
     std::string    errorMessage( int nb );
     HTTP::Response getResponse();
-    std::string    getContentType( std::string path );
+    std::string    getContentType( const std::string &path );
     void           setResponse( int nb, std::string content );
 };
 

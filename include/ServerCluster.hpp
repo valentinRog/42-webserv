@@ -28,14 +28,14 @@ class ServerCluster {
     std::map< uint16_t, std::map< uint32_t, VirtualHostMapper > > _vh;
 
     class ClientCallback : public CallbackBase {
-        int                      _fd;
-        ServerCluster           &_server;
-        HTTP::DynamicParser      _http_parser;
-        const VirtualHostMapper &_vhm;
+        int                          _fd;
+        ServerCluster &              _server;
+        HTTP::Request::DynamicParser _http_parser;
+        const VirtualHostMapper &    _vhm;
 
     public:
         ClientCallback( int                      fd,
-                        ServerCluster           &server,
+                        ServerCluster &          server,
                         const VirtualHostMapper &vhm,
                         time_t                   con_to  = _connection_timeout,
                         time_t                   idle_to = _idle_timeout );
@@ -59,7 +59,7 @@ class ServerCluster {
     };
 
 public:
-    ServerCluster();
+    ServerCluster( const JSON::Object &o );
 
     void bind( const ServerConf &conf );
     void run();
