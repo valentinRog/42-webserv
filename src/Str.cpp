@@ -27,4 +27,23 @@ bool Str::ends_with( const std::string &s, const std::string &suffix ) {
            && !s.compare( s.size() - suffix.size(), suffix.size(), suffix );
 }
 
+std::string Str::to_lower( const std::string &s ) {
+    std::string res( s );
+    std::transform( res.begin(), res.end(), res.begin(), ::tolower );
+    return res;
+}
+
+std::string Str::to_upper( const std::string &s ) {
+    std::string res( s );
+    std::transform( res.begin(), res.end(), res.begin(), ::toupper );
+    return res;
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool Str::CaseInsensitiveCmp::operator()( const std::string &s1,
+                                          const std::string &s2 ) const {
+    return to_lower( s1 ) < to_lower( s2 );
+}
+
 /* -------------------------------------------------------------------------- */

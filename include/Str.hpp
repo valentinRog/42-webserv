@@ -17,6 +17,14 @@ struct Str {
     static bool ends_with( const std::string &s, const std::string &suffix );
 
     template < typename T > static std::string from( const T &v );
+
+    static std::string to_lower( const std::string &s );
+
+    static std::string to_upper( const std::string &s );
+
+    struct CaseInsensitiveCmp {
+        bool operator()( const std::string &s1, const std::string &s2 ) const;
+    };
 };
 
 /* -------------------------------------------------------------------------- */
