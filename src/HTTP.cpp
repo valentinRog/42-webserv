@@ -15,6 +15,22 @@ const std::string &HTTP::Request::key_to_string( e_header_key k ) {
     return m.at( k );
 }
 
+const std::
+    map< std::string, HTTP::Request::e_header_key, Str::CaseInsensitiveCmp > &
+    HTTP::Request::string_to_key() {
+    typedef std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
+        map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[key_to_string( CONTENT_LENGTH )] = CONTENT_LENGTH;
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m;
+}
+
 const std::string &
 HTTP::Request::method_to_string( HTTP::Request::e_method method ) {
     typedef std::map< e_method, std::string > map_type;
@@ -31,20 +47,20 @@ HTTP::Request::method_to_string( HTTP::Request::e_method method ) {
     return m.at( method );
 }
 
-HTTP::Request::e_method
-HTTP::Request::string_to_method( const std::string &s ) {
+const std::map< std::string, HTTP::Request::e_method > &
+HTTP::Request::string_to_method() {
     typedef std::map< std::string, e_method > map_type;
     struct f {
         static map_type init() {
             map_type m;
-            m["GET"]    = GET;
-            m["POST"]   = POST;
-            m["DELETE"] = DELETE;
+            m[method_to_string( GET )]    = GET;
+            m[method_to_string( POST )]   = POST;
+            m[method_to_string( DELETE )] = DELETE;
             return m;
         }
     };
     static const map_type m( f::init() );
-    return m.at( s );
+    return m;
 }
 
 /* ------------------------- Request::DynamicParser ------------------------- */
@@ -53,19 +69,24 @@ HTTP::Request::DynamicParser::DynamicParser()
     : _step( REQUEST ),
       _request( new Request() ) {}
 
-void HTTP::Request::DynamicParser::operator<<( const std::string &s ) {
-    for ( std::string::const_iterator it( s.begin() ); it != s.end(); ++it ) {
-        if ( *it == '\r' || *it == '\n' ) {
-            _sep += *it;
-            if ( _sep == "\r\n" ) {
-                _parse_line();
-                _line.clear();
-                _sep.clear();
+void HTTP::Request::DynamicParser::add( const u_char *s, size_t n ) {
+    if ( _step & ( DONE | FAILED ) ) { return; }
+    const u_char *p( s );
+    if ( _step != CONTENT ) {
+        for ( ; p < s + n && !( _step & ( CONTENT | FAILED ) ); p++ ) {
+            if ( *p == '\r' || *p == '\n' ) {
+                _sep += *p;
+                if ( _sep == "\r\n" ) {
+                    _parse_line();
+                    _line.clear();
+                    _sep.clear();
+                }
+            } else {
+                _line += *p;
             }
-        } else {
-            _line += *it;
         }
     }
+    if ( _step == CONTENT ) { _append_to_content( p, n - ( p - s ) ); }
 }
 
 HTTP::Request::DynamicParser::e_step
@@ -78,66 +99,91 @@ Ptr::shared< HTTP::Request > HTTP::Request::DynamicParser::request() {
 }
 
 void HTTP::Request::DynamicParser::_parse_line() {
+    switch ( _step ) {
+    case REQUEST: _parse_request_line(); break;
+    case HOST: _parse_host_line(); break;
+    case HEADER: _parse_header_line(); break;
+    default: break;
+    }
+}
+
+void HTTP::Request::DynamicParser::_parse_request_line() {
     std::istringstream iss( _line );
     std::string        s;
-    switch ( _step ) {
-    case REQUEST:
-        iss >> s;
-        _request->method = HTTP::Request::string_to_method( s );
-        iss >> _request->url;
-        iss >> _request->version;
-        _step = HOST;
-        break;
-    case HOST:
-        iss.ignore( std::numeric_limits< std::streamsize >::max(), ' ' );
-        iss >> _request->host;
-        _step = HEADER;
-        break;
-    case HEADER: {
-        if ( !iss.str().size() ) {
+    iss >> s;
+    _request->method = HTTP::Request::string_to_method().at( s );
+    iss >> _request->url;
+    iss >> _request->version;
+    _step = HOST;
+}
+
+void HTTP::Request::DynamicParser::_parse_host_line() {
+    std::istringstream iss( _line );
+    iss.ignore( std::numeric_limits< std::streamsize >::max(), ' ' );
+    iss >> _request->host;
+    _step = HEADER;
+}
+
+void HTTP::Request::DynamicParser::_parse_header_line() {
+    std::istringstream iss( _line );
+    if ( !iss.str().size() ) {
+        if ( _request->defined_header.count( CONTENT_LENGTH ) ) {
+            std::istringstream iss(
+                _request->defined_header.at( CONTENT_LENGTH ) );
+            iss >> _content_length;
             _step = CONTENT;
         } else {
-            std::string k;
-            std::string v;
-            iss >> k >> v;
-            k                   = k.substr( 0, k.size() - 1 );
+            _step = DONE;
+        }
+    } else {
+        std::string k;
+        std::string v;
+        iss >> k >> v;
+        k = k.substr( 0, k.size() - 1 );
+        if ( Request::string_to_key().count( k ) ) {
+            _request->defined_header[Request::string_to_key().at( k )] = v;
+        } else {
             _request->header[k] = v;
-            break;
         }
     }
-    case CONTENT: _step = DONE;
-    case DONE: break;
-    }
+}
+
+void HTTP::Request::DynamicParser::_append_to_content( const u_char *s,
+                                                       size_t        n ) {
+    _request->content.append(
+        s,
+        std::min( n, _content_length - _request->content.size() ) );
+    if ( _request->content.size() >= _content_length ) { _step = DONE; }
 }
 
 /* -------------------------------- Response -------------------------------- */
 
-const std::pair< int, std::string > &
+const std::pair< std::string, std::string > &
 HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
     struct f {
-        static std::map< e_error_code, std::pair< int, std::string > > init() {
-            std::map< e_error_code, std::pair< int, std::string > > m;
-            m[E200] = std::make_pair( 200, "OK" );
-            m[E301] = std::make_pair( 301, "Move Permanently" );
-            m[E400] = std::make_pair( 400, "Bad Request" );
-            m[E403] = std::make_pair( 403, "Forbidden" );
-            m[E404] = std::make_pair( 404, "Not Found" );
-            m[E405] = std::make_pair( 405, "Method Not Allowed" );
-            m[E408] = std::make_pair( 408, "Request Timeout" );
-            m[E500] = std::make_pair( 500, "InternalServer Error" );
-            m[E502] = std::make_pair( 502, "Bad Gateway" );
-            m[E505] = std::make_pair( 505, "Version Not Supported" );
+        static std::map< e_error_code, std::pair< std::string, std::string > >
+        init() {
+            std::map< e_error_code, std::pair< std::string, std::string > > m;
+            m[E200] = std::make_pair( "200", "OK" );
+            m[E301] = std::make_pair( "301", "Move Permanently" );
+            m[E400] = std::make_pair( "400", "Bad Request" );
+            m[E403] = std::make_pair( "403", "Forbidden" );
+            m[E404] = std::make_pair( "404", "Not Found" );
+            m[E405] = std::make_pair( "405", "Method Not Allowed" );
+            m[E408] = std::make_pair( "408", "Request Timeout" );
+            m[E500] = std::make_pair( "500", "InternalServer Error" );
+            m[E502] = std::make_pair( "502", "Bad Gateway" );
+            m[E505] = std::make_pair( "505", "Version Not Supported" );
             return m;
         }
     };
-    static const std::map< e_error_code, std::pair< int, std::string > > m(
-        f::init() );
+    static const std::map< e_error_code, std::pair< std::string, std::string > >
+        m( f::init() );
     return m.at( code );
 }
 
 std::string HTTP::Response::stringify() const {
-    std::string s( version + ' '
-                   + Str::from( error_code_to_string( code ).first ) + ' '
+    std::string s( version + ' ' + error_code_to_string( code ).first + ' '
                    + error_code_to_string( code ).second + "\r\n" );
     for ( std::map< e_header_key, std::string >::const_iterator it
           = header.begin();
@@ -187,13 +233,13 @@ void HTTP::RequestHandler::response() {
         return setResponse( Response::E404, errorMessage( Response::E404 ) );
     }
     if ( _route->redir() != "" ) { return toRedir(); }
-    std::map< Request::e_method, void ( HTTP::RequestHandler::* )() > handler;
-    handler[Request::GET]    = &RequestHandler::getMethod;
-    handler[Request::POST]   = &RequestHandler::postMethod;
-    handler[Request::DELETE] = &RequestHandler::deleteMethod;
     if ( _route->methods().count(
              Request::method_to_string( _request->method ) ) ) {
-        return ( this->*handler[_request->method] )();
+        switch ( _request->method ) {
+        case Request::GET: return getMethod();
+        case Request::POST: return postMethod();
+        case Request::DELETE: return getMethod();
+        }
     }
     setResponse( Response::E405, errorMessage( Response::E405 ) );
 }
@@ -211,7 +257,6 @@ void HTTP::RequestHandler::getMethod() {
                   _route->index().begin() );
               it != _route->index().end();
               it++ ) {
-            std::cout << _path + '/' + *it << std::endl;
             std::ifstream f( ( _path + '/' + *it ).c_str() );
             if ( f.is_open() ) {
                 _path += '/' + *it;
@@ -296,9 +341,7 @@ HTTP::RequestHandler::errorMessage( HTTP::Response::e_error_code code ) {
     std::string content;
 
     content = "<!DOCTYPE html><html>";
-    content += "<h1>"
-               + Str::from( Response::error_code_to_string( code ).first )
-               + "</h>";
+    content += "<h1>" + Response::error_code_to_string( code ).first + "</h>";
     content += "<p>" + Response::error_code_to_string( code ).second
                + "</p></html>";
     return ( content );

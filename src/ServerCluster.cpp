@@ -108,12 +108,12 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 }
 
 void ServerCluster::ClientCallback::handle_read() {
-    char        buff[_buffer_size];
-    size_t      n = read( _fd, buff, sizeof( buff ) );
-    std::string s;
-    s.append( buff, n );
-    _http_parser << s;
-    // update_last_t();
+    u_char buff[_buffer_size];
+    size_t n( read( _fd, buff, sizeof( buff ) ) );
+    write(STDOUT_FILENO, buff, n );
+    std::cout << std::endl << std::endl;
+    _http_parser.add( buff, n );
+    update_last_t();
 }
 
 void ServerCluster::ClientCallback::handle_write() {
