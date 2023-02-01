@@ -25,7 +25,7 @@ struct Request {
     std::string                           host;
     std::map< e_header_key, std::string > defined_header;
     std::map< std::string, std::string, Str::CaseInsensitiveCmp > header;
-    std::basic_string< uint8_t >                                  content;
+    std::string                                                   content;
 
     /* ------------------------- Request::DynamicParser ------------------------- */
 
@@ -50,7 +50,7 @@ struct Request {
     public:
         DynamicParser();
 
-        void                   add( const u_char *s, size_t n );
+        void                   add( const char *s, size_t n );
         e_step                 step() const;
         Ptr::Shared< Request > request();
 
@@ -59,7 +59,7 @@ struct Request {
         void _parse_request_line();
         void _parse_host_line();
         void _parse_header_line();
-        void _append_to_content( const u_char *s, size_t n );
+        void _append_to_content( const char *s, size_t n );
     };
 
     /* -------------------------------------------------------------------------- */
@@ -87,9 +87,19 @@ struct Response : public Trait::Stringify {
 
     static const std::string &version();
 
+    Response( e_error_code code ) : code( code ) {}
+
     e_error_code                          code;
     std::map< e_header_key, std::string > header;
-    std::string                           content;
+
+private:
+    std::string _content;
+
+public:
+    void set_content( const std::string &s ) {
+        _content               = s;
+        header[CONTENT_LENGTH] = std::to_string( _content.size() );
+    }
 
     std::string stringify() const;
 
@@ -102,7 +112,6 @@ private:
 class RequestHandler {
     Ptr::Shared< Request >    _request;
     Ptr::Shared< ServerConf > _conf;
-    Response                  _response;
     const ServerConf::Route  *_route;
     std::string               _path;
 
@@ -112,18 +121,16 @@ public:
 
     static Response make_error_response( Response::e_error_code code );
 
-    const Response &make_response();
+    Response make_response();
 
-    void toRedir();
-    void toDirListing();
+private:
+    Response _redir();
+    Response _autoindex();
+    Response _get();
+    Response _post();
+    Response _delete();
 
-    void getMethod();
-    void postMethod();
-    void deleteMethod();
-
-    HTTP::Response getResponse();
-    std::string    getContentType( const std::string &path );
-    void setResponse( Response::e_error_code code, std::string content );
+    const std::string &_content_type( const std::string &path ) const;
 };
 
 /* -------------------------------------------------------------------------- */

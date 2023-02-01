@@ -108,7 +108,7 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 }
 
 void ServerCluster::ClientCallback::handle_read() {
-    u_char buff[_buffer_size];
+    char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
     write( STDOUT_FILENO, buff, n );
     std::cout << std::endl << std::endl;
