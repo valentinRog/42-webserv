@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-/* -------------------------------------------------------------------------- */
+/* ----------------------------------- Str ---------------------------------- */
 
 struct Str {
     static std::string replace_all( const std::string &s,
@@ -22,9 +22,13 @@ struct Str {
 
     static std::string to_upper( const std::string &s );
 
+    /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
+
     struct CaseInsensitiveCmp {
         bool operator()( const std::string &s1, const std::string &s2 ) const;
     };
+
+    /* -------------------------------------------------------------------------- */
 };
 
 /* -------------------------------------------------------------------------- */

@@ -3,10 +3,10 @@
 #include "Ptr.hpp"
 #include "common.h"
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------- PolymorphicWrapper --------------------------- */
 
 template < typename T > class PolymorphicWrapper {
-    Ptr::unique< T > _p;
+    Ptr::Unique< T > _p;
 
 public:
     PolymorphicWrapper( const T &v );

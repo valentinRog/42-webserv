@@ -94,7 +94,7 @@ HTTP::Request::DynamicParser::step() const {
     return _step;
 }
 
-Ptr::shared< HTTP::Request > HTTP::Request::DynamicParser::request() {
+Ptr::Shared< HTTP::Request > HTTP::Request::DynamicParser::request() {
     return _request;
 }
 
@@ -182,8 +182,13 @@ HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
     return m.at( code );
 }
 
+const std::string &HTTP::Response::version() {
+    static const std::string s( "HTTP/1.1" );
+    return s;
+}
+
 std::string HTTP::Response::stringify() const {
-    std::string s( version + ' ' + error_code_to_string( code ).first + ' '
+    std::string s( version() + ' ' + error_code_to_string( code ).first + ' '
                    + error_code_to_string( code ).second + "\r\n" );
     for ( std::map< e_header_key, std::string >::const_iterator it
           = header.begin();
@@ -212,45 +217,51 @@ HTTP::Response::_header_key_name() {
 
 /* ----------------------------- RequestHandler ----------------------------- */
 
-HTTP::RequestHandler::RequestHandler( Ptr::shared< Request >    request,
-                                      Ptr::shared< ServerConf > conf )
+HTTP::RequestHandler::RequestHandler( Ptr::Shared< Request >    request,
+                                      Ptr::Shared< ServerConf > conf )
     : _request( request ),
       _conf( conf ),
       _route( 0 ) {
-    if ( _conf->route_mapper().count( _request->url ) ) {
-        _route = &_conf->route_mapper().at( _request->url );
+    if ( _conf->route_mapper().count( _request->url + '/' ) ) {
+        _route = &_conf->route_mapper().at( _request->url + '/' );
         _path  = _route->root() + '/'
                 + _conf->route_mapper().suffix( _request->url );
     }
-    response();
 }
 
-void HTTP::RequestHandler::response() {
-    if ( _request->version != "HTTP/1.1" ) {
-        return setResponse( Response::E505, errorMessage( Response::E505 ) );
+HTTP::Response
+HTTP::RequestHandler::make_error_response( HTTP::Response::e_error_code code ) {
+    Response response;
+    response.code = code;
+    response.content
+        = "<h1>" + HTTP::Response::error_code_to_string( code ).first + "</h1>";
+    return response;
+}
+
+const HTTP::Response &HTTP::RequestHandler::make_response() {
+    if ( !_route ) { return _response = make_error_response( Response::E404 ); }
+    if ( _route->redir() != "" ) {
+        toRedir();
+        return _response;
     }
-    if ( !_route ) {
-        return setResponse( Response::E404, errorMessage( Response::E404 ) );
-    }
-    if ( _route->redir() != "" ) { return toRedir(); }
     if ( _route->methods().count(
              Request::method_to_string( _request->method ) ) ) {
         switch ( _request->method ) {
-        case Request::GET: return getMethod();
-        case Request::POST: return postMethod();
-        case Request::DELETE: return getMethod();
+        case Request::GET: getMethod(); break;
+        case Request::POST: postMethod(); break;
+        case Request::DELETE: getMethod(); break;
         }
+        return _response;
     }
-    setResponse( Response::E405, errorMessage( Response::E405 ) );
+    return _response = make_error_response( Response::E405 );
 }
 
 void HTTP::RequestHandler::getMethod() {
     struct stat s;
     if ( stat( _path.c_str(), &s ) ) {
-        return errno == ENOENT ? setResponse( Response::E404,
-                                              errorMessage( Response::E404 ) )
-                               : setResponse( Response::E500,
-                                              errorMessage( Response::E500 ) );
+        _response = errno == ENOENT ? make_error_response( Response::E404 )
+                                    : make_error_response( Response::E500 );
+        return;
     }
     if ( s.st_mode & S_IFDIR ) {
         for ( std::list< std::string >::const_iterator it(
@@ -262,15 +273,18 @@ void HTTP::RequestHandler::getMethod() {
                 _path += '/' + *it;
                 std::ostringstream oss;
                 oss << f.rdbuf();
+                std::cout << _path << std::endl;
                 return setResponse( Response::E200, oss.str() );
             }
         }
         if ( _route->autoindex() ) { return toDirListing(); }
-        return setResponse( Response::E404, errorMessage( Response::E404 ) );
+        _response = make_error_response( Response::E404 );
+        return;
     }
     std::ifstream f( _path.c_str() );
     if ( !f.is_open() ) {
-        return setResponse( Response::E404, errorMessage( Response::E404 ) );
+        _response = make_error_response( Response::E404 );
+        return;
     }
     std::ostringstream oss;
     oss << f.rdbuf();
@@ -283,17 +297,15 @@ void HTTP::RequestHandler::deleteMethod() {
     struct stat s;
     if ( stat( _path.c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR ) {
-            setResponse( Response::E400, errorMessage( Response::E400 ) );
+            _response = make_error_response( Response::E400 );
         } else {
             std::remove( _path.c_str() );
             setResponse( Response::E200, "" );
         }
     } else {
         if ( errno == ENOENT )
-            setResponse( Response::E404, errorMessage( Response::E404 ) );
-        else {
-            setResponse( Response::E500, errorMessage( Response::E500 ) );
-        }
+            make_error_response( Response::E404 );
+        else { _response = make_error_response( Response::E500 ); }
     }
 }
 
@@ -322,29 +334,19 @@ void HTTP::RequestHandler::toRedir() {
 void HTTP::RequestHandler::setResponse( HTTP::Response::e_error_code code,
                                         std::string                  content ) {
     _response.code    = code;
-    _response.version = _request->version;
     _response.content = content;
-    if ( _route->redir().empty() )
-        _response.header[Response::CONTENT_TYPE] = getContentType( _path );
-    else {
-        _response.header[Response::LOCATION] = _route->redir();
+    if ( _route ) {
+        if ( _route->redir().empty() ) {
+            _response.header[Response::CONTENT_TYPE] = getContentType( _path );
+        } else {
+            _response.header[Response::LOCATION] = _route->redir();
+        }
     }
     _response.header[Response::HOST] = "ddfdfdfd";
     if ( !content.empty() ) {
         _response.header[Response::CONTENT_LENGTH]
             = Str::from( content.size() );
     }
-}
-
-std::string
-HTTP::RequestHandler::errorMessage( HTTP::Response::e_error_code code ) {
-    std::string content;
-
-    content = "<!DOCTYPE html><html>";
-    content += "<h1>" + Response::error_code_to_string( code ).first + "</h>";
-    content += "<p>" + Response::error_code_to_string( code ).second
-               + "</p></html>";
-    return ( content );
 }
 
 HTTP::Response HTTP::RequestHandler::getResponse() { return ( _response ); }

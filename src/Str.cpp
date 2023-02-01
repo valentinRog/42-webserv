@@ -1,6 +1,6 @@
 #include "Str.hpp"
 
-/* -------------------------------------------------------------------------- */
+/* ----------------------------------- Str ---------------------------------- */
 
 std::string Str::replace_all( const std::string &s,
                               const std::string &from,
@@ -39,7 +39,7 @@ std::string Str::to_upper( const std::string &s ) {
     return res;
 }
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
 bool Str::CaseInsensitiveCmp::operator()( const std::string &s1,
                                           const std::string &s2 ) const {

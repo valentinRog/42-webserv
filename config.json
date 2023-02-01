@@ -11,12 +11,12 @@
           "autoindex": true,
           "methods": ["GET"]
         },
-        "/trucadelete/": {
+        "/trucadelete": {
           "root": "./html/delete/",
           "index": ["test1.html"],
           "methods": ["GET", "DELETE"]
         },
-        "/redir/": {
+        "/redir": {
           "root": "./html/redir/",
           "index": ["test1.html"],
           "methods": ["GET"],

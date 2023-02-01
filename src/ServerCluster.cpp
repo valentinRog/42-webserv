@@ -1,14 +1,14 @@
 #include "ServerCluster.hpp"
 
-/* -------------------------------------------------------------------------- */
+/* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 
 ServerCluster::VirtualHostMapper::VirtualHostMapper(
     const ServerConf &default_conf )
     : _default( new ServerConf( default_conf ) ) {}
 
-Ptr::shared< ServerConf >
+Ptr::Shared< ServerConf >
 ServerCluster::VirtualHostMapper::operator[]( const std::string &s ) const {
-    std::map< std::string, Ptr::shared< ServerConf > >::const_iterator it(
+    std::map< std::string, Ptr::Shared< ServerConf > >::const_iterator it(
         _names_map.find( s ) );
     return it == _names_map.end() ? _default : it->second;
 }
@@ -21,10 +21,10 @@ void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
     }
 }
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ ServerCluster ----------------------------- */
 
 ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
-    Ptr::shared< std::map< std::string, std::string > > mime(
+    Ptr::Shared< std::map< std::string, std::string > > mime(
         new std::map< std::string, std::string > );
     JSON::Object mime_o(
         JSON::Parse::from_file( o.at( "mime_file" ).unwrap< JSON::String >() )
@@ -91,10 +91,10 @@ void ServerCluster::_bind( uint16_t port ) {
     _q.add( fd, SocketCallback( fd, addr, *this ) );
 }
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------- ServerCluster::ClientCallback --------------------- */
 
 ServerCluster::ClientCallback::ClientCallback( int                      fd,
-                                               ServerCluster &          server,
+                                               ServerCluster           &server,
                                                const VirtualHostMapper &vhm,
                                                time_t                   con_to,
                                                time_t idle_to )
@@ -110,7 +110,7 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     u_char buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
-    write(STDOUT_FILENO, buff, n );
+    write( STDOUT_FILENO, buff, n );
     std::cout << std::endl << std::endl;
     _http_parser.add( buff, n );
     update_last_t();
@@ -118,9 +118,9 @@ void ServerCluster::ClientCallback::handle_read() {
 
 void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
-        Ptr::shared< HTTP::Request > request( _http_parser.request() );
+        Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         HTTP::RequestHandler         rh( request, _vhm[request->host] );
-        std::string                  response = rh.getResponse().stringify();
+        std::string                  response = rh.make_response().stringify();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );
     }
@@ -130,11 +130,11 @@ void ServerCluster::ClientCallback::handle_timeout() {
     _server._q.remove( _fd );
 }
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------- ServerCluster::SocketCallback --------------------- */
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster &    server )
+                                               ServerCluster     &server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -150,7 +150,7 @@ void ServerCluster::SocketCallback::handle_read() {
     int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type &         m( _server._vh.at( addr.sin_port ) );
+    const map_type          &m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {

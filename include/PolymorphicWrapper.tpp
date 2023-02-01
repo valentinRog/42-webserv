@@ -1,6 +1,6 @@
 #include "PolymorphicWrapper.hpp"
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------- PolymorphicWrapper --------------------------- */
 
 template < typename T >
 PolymorphicWrapper< T >::PolymorphicWrapper( const T &v ) : _p( v.clone() ) {}

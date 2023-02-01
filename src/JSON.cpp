@@ -1,6 +1,6 @@
 #include "JSON.hpp"
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------- Value --------------------------------- */
 
 JSON::Value::~Value() {}
 
@@ -8,7 +8,7 @@ std::ostream &JSON::Value::repr( std::ostream &os ) const {
     return os << stringify();
 }
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- String --------------------------------- */
 
 JSON::String::String( const std::string &s ) : _s( s ) {}
 
@@ -18,7 +18,7 @@ std::string JSON::String::stringify() const { return '"' + _s + '"'; }
 
 JSON::String::operator std::string() const { return _s; }
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Number --------------------------------- */
 
 JSON::Number::Number( double n ) : _n( n ) {}
 
@@ -32,7 +32,7 @@ std::string JSON::Number::stringify() const {
 
 JSON::Number::operator double() const { return _n; }
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Object --------------------------------- */
 
 JSON::Value *JSON::Object::clone() const { return new JSON::Object( *this ); }
 
@@ -46,7 +46,7 @@ std::string JSON::Object::stringify() const {
     return s + '}';
 }
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------- Array --------------------------------- */
 
 JSON::Value *JSON::Array::clone() const { return new JSON::Array( *this ); }
 
@@ -60,7 +60,7 @@ std::string JSON::Array::stringify() const {
     return s + ']';
 }
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Boolean -------------------------------- */
 
 JSON::Boolean::Boolean( bool b ) : _b( b ) {}
 
@@ -74,13 +74,13 @@ std::string JSON::Boolean::stringify() const {
 
 JSON::Boolean::operator bool() const { return _b; }
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------- Null ---------------------------------- */
 
 JSON::Value *JSON::Null::clone() const { return new JSON::Null( *this ); }
 
 std::string JSON::Null::stringify() const { return "null"; }
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------- Parse --------------------------------- */
 
 const std::set< char > &JSON::Parse::whitespaces() {
     struct f {
@@ -231,6 +231,8 @@ JSON::Wrapper JSON::Parse::from_file( const std::string &filename ) {
     std::queue< std::string > q( _lexer( ss.str() ) );
     return _parse( q );
 }
+
+/* --------------------------- Parse::ParsingError -------------------------- */
 
 const char *JSON::Parse::ParsingError::what() const throw() {
     return "Error while parsing JSON";

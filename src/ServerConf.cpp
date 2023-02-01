@@ -1,6 +1,6 @@
 #include "ServerConf.hpp"
 
-/* -------------------------------------------------------------------------- */
+/* ---------------------------- ServerConf::Route --------------------------- */
 
 ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
     _root = o.at( "root" ).unwrap< JSON::String >();
@@ -40,7 +40,7 @@ bool ServerConf::Route::autoindex() const { return _autoindex; }
 
 const std::string &ServerConf::Route::redir() const { return _redir; }
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------- ServerConf::RouteMapper ------------------------ */
 
 void ServerConf::RouteMapper::insert(
     const std::pair< std::string, Route > &v ) {
@@ -48,6 +48,7 @@ void ServerConf::RouteMapper::insert(
     _routes.insert( key );
     _routes_table.insert( v );
 }
+
 const ServerConf::Route &
 ServerConf::RouteMapper::at( const std::string &s ) const {
     return _routes_table.at( _routes.lower_bound( s ) );
@@ -61,17 +62,18 @@ std::string ServerConf::RouteMapper::suffix( const std::string &s ) const {
     std::string::size_type l( _routes.lower_bound( s ).size() );
     return s.substr( l, s.size() - l );
 }
-/* -------------------------------------------------------------------------- */
+
+/* ------------------ ServerConf::RouteMapper::ConfigError ------------------ */
 
 const char *ServerConf::ConfigError::what() const throw() {
     return "Invalid configuration";
 }
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------- ServerConf ------------------------------- */
 
 ServerConf::ServerConf(
-    const JSON::Object &                                o,
-    Ptr::shared< std::map< std::string, std::string > > mime )
+    const JSON::Object                                 &o,
+    Ptr::Shared< std::map< std::string, std::string > > mime )
     : _mime( mime ) {
     try {
         ::bzero( &_addr, sizeof _addr );
@@ -102,8 +104,6 @@ ServerConf::ServerConf(
         throw ConfigError();
     } catch ( const std::bad_cast & ) { throw ConfigError(); }
 }
-
-/* -------------------------------------------------------------------------- */
 
 const sockaddr_in &ServerConf::addr() const { return _addr; }
 

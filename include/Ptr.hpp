@@ -4,15 +4,15 @@
 
 namespace Ptr {
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Unique --------------------------------- */
 
-template < typename T > class unique {
+template < typename T > class Unique {
     T *_p;
 
 public:
-    unique();
-    explicit unique( T *p );
-    ~unique();
+    Unique();
+    explicit Unique( T *p );
+    ~Unique();
 
     T   *release();
     void reset( T *p = 0 );
@@ -23,21 +23,21 @@ public:
     const T *operator->() const;
 
 private:
-    unique( const unique & );
-    unique &operator=( const unique & );
+    Unique( const Unique & );
+    Unique &operator=( const Unique & );
 };
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Shared --------------------------------- */
 
-template < typename T > class shared {
+template < typename T > class Shared {
     T   *_p;
     int *_n_ref;
 
 public:
-    shared( T *p = 0 );
-    shared( const shared< T > &p );
-    shared< T > &operator=( const shared< T > &p );
-    ~shared();
+    Shared( T *p = 0 );
+    Shared( const Shared< T > &p );
+    Shared< T > &operator=( const Shared< T > &p );
+    ~Shared();
 
     T       &operator*();
     const T &operator*() const;

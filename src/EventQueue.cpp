@@ -1,6 +1,6 @@
 #include "EventQueue.hpp"
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ CallbackBase ------------------------------ */
 
 CallbackBase::CallbackBase( time_t con_to, time_t idle_to )
     : _con_to( con_to ),
@@ -16,7 +16,7 @@ time_t CallbackBase::idle_to() const { return _idle_to; }
 time_t CallbackBase::last_t() const { return _last_t; }
 void   CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
-/* -------------------------------------------------------------------------- */
+/* ----------------------------- EventQueueBase ----------------------------- */
 
 EventQueueBase::~EventQueueBase() {}
 
@@ -24,7 +24,7 @@ EventQueueBase::~EventQueueBase() {}
 
 #ifdef __linux__
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------- EventQueue ------------------------------- */
 
 EventQueue::EventQueue( int max_events ) : EventQueueBase( max_events ) {
     _epoll_fd = epoll_create( _max_events );
@@ -88,7 +88,7 @@ void EventQueue::wait() {
 
 #else
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------- EventQueue ------------------------------- */
 
 EventQueue::EventQueue( int max_events ) : EventQueueBase( max_events ) {
     _kqueue_fd = kqueue();

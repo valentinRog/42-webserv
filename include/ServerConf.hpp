@@ -6,10 +6,12 @@
 #include "Trie.hpp"
 #include "common.h"
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------- ServerConf ------------------------------- */
 
 class ServerConf {
 public:
+    /* ---------------------------- ServerConf::Route --------------------------- */
+
     class Route {
         std::string              _root;
         std::list< std::string > _index;
@@ -20,12 +22,14 @@ public:
     public:
         Route( const JSON::Object &o );
 
-        const std::string &             root() const;
+        const std::string              &root() const;
         const std::list< std::string > &index() const;
-        const std::set< std::string > & methods() const;
+        const std::set< std::string >  &methods() const;
         bool                            autoindex() const;
-        const std::string &             redir() const;
+        const std::string              &redir() const;
     };
+
+    /* ------------------------- ServerConf::RouteMapper ------------------------ */
 
     class RouteMapper {
         std::map< std::string, Route > _routes_table;
@@ -41,23 +45,27 @@ public:
         std::string suffix( const std::string &s ) const;
     };
 
+    /* ------------------ ServerConf::RouteMapper::ConfigError ------------------ */
+
     class ConfigError : public std::exception {
         virtual const char *what() const throw();
     };
+
+    /* -------------------------------------------------------------------------- */
 
 private:
     sockaddr_in                                         _addr;
     std::set< std::string >                             _names;
     RouteMapper                                         _route_mapper;
-    Ptr::shared< std::map< std::string, std::string > > _mime;
+    Ptr::Shared< std::map< std::string, std::string > > _mime;
 
 public:
-    ServerConf( const JSON::Object &                                o,
-                Ptr::shared< std::map< std::string, std::string > > mime );
+    ServerConf( const JSON::Object                                 &o,
+                Ptr::Shared< std::map< std::string, std::string > > mime );
 
-    const sockaddr_in &                         addr() const;
-    const std::set< std::string > &             names() const;
-    const RouteMapper &                         route_mapper() const;
+    const sockaddr_in                          &addr() const;
+    const std::set< std::string >              &names() const;
+    const RouteMapper                          &route_mapper() const;
     const std::map< std::string, std::string > &mime() const;
 };
 
