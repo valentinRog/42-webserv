@@ -119,7 +119,7 @@ void ServerCluster::ClientCallback::handle_read() {
 void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
-        HTTP::RequestHandler         rh( request, _vhm[request->host] );
+        HTTP::RequestHandler         rh( request, _vhm[request->host()] );
         std::string                  response = rh.make_response().stringify();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );

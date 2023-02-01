@@ -9,23 +9,34 @@ namespace HTTP {
 
 /* --------------------------------- Request -------------------------------- */
 
-struct Request {
+class Request {
+public:
     enum e_header_key { CONTENT_LENGTH };
     static const std::string &key_to_string( e_header_key k );
     static const std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
         &string_to_key();
 
-    enum e_method { GET, POST, DELETE };
+    enum e_method { GET, POST, DELETE, PUT };
     static const std::string &method_to_string( e_method );
     static const std::map< std::string, e_method > &string_to_method();
 
-    e_method                              method;
-    std::string                           url;
-    std::string                           version;
-    std::string                           host;
-    std::map< e_header_key, std::string > defined_header;
-    std::map< std::string, std::string, Str::CaseInsensitiveCmp > header;
-    std::string                                                   content;
+    e_method                              _method;
+    std::string                           _url;
+    std::string                           _version;
+    std::string                           _host;
+    std::map< e_header_key, std::string > _defined_header;
+    std::map< std::string, std::string, Str::CaseInsensitiveCmp > _header;
+    std::string                                                   _content;
+
+public:
+    e_method                                     method() const;
+    const std::string &                          url() const;
+    const std::string &                          version() const;
+    const std::string &                          host() const;
+    const std::map< e_header_key, std::string > &defined_header() const;
+    const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
+                       header() const;
+    const std::string &content() const;
 
     /* ------------------------- Request::DynamicParser ------------------------- */
 
@@ -98,7 +109,7 @@ private:
 public:
     void set_content( const std::string &s ) {
         _content               = s;
-        header[CONTENT_LENGTH] = std::to_string( _content.size() );
+        header[CONTENT_LENGTH] = Str::from( _content.size() );
     }
 
     std::string stringify() const;
@@ -112,7 +123,7 @@ private:
 class RequestHandler {
     Ptr::Shared< Request >    _request;
     Ptr::Shared< ServerConf > _conf;
-    const ServerConf::Route  *_route;
+    const ServerConf::Route * _route;
     std::string               _path;
 
 public:
@@ -129,6 +140,7 @@ private:
     Response _get();
     Response _post();
     Response _delete();
+    Response _put();
 
     const std::string &_content_type( const std::string &path ) const;
 };

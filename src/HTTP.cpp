@@ -40,6 +40,7 @@ HTTP::Request::method_to_string( HTTP::Request::e_method method ) {
             m[GET]    = "GET";
             m[POST]   = "POST";
             m[DELETE] = "DELETE";
+            m[PUT]    = "PUT";
             return m;
         }
     };
@@ -56,12 +57,33 @@ HTTP::Request::string_to_method() {
             m[method_to_string( GET )]    = GET;
             m[method_to_string( POST )]   = POST;
             m[method_to_string( DELETE )] = DELETE;
+            m[method_to_string( PUT )]    = PUT;
             return m;
         }
     };
     static const map_type m( f::init() );
     return m;
 }
+
+HTTP::Request::e_method HTTP::Request::method() const { return _method; }
+
+const std::string &HTTP::Request::url() const { return _url; }
+
+const std::string &HTTP::Request::version() const { return _version; }
+
+const std::string &HTTP::Request::host() const { return _host; }
+
+const std::map< HTTP::Request::e_header_key, std::string > &
+HTTP::Request::defined_header() const {
+    return _defined_header;
+}
+
+const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
+HTTP::Request::header() const {
+    return _header;
+}
+
+const std::string &HTTP::Request::content() const { return _content; }
 
 /* ------------------------- Request::DynamicParser ------------------------- */
 
@@ -111,25 +133,25 @@ void HTTP::Request::DynamicParser::_parse_request_line() {
     std::istringstream iss( _line );
     std::string        s;
     iss >> s;
-    _request->method = HTTP::Request::string_to_method().at( s );
-    iss >> _request->url;
-    iss >> _request->version;
+    _request->_method = Request::string_to_method().at( s );
+    iss >> _request->_url;
+    iss >> _request->_version;
     _step = HOST;
 }
 
 void HTTP::Request::DynamicParser::_parse_host_line() {
     std::istringstream iss( _line );
     iss.ignore( std::numeric_limits< std::streamsize >::max(), ' ' );
-    iss >> _request->host;
+    iss >> _request->_host;
     _step = HEADER;
 }
 
 void HTTP::Request::DynamicParser::_parse_header_line() {
     std::istringstream iss( _line );
     if ( !iss.str().size() ) {
-        if ( _request->defined_header.count( CONTENT_LENGTH ) ) {
+        if ( _request->_defined_header.count( CONTENT_LENGTH ) ) {
             std::istringstream iss(
-                _request->defined_header.at( CONTENT_LENGTH ) );
+                _request->_defined_header.at( CONTENT_LENGTH ) );
             iss >> _content_length;
             _step = CONTENT;
         } else {
@@ -141,19 +163,19 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
         iss >> k >> v;
         k = k.substr( 0, k.size() - 1 );
         if ( Request::string_to_key().count( k ) ) {
-            _request->defined_header[Request::string_to_key().at( k )] = v;
+            _request->_defined_header[Request::string_to_key().at( k )] = v;
         } else {
-            _request->header[k] = v;
+            _request->_header[k] = v;
         }
     }
 }
 
 void HTTP::Request::DynamicParser::_append_to_content( const char *s,
                                                        size_t      n ) {
-    _request->content.append(
+    _request->_content.append(
         s,
-        std::min( n, _content_length - _request->content.size() ) );
-    if ( _request->content.size() >= _content_length ) { _step = DONE; }
+        std::min( n, _content_length - _request->_content.size() ) );
+    if ( _request->_content.size() >= _content_length ) { _step = DONE; }
 }
 
 /* -------------------------------- Response -------------------------------- */
@@ -222,10 +244,10 @@ HTTP::RequestHandler::RequestHandler( Ptr::Shared< Request >    request,
     : _request( request ),
       _conf( conf ),
       _route( 0 ) {
-    if ( _conf->route_mapper().count( _request->url + '/' ) ) {
-        _route = &_conf->route_mapper().at( _request->url + '/' );
+    if ( _conf->route_mapper().count( _request->url() + '/' ) ) {
+        _route = &_conf->route_mapper().at( _request->url() + '/' );
         _path  = _route->root() + '/'
-                + _conf->route_mapper().suffix( _request->url );
+                + _conf->route_mapper().suffix( _request->url() );
     }
 }
 
@@ -241,11 +263,12 @@ HTTP::Response HTTP::RequestHandler::make_response() {
     if ( !_route ) { return make_error_response( Response::E404 ); }
     if ( _route->redir().size() ) { return _redir(); }
     if ( _route->methods().count(
-             Request::method_to_string( _request->method ) ) ) {
-        switch ( _request->method ) {
+             Request::method_to_string( _request->method() ) ) ) {
+        switch ( _request->method() ) {
         case Request::GET: return _get();
         case Request::POST: return _post();
-        case Request::DELETE: return _get();
+        case Request::DELETE: return _delete();
+        case Request::PUT: return _put();
         }
     }
     return make_error_response( Response::E405 );
@@ -286,32 +309,44 @@ HTTP::Response HTTP::RequestHandler::_get() {
 }
 
 HTTP::Response HTTP::RequestHandler::_post() {
-    return make_error_response( Response::E500 );
+    return Response( Response::E500 );
 }
 
 HTTP::Response HTTP::RequestHandler::_delete() {
     struct stat s;
     if ( stat( _path.c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR ) {
-            return make_error_response( Response::E400 );
+            return Response( Response::E400 );
         } else {
             std::remove( _path.c_str() );
-            return make_error_response( Response::E200 );
+            return Response( Response::E200 );
         }
     }
-    return errno == ENOENT ? make_error_response( Response::E404 )
-                           : make_error_response( Response::E500 );
+    return errno == ENOENT ? Response( Response::E404 )
+                           : Response( Response::E500 );
+}
+
+HTTP::Response HTTP::RequestHandler::_put() {
+    std::ofstream f( _path.c_str() );
+    if ( f.is_open() ) {
+        f << _request->content();
+        return Response( Response::E200 );
+    }
+    return Response( Response::E404 );
 }
 
 HTTP::Response HTTP::RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
     std::string    contentEnd = "</h1></body></html>";
-    DIR           *dir;
+    DIR *          dir;
     dir = opendir( _path.c_str() );
     if ( !dir ) return make_error_response( Response::E500 );
-    while ( ( file = readdir( dir ) ) != NULL )
-        content += "<p>" + std::string( file->d_name ) + "</p>";
+    while ( ( file = readdir( dir ) ) != NULL ) {
+        content += std::string( "<p><a href='" ) 
+                   + _conf->route_mapper().suffix( _request->url() ) + '/'
+                   + file->d_name + "'>" + file->d_name + "</a></p>";
+    }
     content += contentEnd;
     closedir( dir );
     Response r( Response::E200 );

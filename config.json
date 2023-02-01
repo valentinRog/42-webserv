@@ -37,10 +37,10 @@
     {
       "listen": ["0.0.0.0", 5000],
       "routes": {
-        "/yo": {
-          "root": "html",
-          "methods": ["GET"],
-          "index": ["index.html"]
+        "/": {
+          "root": "html/upload",
+          "methods": ["GET", "DELETE", "PUT"],
+          "autoindex": true
         }
       }
     }
