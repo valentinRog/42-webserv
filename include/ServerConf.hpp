@@ -13,20 +13,22 @@ public:
     /* ---------------------------- ServerConf::Route --------------------------- */
 
     class Route {
-        std::string              _root;
-        std::list< std::string > _index;
-        std::set< std::string >  _methods;
-        bool                     _autoindex;
-        std::string              _redir;
+        std::string                          _root;
+        std::list< std::string >             _index;
+        std::set< std::string >              _methods;
+        bool                                 _autoindex;
+        std::string                          _redir;
+        std::map< std::string, std::string > _cgis;
 
     public:
         Route( const JSON::Object &o );
 
-        const std::string              &root() const;
-        const std::list< std::string > &index() const;
-        const std::set< std::string >  &methods() const;
-        bool                            autoindex() const;
-        const std::string              &redir() const;
+        const std::string &                         root() const;
+        const std::list< std::string > &            index() const;
+        const std::set< std::string > &             methods() const;
+        bool                                        autoindex() const;
+        const std::string &                         redir() const;
+        const std::map< std::string, std::string > &cgis() const;
     };
 
     /* ------------------------- ServerConf::RouteMapper ------------------------ */
@@ -60,12 +62,12 @@ private:
     Ptr::Shared< std::map< std::string, std::string > > _mime;
 
 public:
-    ServerConf( const JSON::Object                                 &o,
+    ServerConf( const JSON::Object &                                o,
                 Ptr::Shared< std::map< std::string, std::string > > mime );
 
-    const sockaddr_in                          &addr() const;
-    const std::set< std::string >              &names() const;
-    const RouteMapper                          &route_mapper() const;
+    const sockaddr_in &                         addr() const;
+    const std::set< std::string > &             names() const;
+    const RouteMapper &                         route_mapper() const;
     const std::map< std::string, std::string > &mime() const;
 };
 

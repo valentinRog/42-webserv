@@ -22,6 +22,8 @@ struct Str {
 
     static std::string to_upper( const std::string &s );
 
+    static char *dup(const std::string &s);
+
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
     struct CaseInsensitiveCmp {

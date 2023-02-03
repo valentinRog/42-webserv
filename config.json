@@ -3,7 +3,7 @@
   "servers": [
     {
       "listen": ["0.0.0.0", 80],
-      "server_names": ["yo.org"],
+      "server_names": ["localhost"],
       "routes": {
         "/": {
           "root": "html",
@@ -11,26 +11,17 @@
           "autoindex": true,
           "methods": ["GET"]
         },
-        "/trucadelete": {
-          "root": "./html/delete/",
-          "index": ["test1.html"],
-          "methods": ["GET", "DELETE"]
+        "/cgi/form": {
+          "root": "html/cgi/form/",
+          "methods": ["POST"],
+          "cgi": {
+            ".py": "cgi-bin/python-cgi"
+          }
         },
         "/redir": {
-          "root": "./html/redir/",
-          "index": ["test1.html"],
+          "root": "html",
           "methods": ["GET"],
           "redir": "http://noboardchess.org"
-        }
-      }
-    },
-    {
-      "listen": ["0.0.0.0", 80],
-      "server_names": ["localhost"],
-      "routes": {
-        "/": {
-          "root": "./",
-          "methods": ["GET"]
         }
       }
     },
@@ -41,6 +32,25 @@
           "root": "html/upload",
           "methods": ["GET", "DELETE", "PUT"],
           "autoindex": true
+        }
+      }
+    },
+    {
+      "listen": ["0.0.0.0", 4000],
+      "routes": {
+        "/": {
+          "root": "html/cgi",
+          "methods": ["GET"],
+          "autoindex": true,
+          "cgi": {
+            ".py": "cgi-bin/python-cgi",
+            ".sh": "cgi-bin/bash-cgi",
+            ".php": "/usr/bin/php-cgi"
+          }
+        },
+        "/form": {
+          "root": "html/cgi/form",
+          "methods": ["POST"]
         }
       }
     }

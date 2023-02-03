@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+
+import os
+import subprocess
+import sys
+
+path = os.environ.get("PATH_INFO")
+p = subprocess.Popen(
+    ["python3", path],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE)
+output, _ = p.communicate(input=sys.stdin.read().encode())
+print(output.decode(), end="")

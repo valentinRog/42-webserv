@@ -24,6 +24,14 @@ ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
     if ( o.count( "redir" ) ) {
         _redir = o.at( "redir" ).unwrap< JSON::String >();
     }
+    if ( o.count( "cgi" ) ) {
+        JSON::Object cgi_o( o.at( "cgi" ).unwrap< JSON::Object >() );
+        for ( JSON::Object::const_iterator it = cgi_o.begin();
+              it != cgi_o.end();
+              it++ ) {
+            _cgis[it->first] = it->second.unwrap< JSON::String >();
+        }
+    }
 }
 
 const std::string &ServerConf::Route::root() const { return _root; }
@@ -39,6 +47,10 @@ const std::set< std::string > &ServerConf::Route::methods() const {
 bool ServerConf::Route::autoindex() const { return _autoindex; }
 
 const std::string &ServerConf::Route::redir() const { return _redir; }
+
+const std::map< std::string, std::string > &ServerConf::Route::cgis() const {
+    return _cgis;
+}
 
 /* ------------------------- ServerConf::RouteMapper ------------------------ */
 
@@ -72,7 +84,7 @@ const char *ServerConf::ConfigError::what() const throw() {
 /* ------------------------------- ServerConf ------------------------------- */
 
 ServerConf::ServerConf(
-    const JSON::Object                                 &o,
+    const JSON::Object &                                o,
     Ptr::Shared< std::map< std::string, std::string > > mime )
     : _mime( mime ) {
     try {

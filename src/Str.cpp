@@ -39,6 +39,12 @@ std::string Str::to_upper( const std::string &s ) {
     return res;
 }
 
+char *Str::dup( const std::string &s ) {
+    char *res = new char[s.size() + 1];
+    ::strcpy( res, s.c_str() );
+    return res;
+}
+
 /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
 bool Str::CaseInsensitiveCmp::operator()( const std::string &s1,

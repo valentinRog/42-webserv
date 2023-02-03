@@ -94,7 +94,7 @@ void ServerCluster::_bind( uint16_t port ) {
 /* ---------------------- ServerCluster::ClientCallback --------------------- */
 
 ServerCluster::ClientCallback::ClientCallback( int                      fd,
-                                               ServerCluster           &server,
+                                               ServerCluster &          server,
                                                const VirtualHostMapper &vhm,
                                                time_t                   con_to,
                                                time_t idle_to )
@@ -110,8 +110,6 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
-    write( STDOUT_FILENO, buff, n );
-    std::cout << std::endl << std::endl;
     _http_parser.add( buff, n );
     update_last_t();
 }
@@ -120,7 +118,7 @@ void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         HTTP::RequestHandler         rh( request, _vhm[request->host()] );
-        std::string                  response = rh.make_response().stringify();
+        std::string                  response = rh.make_raw_response();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );
     }
@@ -134,7 +132,7 @@ void ServerCluster::ClientCallback::handle_timeout() {
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster     &server )
+                                               ServerCluster &    server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -150,7 +148,7 @@ void ServerCluster::SocketCallback::handle_read() {
     int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type          &m( _server._vh.at( addr.sin_port ) );
+    const map_type &         m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {

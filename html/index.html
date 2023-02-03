@@ -7,9 +7,13 @@
   <body>
     <h1>Yo</h1>
     <a href="redir">AAAAAA</a>
-    <form action="/" method="post" enctype="multipart/form-data">
-      <input type="file" name="fileToUpload" />
-      <input type="submit" value="Upload File" />
+    <form action="cgi/form/form.py" method="POST">
+      <fieldset>
+        <legend>Enter two numbers to add</legend>
+        <label>First Number: <input type="number" name="n1" /></label><br />
+        <label>Second Number: <input type="number" name="n2" /></label><br />
+      </fieldset>
+      <button>Add</button>
     </form>
   </body>
 </html>

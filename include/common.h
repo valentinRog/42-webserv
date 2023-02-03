@@ -28,6 +28,7 @@
 #include <typeinfo>
 #include <unistd.h>
 #include <vector>
+#include <sys/wait.h>
 
 #ifdef __linux__
 #include <sys/epoll.h>
