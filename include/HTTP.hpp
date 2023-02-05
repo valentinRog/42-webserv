@@ -16,7 +16,7 @@ public:
     static const std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
         &string_to_key();
 
-    enum e_method { GET, POST, DELETE, PUT };
+    enum e_method { GET, POST, DELETE };
     static const std::string &method_to_string( e_method );
     static const std::map< std::string, e_method > &string_to_method();
 
@@ -169,7 +169,6 @@ private:
     Response    _get();
     Response    _post();
     Response    _delete();
-    Response    _put();
     std::string _cgi( const std::string &bin_path );
 
     const std::string &_content_type( const std::string &path ) const;

@@ -70,6 +70,10 @@ std::size_t ServerConf::RouteMapper::count( const std::string &s ) const {
     return _routes_table.count( _routes.lower_bound( s ) );
 }
 
+std::string ServerConf::RouteMapper::route_name( const std::string &s ) const {
+    return _routes.lower_bound( s );
+}
+
 std::string ServerConf::RouteMapper::suffix( const std::string &s ) const {
     std::string::size_type l( _routes.lower_bound( s ).size() );
     return s.substr( l, s.size() - l );

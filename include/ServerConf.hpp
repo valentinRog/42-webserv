@@ -44,6 +44,7 @@ public:
         const Route &at( const std::string &s ) const;
         std::map< std::string, Route >::size_type
                     count( const std::string &s ) const;
+        std::string route_name(const std::string &s ) const;
         std::string suffix( const std::string &s ) const;
     };
 

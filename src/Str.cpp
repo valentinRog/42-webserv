@@ -39,6 +39,24 @@ std::string Str::to_upper( const std::string &s ) {
     return res;
 }
 
+std::string Str::trim_left( const std::string &s, const std::string &charset ) {
+    size_t n( s.find_first_not_of( charset ) );
+    return n == std::string::npos ? "" : s.substr( n, s.size() - n );
+}
+
+std::string Str::trim_right( const std::string &s,
+                             const std::string &charset ) {
+    size_t n( s.find_last_not_of( charset ) );
+    return n == std::string::npos ? "" : s.substr( 0, n + 1 );
+}
+
+std::string Str::trim( const std::string &s, const std::string &charset ) {
+    size_t first = s.find_first_not_of( charset );
+    size_t last  = s.find_last_not_of( charset );
+    return first == std::string::npos ? ""
+                                      : s.substr( first, last - first + 1 );
+}
+
 char *Str::dup( const std::string &s ) {
     char *res = new char[s.size() + 1];
     ::strcpy( res, s.c_str() );

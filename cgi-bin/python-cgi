@@ -9,5 +9,5 @@ p = subprocess.Popen(
     ["python3", path],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE)
-output, _ = p.communicate(input=sys.stdin.read().encode())
+output, _ = p.communicate(input=open(0, "rb").read())
 print(output.decode(), end="")

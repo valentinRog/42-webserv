@@ -40,7 +40,6 @@ HTTP::Request::method_to_string( HTTP::Request::e_method method ) {
             m[GET]    = "GET";
             m[POST]   = "POST";
             m[DELETE] = "DELETE";
-            m[PUT]    = "PUT";
             return m;
         }
     };
@@ -57,7 +56,6 @@ HTTP::Request::string_to_method() {
             m[method_to_string( GET )]    = GET;
             m[method_to_string( POST )]   = POST;
             m[method_to_string( DELETE )] = DELETE;
-            m[method_to_string( PUT )]    = PUT;
             return m;
         }
     };
@@ -160,8 +158,9 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
     } else {
         std::string k;
         std::string v;
-        iss >> k >> v;
+        iss >> k;
         k = k.substr( 0, k.size() - 1 );
+        v = iss.str().substr( k.size() + 2, iss.str().size() );
         if ( Request::string_to_key().count( k ) ) {
             _request->_defined_header[Request::string_to_key().at( k )] = v;
         } else {
@@ -317,7 +316,6 @@ std::string HTTP::RequestHandler::make_raw_response() {
     case Request::GET: return _get().stringify();
     case Request::POST: return _post().stringify();
     case Request::DELETE: return _delete().stringify();
-    case Request::PUT: return _put().stringify();
     }
 }
 
@@ -373,15 +371,6 @@ HTTP::Response HTTP::RequestHandler::_delete() {
                            : Response( Response::E500 );
 }
 
-HTTP::Response HTTP::RequestHandler::_put() {
-    std::ofstream f( _path.c_str() );
-    if ( f.is_open() ) {
-        f << _request->content();
-        return Response( Response::E200 );
-    }
-    return Response( Response::E404 );
-}
-
 HTTP::Response HTTP::RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
@@ -391,6 +380,7 @@ HTTP::Response HTTP::RequestHandler::_autoindex() {
     if ( !dir ) return make_error_response( Response::E500 );
     while ( ( file = readdir( dir ) ) != NULL ) {
         content += std::string( "<p><a href='" )
+                   + _conf->route_mapper().route_name( _request->url() ) + '/'
                    + _conf->route_mapper().suffix( _request->url() ) + '/'
                    + file->d_name + "'>" + file->d_name + "</a></p>";
     }
@@ -438,6 +428,7 @@ std::string HTTP::RequestHandler::_cgi( const std::string &bin_path ) {
         ::execve( *args, args, envp );
         ::exit( EXIT_FAILURE );
     }
+    CGI::Env::clear_c_env( envp );
     close( i_pipe[0] );
     close( o_pipe[1] );
     write( i_pipe[1], _request->content().c_str(), _request->content().size() );
@@ -451,11 +442,8 @@ std::string HTTP::RequestHandler::_cgi( const std::string &bin_path ) {
     close( o_pipe[0] );
     s.append( buff, n );
     wait( 0 );
-    CGI::Env::clear_c_env( envp );
-    Response r( Response::E200 );
-    r.set_content( s );
-    r.header[Response::CONTENT_TYPE] = "text/html";
-    return r.stringify();
+    return Str::trim_right( Response( Response::E200 ).stringify(), "\r\n" )
+           + "\r\n" + s;
 }
 
 const std::string &

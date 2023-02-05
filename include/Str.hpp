@@ -22,6 +22,12 @@ struct Str {
 
     static std::string to_upper( const std::string &s );
 
+    static std::string trim_left(const std::string &s, const std::string &charset);
+
+    static std::string trim_right(const std::string &s, const std::string &charset);
+
+    static std::string trim(const std::string &s, const std::string &charset);
+
     static char *dup(const std::string &s);
 
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
