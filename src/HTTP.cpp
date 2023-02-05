@@ -7,7 +7,8 @@ const std::string &HTTP::Request::key_to_string( e_header_key k ) {
     struct f {
         static map_type init() {
             map_type m;
-            m[CONTENT_LENGTH] = "Content-Length";
+            m[CONTENT_LENGTH]    = "Content-Length";
+            m[TRANSFER_ENCODING] = "Transfer-Encoding";
             return m;
         }
     };
@@ -23,7 +24,8 @@ const std::
     struct f {
         static map_type init() {
             map_type m;
-            m[key_to_string( CONTENT_LENGTH )] = CONTENT_LENGTH;
+            m[key_to_string( CONTENT_LENGTH )]    = CONTENT_LENGTH;
+            m[key_to_string( TRANSFER_ENCODING )] = TRANSFER_ENCODING;
             return m;
         }
     };
@@ -87,7 +89,8 @@ const std::string &HTTP::Request::content() const { return _content; }
 
 HTTP::Request::DynamicParser::DynamicParser()
     : _step( REQUEST ),
-      _request( new Request() ) {}
+      _request( new Request() ),
+      _chunked( false ) {}
 
 void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
     if ( _step & ( DONE | FAILED ) ) { return; }
@@ -147,7 +150,12 @@ void HTTP::Request::DynamicParser::_parse_host_line() {
 void HTTP::Request::DynamicParser::_parse_header_line() {
     std::istringstream iss( _line );
     if ( !iss.str().size() ) {
-        if ( _request->_defined_header.count( CONTENT_LENGTH ) ) {
+        if ( _request->_defined_header.count( TRANSFER_ENCODING )
+             && _request->_defined_header.at( TRANSFER_ENCODING )
+                    == "chunked" ) {
+            _chunked = true;
+            _step    = CONTENT;
+        } else if ( _request->_defined_header.count( CONTENT_LENGTH ) ) {
             std::istringstream iss(
                 _request->_defined_header.at( CONTENT_LENGTH ) );
             iss >> _content_length;
@@ -171,10 +179,35 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
 
 void HTTP::Request::DynamicParser::_append_to_content( const char *s,
                                                        size_t      n ) {
-    _request->_content.append(
-        s,
-        std::min( n, _content_length - _request->_content.size() ) );
-    if ( _request->_content.size() >= _content_length ) { _step = DONE; }
+    if ( _chunked ) {
+        _request->_content.append( s, n );
+        if ( Str::ends_with( _request->_content, "\r\n\r\n" ) ) {
+            _unchunk();
+            _step = DONE;
+        }
+    } else {
+        n = std::min( n, _content_length - _request->_content.size() );
+        _request->_content.append( s, n );
+        if ( _request->_content.size() >= _content_length ) { _step = DONE; }
+    }
+}
+
+void HTTP::Request::DynamicParser::_unchunk() {
+    std::string        new_content;
+    std::istringstream chunked_stream( _request->_content );
+    std::string        chunk_size_line;
+    while ( std::getline( chunked_stream, chunk_size_line ) ) {
+        chunk_size_line = Str::trim_right( chunk_size_line, "\r\n" );
+        std::istringstream iss( chunk_size_line );
+        size_t             chunk_size;
+        iss >> chunk_size;
+        std::string chunk_data( chunk_size, ' ' );
+        chunked_stream.read( &chunk_data[0], chunk_size );
+        new_content.append( chunk_data );
+        std::string line_break;
+        std::getline( chunked_stream, line_break );
+    }
+    _request->_content = new_content;
 }
 
 /* -------------------------------- Response -------------------------------- */
@@ -414,21 +447,21 @@ std::string HTTP::RequestHandler::_cgi( const std::string &bin_path ) {
     env[CGI::QUERY_STRING]    = "";
     env[CGI::REDIRECT_STATUS] = "200";
     env[CGI::SCRIPT_FILENAME] = _path;
-    char **envp               = env.c_arr();
-    int    i_pipe[2];
-    int    o_pipe[2];
+    int i_pipe[2];
+    int o_pipe[2];
     ::pipe( i_pipe );
     ::pipe( o_pipe );
     int pid = ::fork();
     if ( !pid ) {
+        char **envp( env.c_arr() );
         ::dup2( i_pipe[0], STDIN_FILENO );
         ::close( i_pipe[1] );
         ::dup2( o_pipe[1], STDOUT_FILENO );
         ::close( o_pipe[0] );
         ::execve( *args, args, envp );
         ::exit( EXIT_FAILURE );
+        CGI::Env::clear_c_env( envp );
     }
-    CGI::Env::clear_c_env( envp );
     close( i_pipe[0] );
     close( o_pipe[1] );
     write( i_pipe[1], _request->content().c_str(), _request->content().size() );

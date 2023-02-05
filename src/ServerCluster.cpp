@@ -110,6 +110,7 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
+    write(STDOUT_FILENO, buff, n );
     _http_parser.add( buff, n );
     update_last_t();
 }
@@ -117,6 +118,7 @@ void ServerCluster::ClientCallback::handle_read() {
 void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
+        std::cout << request->content() << std::endl;
         HTTP::RequestHandler         rh( request, _vhm[request->host()] );
         std::string                  response = rh.make_raw_response();
         write( _fd, response.c_str(), response.size() );

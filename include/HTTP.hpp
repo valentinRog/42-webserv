@@ -1,6 +1,7 @@
 #pragma once
 
 #include "JSON.hpp"
+#include "Option.hpp"
 #include "Ptr.hpp"
 #include "ServerConf.hpp"
 #include "common.h"
@@ -11,7 +12,7 @@ namespace HTTP {
 
 class Request {
 public:
-    enum e_header_key { CONTENT_LENGTH };
+    enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING };
     static const std::string &key_to_string( e_header_key k );
     static const std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
         &string_to_key();
@@ -57,6 +58,7 @@ public:
         e_step                 _step;
         Ptr::Shared< Request > _request;
         size_t                 _content_length;
+        bool                   _chunked;
 
     public:
         DynamicParser();
@@ -71,6 +73,7 @@ public:
         void _parse_host_line();
         void _parse_header_line();
         void _append_to_content( const char *s, size_t n );
+        void _unchunk();
     };
 
     /* -------------------------------------------------------------------------- */
