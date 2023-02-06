@@ -12,7 +12,7 @@ namespace HTTP {
 
 class Request {
 public:
-    enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING };
+    enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING, COOKIE };
     static const std::string &key_to_string( e_header_key k );
     static const std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
         &string_to_key();
@@ -31,12 +31,12 @@ public:
 
 public:
     e_method                                     method() const;
-    const std::string &                          url() const;
-    const std::string &                          version() const;
-    const std::string &                          host() const;
+    const std::string                           &url() const;
+    const std::string                           &version() const;
+    const std::string                           &host() const;
     const std::map< e_header_key, std::string > &defined_header() const;
-    const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
-                       header() const;
+    const std::map< std::string, std::string, Str::CaseInsensitiveCmp >                    &
+    header() const;
     const std::string &content() const;
 
     /* ------------------------- Request::DynamicParser ------------------------- */
@@ -126,7 +126,7 @@ private:
 class RequestHandler {
     Ptr::Shared< Request >    _request;
     Ptr::Shared< ServerConf > _conf;
-    const ServerConf::Route * _route;
+    const ServerConf::Route  *_route;
     std::string               _path;
 
     struct CGI {
@@ -153,7 +153,7 @@ class RequestHandler {
         static const std::string &env_key_to_string( e_env_key key );
 
         struct Env : public std::map< e_env_key, std::string > {
-            char **     c_arr() const;
+            char      **c_arr() const;
             static void clear_c_env( char **envp );
         };
     };

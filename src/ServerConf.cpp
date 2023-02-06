@@ -88,9 +88,10 @@ const char *ServerConf::ConfigError::what() const throw() {
 /* ------------------------------- ServerConf ------------------------------- */
 
 ServerConf::ServerConf(
-    const JSON::Object &                                o,
+    const JSON::Object                                 &o,
     Ptr::Shared< std::map< std::string, std::string > > mime )
-    : _mime( mime ) {
+    : _mime( mime ),
+      _client_max_body_size( std::numeric_limits< std::size_t >::max() ) {
     try {
         ::bzero( &_addr, sizeof _addr );
         _addr.sin_family = AF_INET;
@@ -116,6 +117,10 @@ ServerConf::ServerConf(
                 std::make_pair( it->first,
                                 it->second.unwrap< JSON::Object >() ) );
         }
+        if ( o.count( "client_max_body_size" ) ) {
+            _client_max_body_size
+                = o.at( "client_max_body_size" ).unwrap< JSON::Number >();
+        }
     } catch ( const std::out_of_range & ) {
         throw ConfigError();
     } catch ( const std::bad_cast & ) { throw ConfigError(); }
@@ -131,6 +136,10 @@ const ServerConf::RouteMapper &ServerConf::route_mapper() const {
 
 const std::map< std::string, std::string > &ServerConf::mime() const {
     return *_mime;
+}
+
+size_t ServerConf::client_max_body_size() const {
+    return _client_max_body_size;
 }
 
 /* -------------------------------------------------------------------------- */

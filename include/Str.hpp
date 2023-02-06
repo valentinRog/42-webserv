@@ -30,6 +30,9 @@ struct Str {
 
     static char *dup(const std::string &s);
 
+    template<typename TI, typename TO>
+    static void split(TO& output, const TI& input, const std::string& charset);
+
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
     struct CaseInsensitiveCmp {

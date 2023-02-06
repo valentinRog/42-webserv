@@ -23,11 +23,11 @@ public:
     public:
         Route( const JSON::Object &o );
 
-        const std::string &                         root() const;
-        const std::list< std::string > &            index() const;
-        const std::set< std::string > &             methods() const;
+        const std::string                          &root() const;
+        const std::list< std::string >             &index() const;
+        const std::set< std::string >              &methods() const;
         bool                                        autoindex() const;
-        const std::string &                         redir() const;
+        const std::string                          &redir() const;
         const std::map< std::string, std::string > &cgis() const;
     };
 
@@ -44,7 +44,7 @@ public:
         const Route &at( const std::string &s ) const;
         std::map< std::string, Route >::size_type
                     count( const std::string &s ) const;
-        std::string route_name(const std::string &s ) const;
+        std::string route_name( const std::string &s ) const;
         std::string suffix( const std::string &s ) const;
     };
 
@@ -61,15 +61,17 @@ private:
     std::set< std::string >                             _names;
     RouteMapper                                         _route_mapper;
     Ptr::Shared< std::map< std::string, std::string > > _mime;
+    size_t                                              _client_max_body_size;
 
 public:
-    ServerConf( const JSON::Object &                                o,
+    ServerConf( const JSON::Object                                 &o,
                 Ptr::Shared< std::map< std::string, std::string > > mime );
 
-    const sockaddr_in &                         addr() const;
-    const std::set< std::string > &             names() const;
-    const RouteMapper &                         route_mapper() const;
+    const sockaddr_in                          &addr() const;
+    const std::set< std::string >              &names() const;
+    const RouteMapper                          &route_mapper() const;
     const std::map< std::string, std::string > &mime() const;
+    size_t                                      client_max_body_size() const;
 };
 
 /* -------------------------------------------------------------------------- */

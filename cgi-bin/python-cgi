@@ -2,7 +2,6 @@
 
 import os
 import subprocess
-import sys
 
 path = os.environ.get("PATH_INFO")
 p = subprocess.Popen(

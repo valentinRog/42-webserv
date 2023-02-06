@@ -9,6 +9,7 @@ const std::string &HTTP::Request::key_to_string( e_header_key k ) {
             map_type m;
             m[CONTENT_LENGTH]    = "Content-Length";
             m[TRANSFER_ENCODING] = "Transfer-Encoding";
+            m[COOKIE]            = "Cookie";
             return m;
         }
     };
@@ -26,6 +27,7 @@ const std::
             map_type m;
             m[key_to_string( CONTENT_LENGTH )]    = CONTENT_LENGTH;
             m[key_to_string( TRANSFER_ENCODING )] = TRANSFER_ENCODING;
+            m[key_to_string( COOKIE )]            = COOKIE;
             return m;
         }
     };
@@ -408,7 +410,7 @@ HTTP::Response HTTP::RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
     std::string    contentEnd = "</h1></body></html>";
-    DIR *          dir;
+    DIR           *dir;
     dir = opendir( _path.c_str() );
     if ( !dir ) return make_error_response( Response::E500 );
     while ( ( file = readdir( dir ) ) != NULL ) {
@@ -434,9 +436,9 @@ HTTP::Response HTTP::RequestHandler::_redir() {
 std::string HTTP::RequestHandler::_cgi( const std::string &bin_path ) {
     std::string bp( bin_path );
     std::string p( _path );
-    char *      args[] = { const_cast< char * >( bp.c_str() ),
-                     const_cast< char * >( p.c_str() ),
-                     0 };
+    char       *args[] = { const_cast< char       *>( bp.c_str() ),
+                           const_cast< char       *>( p.c_str() ),
+                           0 };
     CGI::Env    env;
     env[CGI::PATH_INFO]      = _path;
     env[CGI::REQUEST_METHOD] = Request::method_to_string( _request->method() );

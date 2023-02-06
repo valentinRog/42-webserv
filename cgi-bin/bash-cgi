@@ -1,3 +1,5 @@
 #!/bin/bash
 
-bash $PATH_INFO <<< $(cat) | cat
+path=$(echo "$PATH_INFO")
+output=$(bash "$path" < /dev/stdin)
+echo "$output"
