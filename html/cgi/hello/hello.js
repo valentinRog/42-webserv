@@ -1,0 +1,1 @@
+console.log("Content-Type: text/html\n\nHello from js")

@@ -1,8 +1,3 @@
-CONTENT=$(cat << EOF
-<p>Hello from bash</p>
-EOF
-)
-
 echo Content-Type: text/html
 echo
-echo $CONTENT
+echo "<p>Hello from bash 1 fois sur 2</p>"
