@@ -2,6 +2,9 @@
   "mime_file": "mime.json",
   "servers": [
     {
+      "error_pages": {
+        "html/error.html": ["404", "405"]
+      },
       "client_max_body_size": 80,
       "listen": ["0.0.0.0", 80],
       "names": ["localhost"],
@@ -15,7 +18,7 @@
           "root": "html/cgi/form/",
           "methods": ["POST"],
           "cgi": {
-            ".py": "cgi-bin/python-cgi"
+            ".py": "/Users/vrogiste/goinfre/.brew/bin/python3"
           }
         },
         "/upload": {
@@ -28,9 +31,9 @@
           "autoindex": true,
           "methods": ["GET"],
           "cgi": {
-            ".py": "cgi-bin/python-cgi",
+            ".py": "/Users/vrogiste/goinfre/.brew/bin/python3",
             ".php": "/usr/bin/php-cgi",
-            ".sh": "cgi-bin/bash-cgi"
+            ".sh": "/bin/bash"
           }
         },
         "/redir": {

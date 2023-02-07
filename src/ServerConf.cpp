@@ -44,29 +44,32 @@ ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
     for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
         string_to_key().at( it->first );
     }
-    _root = o.at( "root" ).unwrap< JSON::String >();
-    if ( o.count( "index" ) ) {
-        JSON::Array a( o.at( "index" ).unwrap< JSON::Array >() );
+    _root = o.at( key_to_string( ROOT ) ).unwrap< JSON::String >();
+    if ( o.count( key_to_string( INDEX ) ) ) {
+        JSON::Array a( o.at( key_to_string( INDEX ) ).unwrap< JSON::Array >() );
         for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
               it++ ) {
             _index.push_back( it->unwrap< JSON::String >() );
         }
     }
-    if ( o.count( "autoindex" ) ) {
-        _autoindex = o.at( "autoindex" ).unwrap< JSON::Boolean >();
+    if ( o.count( key_to_string( AUTOINDEX ) ) ) {
+        _autoindex
+            = o.at( key_to_string( AUTOINDEX ) ).unwrap< JSON::Boolean >();
     }
-    if ( o.count( "methods" ) ) {
-        JSON::Array a( o.at( "methods" ).unwrap< JSON::Array >() );
+    if ( o.count( key_to_string( METHODS ) ) ) {
+        JSON::Array a(
+            o.at( key_to_string( METHODS ) ).unwrap< JSON::Array >() );
         for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
               it++ ) {
             _methods.insert( it->unwrap< JSON::String >() );
         }
     }
-    if ( o.count( "redir" ) ) {
-        _redir = o.at( "redir" ).unwrap< JSON::String >();
+    if ( o.count( key_to_string( REDIR ) ) ) {
+        _redir = o.at( key_to_string( REDIR ) ).unwrap< JSON::String >();
     }
-    if ( o.count( "cgi" ) ) {
-        JSON::Object cgi_o( o.at( "cgi" ).unwrap< JSON::Object >() );
+    if ( o.count( key_to_string( CGI ) ) ) {
+        JSON::Object cgi_o(
+            o.at( key_to_string( CGI ) ).unwrap< JSON::Object >() );
         for ( JSON::Object::const_iterator it = cgi_o.begin();
               it != cgi_o.end();
               it++ ) {
@@ -137,6 +140,7 @@ const std::string &ServerConf::key_to_string( ServerConf::e_config_key key ) {
             m[SERVER_NAMES]         = "names";
             m[CLIENT_MAX_BODY_SIZE] = "client_max_body_size";
             m[ROUTES]               = "routes";
+            m[ERROR_PAGES]          = "error_pages";
             return m;
         }
     };
@@ -154,6 +158,7 @@ ServerConf::string_to_key() {
             m[key_to_string( SERVER_NAMES )]         = SERVER_NAMES;
             m[key_to_string( CLIENT_MAX_BODY_SIZE )] = CLIENT_MAX_BODY_SIZE;
             m[key_to_string( ROUTES )]               = ROUTES;
+            m[key_to_string( ERROR_PAGES )]          = ERROR_PAGES;
             return m;
         }
     };
@@ -162,7 +167,7 @@ ServerConf::string_to_key() {
 }
 
 ServerConf::ServerConf(
-    const JSON::Object &                                o,
+    const JSON::Object                                 &o,
     Ptr::Shared< std::map< std::string, std::string > > mime )
     : _mime( mime ),
       _client_max_body_size( std::numeric_limits< std::size_t >::max() ) {
@@ -203,6 +208,21 @@ ServerConf::ServerConf(
                 = o.at( key_to_string( CLIENT_MAX_BODY_SIZE ) )
                       .unwrap< JSON::Number >();
         }
+        if ( o.count( key_to_string( ERROR_PAGES ) ) ) {
+            JSON::Object error_pages_o(
+                o.at( key_to_string( ERROR_PAGES ) ).unwrap< JSON::Object >() );
+            for ( JSON::Object::const_iterator it( error_pages_o.begin() );
+                  it != error_pages_o.end();
+                  it++ ) {
+                JSON::Array a( it->second.unwrap< JSON::Array >() );
+                for ( JSON::Array::const_iterator it2( a.begin() );
+                      it2 != a.end();
+                      it2++ ) {
+                    _code_to_error_page[it2->unwrap< JSON::String >()]
+                        = it->first;
+                }
+            }
+        }
     } catch ( const std::out_of_range & ) {
         throw ConfigError();
     } catch ( const std::bad_cast & ) { throw ConfigError(); }
@@ -218,6 +238,11 @@ const ServerConf::RouteMapper &ServerConf::route_mapper() const {
 
 const std::map< std::string, std::string > &ServerConf::mime() const {
     return *_mime;
+}
+
+const std::map< std::string, std::string > &
+ServerConf::code_to_error_page() const {
+    return _code_to_error_page;
 }
 
 size_t ServerConf::client_max_body_size() const {

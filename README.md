@@ -9,8 +9,6 @@
 
 #Fix ////////////
 
-#custom error pages
-
 #fcntl ?
 
 #Set a default file to answer if the request is a directory

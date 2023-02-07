@@ -3,7 +3,6 @@ CONTENT=$(cat << EOF
 EOF
 )
 
-echo Content-Length: $(echo -n $CONTENT | wc -c)
 echo Content-Type: text/html
 echo
 echo $CONTENT

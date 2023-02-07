@@ -327,18 +327,38 @@ HTTP::RequestHandler::RequestHandler( Ptr::Shared< Request >    request,
 }
 
 HTTP::Response
-HTTP::RequestHandler::make_error_response( HTTP::Response::e_error_code code ) {
-    Response r( code );
-    r.set_content( "<h1>" + HTTP::Response::error_code_to_string( code ).first
-                   + "</h1>" );
+HTTP::RequestHandler::make_error_response( HTTP::Response::e_error_code code,
+                                           const ServerConf            *conf ) {
+    Response    r( code );
+    std::string content;
+    if ( conf
+         && conf->code_to_error_page().count(
+             Response::error_code_to_string( code ).first ) ) {
+        std::string        page( conf->code_to_error_page().at(
+            Response::error_code_to_string( code ).first ) );
+        std::cout << "page=" << page << std::endl;
+        std::ostringstream oss;
+        std::ifstream      f( page.c_str() );
+        oss << f.rdbuf();
+        content = oss.str();
+        r.set_content( content );
+    } else {
+        r.set_content( "<h1>"
+                       + HTTP::Response::error_code_to_string( code ).first
+                       + "</h1>" );
+    }
     return r;
 }
 
 std::string HTTP::RequestHandler::make_raw_response() {
-    if ( !_route ) { return make_error_response( Response::E404 ).stringify(); }
+    if ( !_route ) {
+        return make_error_response( Response::E404, _conf.operator->() )
+            .stringify();
+    }
     if ( !_route->methods().count(
              Request::method_to_string( _request->method() ) ) ) {
-        return make_error_response( Response::E405 ).stringify();
+        return make_error_response( Response::E405, _conf.operator->() )
+            .stringify();
     }
     for ( std::map< std::string, std::string >::const_iterator it
           = _route->cgis().begin();
@@ -357,8 +377,9 @@ std::string HTTP::RequestHandler::make_raw_response() {
 HTTP::Response HTTP::RequestHandler::_get() {
     struct stat s;
     if ( stat( _path.c_str(), &s ) ) {
-        return errno == ENOENT ? make_error_response( Response::E404 )
-                               : make_error_response( Response::E500 );
+        return errno == ENOENT
+                   ? make_error_response( Response::E404, _conf.operator->() )
+                   : make_error_response( Response::E500, _conf.operator->() );
     }
     if ( s.st_mode & S_IFDIR ) {
         for ( std::list< std::string >::const_iterator it(
@@ -377,10 +398,12 @@ HTTP::Response HTTP::RequestHandler::_get() {
             }
         }
         if ( _route->autoindex() ) { return _autoindex(); }
-        return make_error_response( Response::E404 );
+        return make_error_response( Response::E404, _conf.operator->() );
     }
     std::ifstream f( _path.c_str() );
-    if ( !f.is_open() ) { return make_error_response( Response::E404 ); }
+    if ( !f.is_open() ) {
+        return make_error_response( Response::E404, _conf.operator->() );
+    }
     Response r( Response::E200 );
     r.set_content( std::string( ( std::istreambuf_iterator< char >( f ) ),
                                 std::istreambuf_iterator< char >() ) );
@@ -412,7 +435,8 @@ HTTP::Response HTTP::RequestHandler::_autoindex() {
     std::string    contentEnd = "</h1></body></html>";
     DIR           *dir;
     dir = opendir( _path.c_str() );
-    if ( !dir ) return make_error_response( Response::E500 );
+    if ( !dir )
+        return make_error_response( Response::E500, _conf.operator->() );
     while ( ( file = readdir( dir ) ) != NULL ) {
         content += std::string( "<p><a href='" )
                    + _conf->route_mapper().route_name( _request->url() ) + '/'
@@ -451,8 +475,15 @@ std::string HTTP::RequestHandler::_cgi( const std::string &bin_path ) {
     env[CGI::SCRIPT_FILENAME] = _path;
     int i_pipe[2];
     int o_pipe[2];
-    ::pipe( i_pipe );
-    ::pipe( o_pipe );
+    if ( ::pipe( i_pipe ) == -1 ) {
+        return RequestHandler::make_error_response( Response::E500,
+                                                    _conf.operator->() )
+            .stringify();
+    }
+    if ( ::pipe( o_pipe ) == -1 ) {
+        close( i_pipe[0] );
+        close( i_pipe[1] );
+    }
     int pid = ::fork();
     if ( !pid ) {
         char **envp( env.c_arr() );

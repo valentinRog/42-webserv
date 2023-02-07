@@ -162,7 +162,8 @@ public:
     RequestHandler( Ptr::Shared< Request >    request,
                     Ptr::Shared< ServerConf > conf );
 
-    static Response make_error_response( Response::e_error_code code );
+    static Response make_error_response( Response::e_error_code code,
+                                         const ServerConf      *conf = 0 );
 
     std::string make_raw_response();
 
