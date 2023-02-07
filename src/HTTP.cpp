@@ -227,7 +227,7 @@ HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
             m[E404] = std::make_pair( "404", "Not Found" );
             m[E405] = std::make_pair( "405", "Method Not Allowed" );
             m[E408] = std::make_pair( "408", "Request Timeout" );
-            m[E500] = std::make_pair( "500", "InternalServer Error" );
+            m[E500] = std::make_pair( "500", "Internal Server Error" );
             m[E502] = std::make_pair( "502", "Bad Gateway" );
             m[E505] = std::make_pair( "505", "Version Not Supported" );
             return m;

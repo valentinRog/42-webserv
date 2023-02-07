@@ -61,16 +61,17 @@ RequestHandler::make_error_response( HTTP::Response::e_error_code code,
     HTTP::Response r( code );
     std::string    content;
     if ( conf && conf->code_to_error_page().count( code ) ) {
-        std::string page( conf->code_to_error_page().at(code ));
+        std::string        page( conf->code_to_error_page().at( code ) );
         std::ostringstream oss;
         std::ifstream      f( page.c_str() );
         oss << f.rdbuf();
         content = oss.str();
         r.set_content( content );
     } else {
-        r.set_content( "<h1>"
-                       + HTTP::Response::error_code_to_string( code ).first
-                       + "</h1>" );
+        r.set_content(
+            "<h1>" + HTTP::Response::error_code_to_string( code ).first
+            + "</h1>" + "<p>"
+            + HTTP::Response::error_code_to_string( code ).second + "</p>" );
     }
     return r;
 }
@@ -89,14 +90,15 @@ std::string RequestHandler::make_raw_response() {
           = _route->cgis().begin();
           it != _route->cgis().end();
           it++ ) {
-        if ( Str::ends_with( _path, it->first ) ) { 
-            try { 
+        if ( Str::ends_with( _path, it->first ) ) {
+            try {
                 std::string cgi = _cgi( it->second );
-                return (cgi);
+                return ( cgi );
+            } catch ( const std::runtime_error & ) {
+                return make_error_response( HTTP::Response::E500,
+                                            _conf.operator->() )
+                    .stringify();
             }
-            catch(std::runtime_error & runTimeError) { 
-                std::cout << runTimeError.what() << std::endl;
-                return make_error_response( HTTP::Response::E405, _conf.operator->() ).stringify(); }
         }
     }
     if ( _route->redir().size() ) { return _redir().stringify(); }
@@ -210,41 +212,50 @@ std::string RequestHandler::_cgi( const std::string &bin_path ) {
     env[CGI::SCRIPT_FILENAME] = _path;
     int i_pipe[2];
     int o_pipe[2];
-    if ( ::pipe( i_pipe ) == -1 ) {
-        return RequestHandler::make_error_response( HTTP::Response::E500,
-                                                    _conf.operator->() )
-            .stringify();
-    }
+    if ( ::pipe( i_pipe ) == -1 ) { throw std::runtime_error( "pipe" ); }
     if ( ::pipe( o_pipe ) == -1 ) {
-        if (close(i_pipe[0]) == -1) { throw std::runtime_error("pipe"); }
-        if (close(i_pipe[1]) == -1) { throw std::runtime_error("pipe"); }
+        close( i_pipe[0] );
+        close( i_pipe[1] );
+        throw std::runtime_error( "pipe" );
     }
     int pid = ::fork();
-    if (!pid) {
-        char **envp(env.c_arr());
-        if (::dup2(i_pipe[0], STDIN_FILENO) == -1) { throw std::runtime_error("dup2"); }
-        if (::close(i_pipe[1]) == -1) { throw std::runtime_error("pipe"); }
-        if (::dup2(o_pipe[1], STDOUT_FILENO) == -1) { throw std::runtime_error("pipe"); }
-        if (::close(o_pipe[0]) == -1) { throw std::runtime_error("pipe"); }
-        if (::execve(*args, args, envp) == -1) { throw std::runtime_error("execve"); }
-        ::exit(EXIT_FAILURE);
-        CGI::Env::clear_c_env(envp);
+    if ( pid == -1 ) { throw std::runtime_error( "fork" ); }
+    if ( !pid ) {
+        char **envp( env.c_arr() );
+        if ( ::dup2( i_pipe[0], STDIN_FILENO ) == -1 ) {
+            throw std::runtime_error( "dup2" );
+        }
+        ::close( i_pipe[1] );
+        if ( ::dup2( o_pipe[1], STDOUT_FILENO ) == -1 ) {
+            throw std::runtime_error( "pipe" );
+        }
+        ::close( o_pipe[0] );
+        ::execve( *args, args, envp );
+        ::exit( EXIT_FAILURE );
+        CGI::Env::clear_c_env( envp );
     }
-    if (close(i_pipe[0]) == -1) { throw std::runtime_error("pipe"); }
-    if (close(o_pipe[1]) == -1) { throw std::runtime_error("pipe"); }
-    if (write(i_pipe[1], _request->content().c_str(), _request->content().size()) == -1) {
-        throw std::runtime_error("write");
+    close( i_pipe[0] );
+    close( o_pipe[1] );
+    if ( write( i_pipe[1],
+                _request->content().c_str(),
+                _request->content().size() )
+         == -1 ) {
+        throw std::runtime_error( "write" );
     }
-    if (close(i_pipe[1]) == -1) { throw std::runtime_error("pipe"); }
+    close( i_pipe[1] );
     char        buff[1024];
     size_t      n;
     std::string s;
     while ( ( n = ::read( o_pipe[0], buff, 1024 ) ) == 1024 ) {
         s.append( buff, n );
     }
-    if (close(o_pipe[0]) == -1) { throw std::runtime_error("pipe"); }
+    ::close( o_pipe[0] );
     s.append( buff, n );
-    if (wait(0) == -1) { throw std::runtime_error("wait"); }
+    int exit_code;
+    wait( &exit_code );
+    if ( !WIFEXITED( exit_code ) | WEXITSTATUS( exit_code ) ) {
+        throw std::runtime_error( "execve" );
+    }
     return Str::trim_right( HTTP::Response( HTTP::Response::E200 ).stringify(),
                             "\r\n" )
            + "\r\n" + s;
