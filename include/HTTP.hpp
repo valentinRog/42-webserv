@@ -44,12 +44,13 @@ public:
     class DynamicParser {
     public:
         enum e_step {
-            REQUEST = 1 << 0,
-            HOST    = 1 << 1,
-            HEADER  = 1 << 2,
-            CONTENT = 1 << 3,
-            DONE    = 1 << 4,
-            FAILED  = 1 << 5
+            REQUEST    = 1 << 0,
+            HOST       = 1 << 1,
+            HEADER     = 1 << 2,
+            CONTENT    = 1 << 3,
+            DONE       = 1 << 4,
+            FAILED     = 1 << 5,
+            CHUNK_SIZE = 1 << 6
         };
 
     private:
@@ -72,8 +73,8 @@ public:
         void _parse_request_line();
         void _parse_host_line();
         void _parse_header_line();
+        void _parse_chunk_size_line();
         void _append_to_content( const char *s, size_t n );
-        void _unchunk();
     };
 
     /* -------------------------------------------------------------------------- */

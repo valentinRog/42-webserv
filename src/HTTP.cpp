@@ -95,23 +95,24 @@ HTTP::Request::DynamicParser::DynamicParser()
       _chunked( false ) {}
 
 void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
-    if ( _step & ( DONE | FAILED ) ) { return; }
     const char *p( s );
-    if ( _step != CONTENT ) {
-        for ( ; p < s + n && !( _step & ( CONTENT | FAILED ) ); p++ ) {
-            if ( *p == '\r' || *p == '\n' ) {
-                _sep += *p;
-                if ( _sep == "\r\n" ) {
-                    _parse_line();
-                    _line.clear();
-                    _sep.clear();
+    while ( !( _step & ( DONE | FAILED ) ) ) {
+        if ( _step != CONTENT ) {
+            for ( ; p < s + n && !( _step & ( CONTENT | FAILED ) ); p++ ) {
+                if ( *p == '\r' || *p == '\n' ) {
+                    _sep += *p;
+                    if ( _sep == "\r\n" ) {
+                        _parse_line();
+                        _line.clear();
+                        _sep.clear();
+                    }
+                } else {
+                    _line += *p;
                 }
-            } else {
-                _line += *p;
             }
         }
+        if ( _step == CONTENT ) { _append_to_content( p, n - ( p - s ) ); }
     }
-    if ( _step == CONTENT ) { _append_to_content( p, n - ( p - s ) ); }
 }
 
 HTTP::Request::DynamicParser::e_step
@@ -128,6 +129,7 @@ void HTTP::Request::DynamicParser::_parse_line() {
     case REQUEST: _parse_request_line(); break;
     case HOST: _parse_host_line(); break;
     case HEADER: _parse_header_line(); break;
+    case CHUNK_SIZE: _parse_chunk_size_line(); break;
     default: break;
     }
 }
@@ -156,7 +158,7 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
              && _request->_defined_header.at( TRANSFER_ENCODING )
                     == "chunked" ) {
             _chunked = true;
-            _step    = CONTENT;
+            _step    = CHUNK_SIZE;
         } else if ( _request->_defined_header.count( CONTENT_LENGTH ) ) {
             std::istringstream iss(
                 _request->_defined_header.at( CONTENT_LENGTH ) );
@@ -179,37 +181,23 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
     }
 }
 
-void HTTP::Request::DynamicParser::_append_to_content( const char *s,
-                                                       size_t      n ) {
-    if ( _chunked ) {
-        _request->_content.append( s, n );
-        if ( Str::ends_with( _request->_content, "\r\n\r\n" ) ) {
-            _unchunk();
-            _step = DONE;
-        }
-    } else {
-        n = std::min( n, _content_length - _request->_content.size() );
-        _request->_content.append( s, n );
-        if ( _request->_content.size() >= _content_length ) { _step = DONE; }
-    }
+void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
+    _chunked = true;
+    std::istringstream iss( _line );
+    iss >> std::hex >> _content_length;
+    std::cout << _content_length << std::endl;
+    _step = _content_length ? CONTENT : DONE;
 }
 
-void HTTP::Request::DynamicParser::_unchunk() {
-    std::string        new_content;
-    std::istringstream chunked_stream( _request->_content );
-    std::string        chunk_size_line;
-    while ( std::getline( chunked_stream, chunk_size_line ) ) {
-        chunk_size_line = Str::trim_right( chunk_size_line, "\r\n" );
-        std::istringstream iss( chunk_size_line );
-        size_t             chunk_size;
-        iss >> chunk_size;
-        std::string chunk_data( chunk_size, ' ' );
-        chunked_stream.read( &chunk_data[0], chunk_size );
-        new_content.append( chunk_data );
-        std::string line_break;
-        std::getline( chunked_stream, line_break );
+void HTTP::Request::DynamicParser::_append_to_content( const char *s,
+                                                       size_t      n ) {
+    n = std::min( n, _content_length - _request->_content.size() );
+    _request->_content.append( s, n );
+    if ( _chunked ) {
+        _step = CHUNK_SIZE;
+    } else if ( _request->_content.size() >= _content_length ) {
+        _step = DONE;
     }
-    _request->_content = new_content;
 }
 
 /* -------------------------------- Response -------------------------------- */
