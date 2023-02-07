@@ -38,7 +38,7 @@
             ".sh": "/bin/sh"
           }
         },
-        "/redir": {
+        "/redir/calcule": {
           "root": "html",
           "methods": ["GET"],
           "redir": "http://noboardchess.org"
