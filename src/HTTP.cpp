@@ -177,17 +177,6 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
             _request->_header[k] = v;
         }
     }
-    if (_request->defined_header().count(Request::COOKIE)) {
-        std::string str = _request->defined_header().at(Request::COOKIE);
-        std::list<std::string> li;
-        Str::split(li, str, ";");
-        for (std::list<std::string>::iterator it = li.begin(); it != li.end(); ++it) {
-            size_t pos = it->find("=");
-            std::string key = it->substr(0, pos);
-            std::string value = it->substr(pos + 1);
-            _request->_cookies[key] = value;
-        }
-    }
 }
 
 void HTTP::Request::DynamicParser::_append_to_content( const char *s,
@@ -298,7 +287,6 @@ HTTP::Response::_header_key_name() {
             m[CONTENT_TYPE]   = "Content-Type";
             m[CONTENT_LENGTH] = "Content-Length";
             m[LOCATION]       = "Location";
-            m[COOKIE]         = "Set-Cookie";
             return m;
         }
     };

@@ -89,6 +89,8 @@ class Parse {
     static const std::set< char > &whitespaces();
     static const std::set< char > &tokens();
 
+    Parse();
+
     static std::queue< std::string > _lexer( const std::string &s );
     static Wrapper                   _parse( std::queue< std::string > &q );
     static String  _parse_string( std::queue< std::string > &q );

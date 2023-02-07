@@ -38,10 +38,18 @@
             ".sh": "/bin/sh"
           }
         },
-        "/redir/calcule": {
+        "/redir": {
           "root": "html",
           "methods": ["GET"],
           "redir": "http://noboardchess.org"
+        },
+        "/cookies": {
+          "root": "html/cgi",
+          "index": ["cookies.py"],
+          "methods": ["GET"],
+          "cgi": {
+            ".py": "/usr/bin/python3"
+          }
         }
       }
     }

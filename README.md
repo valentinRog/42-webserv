@@ -3,15 +3,9 @@
 
 #max client body size
 
-#Protections on syscall and allocations
-
 #Clean and universal way to upload files
 
-#Fix ////////////
-
 #fcntl ?
-
-#Set a default file to answer if the request is a directory
 
 #CGI env variables
 

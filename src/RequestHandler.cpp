@@ -16,6 +16,7 @@ RequestHandler::CGI::env_key_to_string( RequestHandler::CGI::e_env_key key ) {
             m[REDIRECT_STATUS] = "REDIRECT_STATUS";
             m[SCRIPT_NAME]     = "SCRIPT_NAME";
             m[SCRIPT_FILENAME] = "SCRIPT_FILENAME";
+            m[HTTP_COOKIE]     = "HTTP_COOKIE";
             return m;
         }
     };
@@ -212,6 +213,10 @@ std::string RequestHandler::_cgi( const std::string &bin_path ) {
     env[CGI::QUERY_STRING]    = "";
     env[CGI::REDIRECT_STATUS] = "200";
     env[CGI::SCRIPT_FILENAME] = _path;
+    if ( _request->defined_header().count( HTTP::Request::COOKIE ) ) {
+        env[CGI::HTTP_COOKIE]
+            = _request->defined_header().at( HTTP::Request::COOKIE );
+    }
     int i_pipe[2];
     int o_pipe[2];
     if ( ::pipe( i_pipe ) == -1 ) { throw std::runtime_error( "pipe" ); }

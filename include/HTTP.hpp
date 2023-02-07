@@ -25,7 +25,6 @@ public:
     std::string                           _url;
     std::string                           _version;
     std::string                           _host;
-    std::map< std::string, std::string >  _cookies;
     std::map< e_header_key, std::string > _defined_header;
     std::map< std::string, std::string, Str::CaseInsensitiveCmp > _header;
     std::string                                                   _content;
@@ -83,7 +82,7 @@ public:
 /* -------------------------------- Response -------------------------------- */
 
 struct Response : public Trait::Stringify {
-    enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION, COOKIE };
+    enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION };
 
     enum e_error_code {
         E200,
