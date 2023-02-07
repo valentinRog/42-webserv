@@ -13,6 +13,10 @@ class ServerCluster {
     static const time_t _connection_timeout = 30;
     static const time_t _idle_timeout       = 5;
 
+    enum e_config_key { MIME_FILE, SERVERS };
+    static const std::string &key_to_string( e_config_key key );
+    static const std::map< std::string, e_config_key > &string_to_key();
+
     /* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 
     class VirtualHostMapper {
@@ -35,13 +39,13 @@ class ServerCluster {
 
     class ClientCallback : public CallbackBase {
         int                          _fd;
-        ServerCluster               &_server;
+        ServerCluster &              _server;
         HTTP::Request::DynamicParser _http_parser;
-        const VirtualHostMapper     &_vhm;
+        const VirtualHostMapper &    _vhm;
 
     public:
         ClientCallback( int                      fd,
-                        ServerCluster           &server,
+                        ServerCluster &          server,
                         const VirtualHostMapper &vhm,
                         time_t                   con_to  = _connection_timeout,
                         time_t                   idle_to = _idle_timeout );

@@ -4,7 +4,7 @@
     {
       "client_max_body_size": 80,
       "listen": ["0.0.0.0", 80],
-      "server_names": ["localhost"],
+      "names": ["localhost"],
       "routes": {
         "/": {
           "root": "html",

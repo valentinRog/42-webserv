@@ -2,7 +2,48 @@
 
 /* ---------------------------- ServerConf::Route --------------------------- */
 
+const std::string &
+ServerConf::Route::key_to_string( ServerConf::Route::e_config_key key ) {
+    typedef std::map< e_config_key, std::string > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[ROOT]      = "root";
+            m[INDEX]     = "index";
+            m[METHODS]   = "methods";
+            m[CGI]       = "cgi";
+            m[AUTOINDEX] = "autoindex";
+            m[REDIR]     = "redir";
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m.at( key );
+}
+
+const std::map< std::string, ServerConf::Route::e_config_key > &
+ServerConf::Route::string_to_key() {
+    typedef std::map< std::string, e_config_key > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[key_to_string( ROOT )]      = ROOT;
+            m[key_to_string( INDEX )]     = INDEX;
+            m[key_to_string( METHODS )]   = METHODS;
+            m[key_to_string( CGI )]       = CGI;
+            m[key_to_string( AUTOINDEX )] = AUTOINDEX;
+            m[key_to_string( REDIR )]     = REDIR;
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m;
+}
+
 ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
+    for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
+        string_to_key().at( it->first );
+    }
     _root = o.at( "root" ).unwrap< JSON::String >();
     if ( o.count( "index" ) ) {
         JSON::Array a( o.at( "index" ).unwrap< JSON::Array >() );
@@ -87,29 +128,69 @@ const char *ServerConf::ConfigError::what() const throw() {
 
 /* ------------------------------- ServerConf ------------------------------- */
 
+const std::string &ServerConf::key_to_string( ServerConf::e_config_key key ) {
+    typedef std::map< e_config_key, std::string > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[LISTEN]               = "listen";
+            m[SERVER_NAMES]         = "names";
+            m[CLIENT_MAX_BODY_SIZE] = "client_max_body_size";
+            m[ROUTES]               = "routes";
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m.at( key );
+}
+
+const std::map< std::string, ServerConf::e_config_key > &
+ServerConf::string_to_key() {
+    typedef std::map< std::string, e_config_key > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[key_to_string( LISTEN )]               = LISTEN;
+            m[key_to_string( SERVER_NAMES )]         = SERVER_NAMES;
+            m[key_to_string( CLIENT_MAX_BODY_SIZE )] = CLIENT_MAX_BODY_SIZE;
+            m[key_to_string( ROUTES )]               = ROUTES;
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m;
+}
+
 ServerConf::ServerConf(
-    const JSON::Object                                 &o,
+    const JSON::Object &                                o,
     Ptr::Shared< std::map< std::string, std::string > > mime )
     : _mime( mime ),
       _client_max_body_size( std::numeric_limits< std::size_t >::max() ) {
     try {
+        for ( JSON::Object::const_iterator it( o.begin() ); it != o.end();
+              it++ ) {
+            string_to_key().at( it->first );
+        }
         ::bzero( &_addr, sizeof _addr );
         _addr.sin_family = AF_INET;
-        JSON::Array a( o.at( "listen" ).unwrap< JSON::Array >() );
+        JSON::Array a(
+            o.at( key_to_string( LISTEN ) ).unwrap< JSON::Array >() );
         _addr.sin_port = htons( a[1].unwrap< JSON::Number >() );
         if ( ( _addr.sin_addr.s_addr = ::inet_addr(
                    std::string( a[0].unwrap< JSON::String >() ).c_str() ) )
              == INADDR_NONE ) {
             throw std::runtime_error( "inet_addr" );
         }
-        if ( o.count( "server_names" ) ) {
-            JSON::Array a( o.at( "server_names" ).unwrap< JSON::Array >() );
+        if ( o.count( key_to_string( SERVER_NAMES ) ) ) {
+            JSON::Array a(
+                o.at( key_to_string( SERVER_NAMES ) ).unwrap< JSON::Array >() );
             for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
                   it++ ) {
                 _names.insert( it->unwrap< JSON::String >() );
             }
         }
-        JSON::Object routes_o( o.at( "routes" ).unwrap< JSON::Object >() );
+        JSON::Object routes_o(
+            o.at( key_to_string( ROUTES ) ).unwrap< JSON::Object >() );
         for ( JSON::Object::const_iterator it( routes_o.begin() );
               it != routes_o.end();
               it++ ) {
@@ -117,9 +198,10 @@ ServerConf::ServerConf(
                 std::make_pair( it->first,
                                 it->second.unwrap< JSON::Object >() ) );
         }
-        if ( o.count( "client_max_body_size" ) ) {
+        if ( o.count( key_to_string( CLIENT_MAX_BODY_SIZE ) ) ) {
             _client_max_body_size
-                = o.at( "client_max_body_size" ).unwrap< JSON::Number >();
+                = o.at( key_to_string( CLIENT_MAX_BODY_SIZE ) )
+                      .unwrap< JSON::Number >();
         }
     } catch ( const std::out_of_range & ) {
         throw ConfigError();

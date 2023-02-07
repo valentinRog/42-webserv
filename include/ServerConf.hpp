@@ -13,6 +13,10 @@ public:
     /* ---------------------------- ServerConf::Route --------------------------- */
 
     class Route {
+        enum e_config_key { ROOT, INDEX, METHODS, CGI, AUTOINDEX, REDIR };
+        static const std::string &key_to_string( e_config_key key );
+        static const std::map< std::string, e_config_key > &string_to_key();
+
         std::string                          _root;
         std::list< std::string >             _index;
         std::set< std::string >              _methods;
@@ -23,11 +27,11 @@ public:
     public:
         Route( const JSON::Object &o );
 
-        const std::string                          &root() const;
-        const std::list< std::string >             &index() const;
-        const std::set< std::string >              &methods() const;
+        const std::string &                         root() const;
+        const std::list< std::string > &            index() const;
+        const std::set< std::string > &             methods() const;
         bool                                        autoindex() const;
-        const std::string                          &redir() const;
+        const std::string &                         redir() const;
         const std::map< std::string, std::string > &cgis() const;
     };
 
@@ -64,12 +68,16 @@ private:
     size_t                                              _client_max_body_size;
 
 public:
-    ServerConf( const JSON::Object                                 &o,
+    enum e_config_key { LISTEN, SERVER_NAMES, CLIENT_MAX_BODY_SIZE, ROUTES };
+    static const std::string &key_to_string( e_config_key key );
+    static const std::map< std::string, e_config_key > &string_to_key();
+
+    ServerConf( const JSON::Object &                                o,
                 Ptr::Shared< std::map< std::string, std::string > > mime );
 
-    const sockaddr_in                          &addr() const;
-    const std::set< std::string >              &names() const;
-    const RouteMapper                          &route_mapper() const;
+    const sockaddr_in &                         addr() const;
+    const std::set< std::string > &             names() const;
+    const RouteMapper &                         route_mapper() const;
     const std::map< std::string, std::string > &mime() const;
     size_t                                      client_max_body_size() const;
 };

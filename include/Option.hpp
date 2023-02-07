@@ -1,3 +1,5 @@
+#pragma once
+
 #include "common.h"
 
 template < typename T > class Option {
@@ -8,22 +10,14 @@ template < typename T > class Option {
     };
 
 public:
-    Option() : _is_some( false ) {}
+    Option();
+    Option( const T &value );
+    Option &operator=( const T &value );
+    bool    is_some() const;
+    bool    is_none() const;
 
-    Option( const T &value ) : _is_some( true ) { _data = value; }
-
-    Option &operator=( const T &value ) {
-        _data    = value;
-        _is_some = true;
-        return *this;
-    }
-
-    bool is_some() const { return _is_some; }
-
-    bool is_none() const { return !_is_some; }
-
-    T unwrap() const {
-        if ( !_is_some ) { throw std::runtime_error( "Option is None" ); }
-        return _data;
-    }
+    T &      unwrap();
+    const T &unwrap() const;
 };
+
+#include "Option.tpp"

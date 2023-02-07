@@ -1,5 +1,37 @@
 #include "ServerCluster.hpp"
 
+/* ------------------------------ ServerCluster ----------------------------- */
+
+const std::string &
+ServerCluster::key_to_string( ServerCluster::e_config_key key ) {
+    typedef std::map< e_config_key, std::string > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[MIME_FILE] = "mime_file";
+            m[SERVERS]   = "servers";
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m.at( key );
+}
+
+const std::map< std::string, ServerCluster::e_config_key > &
+ServerCluster::string_to_key() {
+    typedef std::map< std::string, e_config_key > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[key_to_string( MIME_FILE )] = MIME_FILE;
+            m[key_to_string( SERVERS )]   = SERVERS;
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m;
+}
+
 /* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 
 ServerCluster::VirtualHostMapper::VirtualHostMapper(
@@ -24,10 +56,14 @@ void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
 /* ------------------------------ ServerCluster ----------------------------- */
 
 ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
+    for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
+        string_to_key().at( it->first );
+    }
     Ptr::Shared< std::map< std::string, std::string > > mime(
         new std::map< std::string, std::string > );
     JSON::Object mime_o(
-        JSON::Parse::from_file( o.at( "mime_file" ).unwrap< JSON::String >() )
+        JSON::Parse::from_file(
+            o.at( key_to_string( MIME_FILE ) ).unwrap< JSON::String >() )
             .unwrap< JSON::Object >() );
     for ( JSON::Object::const_iterator it( mime_o.begin() ); it != mime_o.end();
           it++ ) {
@@ -37,7 +73,7 @@ ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
             ( *mime )[nit->unwrap< JSON::String >()] = it->first;
         }
     }
-    JSON::Array               a( o.at( "servers" ).unwrap< JSON::Array >() );
+    JSON::Array a( o.at( key_to_string( SERVERS ) ).unwrap< JSON::Array >() );
     std::vector< ServerConf > v;
     for ( JSON::Array::const_iterator it( a.begin() ); it != a.end(); it++ ) {
         v.push_back( ServerConf( it->unwrap< JSON::Object >(), mime ) );
@@ -110,7 +146,7 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
-    write(STDOUT_FILENO, buff, n );
+    write( STDOUT_FILENO, buff, n );
     _http_parser.add( buff, n );
     update_last_t();
 }
@@ -119,8 +155,8 @@ void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         std::cout << request->content() << std::endl;
-        HTTP::RequestHandler         rh( request, _vhm[request->host()] );
-        std::string                  response = rh.make_raw_response();
+        HTTP::RequestHandler rh( request, _vhm[request->host()] );
+        std::string          response = rh.make_raw_response();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );
     }

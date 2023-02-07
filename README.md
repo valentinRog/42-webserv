@@ -3,8 +3,6 @@
 
 #max client body size
 
-#Configuration error handling
-
 #Protections on syscall and allocations
 
 #Clean and universal way to upload files
