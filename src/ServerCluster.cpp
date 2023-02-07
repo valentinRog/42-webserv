@@ -155,7 +155,7 @@ void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         std::cout << request->content() << std::endl;
-        HTTP::RequestHandler rh( request, _vhm[request->host()] );
+        RequestHandler rh( request, _vhm[request->host()] );
         std::string          response = rh.make_raw_response();
         write( _fd, response.c_str(), response.size() );
         _server._q.remove( _fd );

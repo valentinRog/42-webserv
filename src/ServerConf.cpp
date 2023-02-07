@@ -218,7 +218,9 @@ ServerConf::ServerConf(
                 for ( JSON::Array::const_iterator it2( a.begin() );
                       it2 != a.end();
                       it2++ ) {
-                    _code_to_error_page[it2->unwrap< JSON::String >()]
+                    _code_to_error_page[HTTP::Response::string_to_error_code()
+                                            .at(
+                                                it2->unwrap< JSON::String >() )]
                         = it->first;
                 }
             }
@@ -240,7 +242,7 @@ const std::map< std::string, std::string > &ServerConf::mime() const {
     return *_mime;
 }
 
-const std::map< std::string, std::string > &
+const std::map< HTTP::Response::e_error_code, std::string > &
 ServerConf::code_to_error_page() const {
     return _code_to_error_page;
 }

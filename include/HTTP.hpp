@@ -3,7 +3,7 @@
 #include "JSON.hpp"
 #include "Option.hpp"
 #include "Ptr.hpp"
-#include "ServerConf.hpp"
+#include "Str.hpp"
 #include "common.h"
 
 namespace HTTP {
@@ -98,6 +98,7 @@ struct Response : public Trait::Stringify {
     };
     static const std::pair< std::string, std::string > &
     error_code_to_string( e_error_code code );
+    static const std::map< std::string, e_error_code > &string_to_error_code();
 
     static const std::string &version();
 
@@ -119,63 +120,6 @@ public:
 
 private:
     static const std::map< e_header_key, std::string > &_header_key_name();
-};
-
-/* ----------------------------- RequestHandler ----------------------------- */
-
-class RequestHandler {
-    Ptr::Shared< Request >    _request;
-    Ptr::Shared< ServerConf > _conf;
-    const ServerConf::Route  *_route;
-    std::string               _path;
-
-    struct CGI {
-        enum e_env_key {
-            PATH_INFO,
-            REQUEST_METHOD,
-            CONTENT_TYPE,
-            CONTENT_LENGTH,
-            QUERY_STRING,
-            HTTP_COOKIE,
-            HTTP_REFERER,
-            HTTP_USER_AGENT,
-            REMOTE_ADDR,
-            REMOTE_HOST,
-            REMOTE_PORT,
-            SERVER_NAME,
-            SERVER_SOFTWARE,
-            SERVER_PROTOCOL,
-            SERVER_PORT,
-            SCRIPT_FILENAME,
-            SCRIPT_NAME,
-            REDIRECT_STATUS
-        };
-        static const std::string &env_key_to_string( e_env_key key );
-
-        struct Env : public std::map< e_env_key, std::string > {
-            char      **c_arr() const;
-            static void clear_c_env( char **envp );
-        };
-    };
-
-public:
-    RequestHandler( Ptr::Shared< Request >    request,
-                    Ptr::Shared< ServerConf > conf );
-
-    static Response make_error_response( Response::e_error_code code,
-                                         const ServerConf      *conf = 0 );
-
-    std::string make_raw_response();
-
-private:
-    Response    _redir();
-    Response    _autoindex();
-    Response    _get();
-    Response    _post();
-    Response    _delete();
-    std::string _cgi( const std::string &bin_path );
-
-    const std::string &_content_type( const std::string &path ) const;
 };
 
 /* -------------------------------------------------------------------------- */

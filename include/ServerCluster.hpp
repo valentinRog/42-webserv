@@ -2,6 +2,7 @@
 
 #include "EventQueue.hpp"
 #include "HTTP.hpp"
+#include "RequestHandler.hpp"
 #include "ServerConf.hpp"
 #include "common.h"
 
@@ -39,13 +40,13 @@ class ServerCluster {
 
     class ClientCallback : public CallbackBase {
         int                          _fd;
-        ServerCluster &              _server;
+        ServerCluster               &_server;
         HTTP::Request::DynamicParser _http_parser;
-        const VirtualHostMapper &    _vhm;
+        const VirtualHostMapper     &_vhm;
 
     public:
         ClientCallback( int                      fd,
-                        ServerCluster &          server,
+                        ServerCluster           &server,
                         const VirtualHostMapper &vhm,
                         time_t                   con_to  = _connection_timeout,
                         time_t                   idle_to = _idle_timeout );
