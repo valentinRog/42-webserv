@@ -175,9 +175,11 @@ HTTP::Response RequestHandler::_autoindex() {
         return make_error_response( HTTP::Response::E500, _conf.operator->() );
     while ( ( file = readdir( dir ) ) != NULL ) {
         content += std::string( "<p><a href='" )
-                   + _conf->route_mapper().route_name( _request->url() ) + '/'
-                   + _conf->route_mapper().suffix( _request->url() ) + '/'
-                   + file->d_name + "'>" + file->d_name + "</a></p>";
+                   + _conf->route_mapper().route_name( _request->url() )
+                   + _conf->route_mapper().suffix( _request->url() );
+        if ( !Str::ends_with( content, "/" ) ) { content += '/'; }
+        content
+            += std::string( file->d_name ) + "'>" + file->d_name + "</a></p>";
     }
     content += contentEnd;
     closedir( dir );

@@ -110,7 +110,7 @@ ServerConf::RouteMapper::at( const std::string &s ) const {
     return _routes_table.at( _routes.lower_bound( s ) );
 }
 
-std::size_t ServerConf::RouteMapper::count( const std::string &s ) const {
+size_t ServerConf::RouteMapper::count( const std::string &s ) const {
     return _routes_table.count( _routes.lower_bound( s ) );
 }
 

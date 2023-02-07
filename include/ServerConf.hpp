@@ -47,10 +47,9 @@ public:
 
         void         insert( const std::pair< std::string, Route > &v );
         const Route &at( const std::string &s ) const;
-        std::map< std::string, Route >::size_type
-                    count( const std::string &s ) const;
-        std::string route_name( const std::string &s ) const;
-        std::string suffix( const std::string &s ) const;
+        size_t       count( const std::string &s ) const;
+        std::string  route_name( const std::string &s ) const;
+        std::string  suffix( const std::string &s ) const;
     };
 
     /* ------------------ ServerConf::RouteMapper::ConfigError ------------------ */
