@@ -37,14 +37,14 @@ public:
 /* --------------------------------- Number --------------------------------- */
 
 class Number : public Value {
-    double _n;
+    size_t _n;
 
 public:
-    Number( double n );
+    Number( size_t n );
     Value      *clone() const;
     std::string stringify() const;
 
-    operator double() const;
+    operator size_t() const;
 };
 
 /* --------------------------------- Object --------------------------------- */

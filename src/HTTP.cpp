@@ -1,5 +1,89 @@
 #include "HTTP.hpp"
 
+/* -------------------------------- Response -------------------------------- */
+
+const std::pair< std::string, std::string > &
+HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
+    struct f {
+        static std::map< e_error_code, std::pair< std::string, std::string > >
+        init() {
+            std::map< e_error_code, std::pair< std::string, std::string > > m;
+            m[E200] = std::make_pair( "200", "OK" );
+            m[E301] = std::make_pair( "301", "Move Permanently" );
+            m[E400] = std::make_pair( "400", "Bad Request" );
+            m[E403] = std::make_pair( "403", "Forbidden" );
+            m[E404] = std::make_pair( "404", "Not Found" );
+            m[E405] = std::make_pair( "405", "Method Not Allowed" );
+            m[E408] = std::make_pair( "408", "Request Timeout" );
+            m[E413] = std::make_pair( "413", "Request Entity Too Large" );
+            m[E500] = std::make_pair( "500", "Internal Server Error" );
+            m[E502] = std::make_pair( "502", "Bad Gateway" );
+            m[E505] = std::make_pair( "505", "Version Not Supported" );
+            return m;
+        }
+    };
+    static const std::map< e_error_code, std::pair< std::string, std::string > >
+        m( f::init() );
+    return m.at( code );
+}
+
+const std::map< std::string, HTTP::Response::e_error_code > &
+HTTP::Response::string_to_error_code() {
+    typedef std::map< std::string, e_error_code > map_type;
+    struct f {
+        static map_type init() {
+            map_type m;
+            m[error_code_to_string( E200 ).first] = E200;
+            m[error_code_to_string( E301 ).first] = E301;
+            m[error_code_to_string( E400 ).first] = E400;
+            m[error_code_to_string( E403 ).first] = E403;
+            m[error_code_to_string( E404 ).first] = E404;
+            m[error_code_to_string( E405 ).first] = E405;
+            m[error_code_to_string( E408 ).first] = E408;
+            m[error_code_to_string( E413 ).first] = E413;
+            m[error_code_to_string( E500 ).first] = E500;
+            m[error_code_to_string( E502 ).first] = E502;
+            m[error_code_to_string( E505 ).first] = E505;
+            return m;
+        }
+    };
+    static const map_type m( f::init() );
+    return m;
+}
+
+const std::string &HTTP::Response::version() {
+    static const std::string s( "HTTP/1.1" );
+    return s;
+}
+
+std::string HTTP::Response::stringify() const {
+    std::string s( version() + ' ' + error_code_to_string( code ).first + ' '
+                   + error_code_to_string( code ).second + "\r\n" );
+    for ( std::map< e_header_key, std::string >::const_iterator it
+          = header.begin();
+          it != header.end();
+          it++ ) {
+        s += _header_key_name().at( it->first ) + ": " + it->second + "\r\n";
+    }
+    return s + "\r\n" + _content;
+}
+
+const std::map< HTTP::Response::e_header_key, std::string > &
+HTTP::Response::_header_key_name() {
+    struct f {
+        static std::map< e_header_key, std::string > init() {
+            std::map< e_header_key, std::string > m;
+            m[HOST]           = "Host";
+            m[CONTENT_TYPE]   = "Content-Type";
+            m[CONTENT_LENGTH] = "Content-Length";
+            m[LOCATION]       = "Location";
+            return m;
+        }
+    };
+    static const std::map< e_header_key, std::string > m( f::init() );
+    return m;
+}
+
 /* --------------------------------- Request -------------------------------- */
 
 const std::string &HTTP::Request::key_to_string( e_header_key k ) {
@@ -124,6 +208,10 @@ Ptr::Shared< HTTP::Request > HTTP::Request::DynamicParser::request() {
     return _request;
 }
 
+HTTP::Response::e_error_code HTTP::Request::DynamicParser::error() const {
+    return _error.unwrap();
+}
+
 void HTTP::Request::DynamicParser::_parse_line() {
     switch ( _step ) {
     case REQUEST: _parse_request_line(); break;
@@ -191,6 +279,11 @@ void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
 
 void HTTP::Request::DynamicParser::_append_to_content( const char *s,
                                                        size_t      n ) {
+    if ( _request->_content.size() + n > 10 ) {
+        _step  = FAILED;
+        _error = Response::E413;
+        return;
+    }
     n = std::min( n, _content_length - _request->_content.size() );
     _request->_content.append( s, n );
     if ( _chunked ) {
@@ -198,88 +291,6 @@ void HTTP::Request::DynamicParser::_append_to_content( const char *s,
     } else if ( _request->_content.size() >= _content_length ) {
         _step = DONE;
     }
-}
-
-/* -------------------------------- Response -------------------------------- */
-
-const std::pair< std::string, std::string > &
-HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
-    struct f {
-        static std::map< e_error_code, std::pair< std::string, std::string > >
-        init() {
-            std::map< e_error_code, std::pair< std::string, std::string > > m;
-            m[E200] = std::make_pair( "200", "OK" );
-            m[E301] = std::make_pair( "301", "Move Permanently" );
-            m[E400] = std::make_pair( "400", "Bad Request" );
-            m[E403] = std::make_pair( "403", "Forbidden" );
-            m[E404] = std::make_pair( "404", "Not Found" );
-            m[E405] = std::make_pair( "405", "Method Not Allowed" );
-            m[E408] = std::make_pair( "408", "Request Timeout" );
-            m[E500] = std::make_pair( "500", "Internal Server Error" );
-            m[E502] = std::make_pair( "502", "Bad Gateway" );
-            m[E505] = std::make_pair( "505", "Version Not Supported" );
-            return m;
-        }
-    };
-    static const std::map< e_error_code, std::pair< std::string, std::string > >
-        m( f::init() );
-    return m.at( code );
-}
-
-const std::map< std::string, HTTP::Response::e_error_code > &
-HTTP::Response::string_to_error_code() {
-    typedef std::map< std::string, e_error_code > map_type;
-    struct f {
-        static map_type init() {
-            map_type m;
-            m[error_code_to_string( E200 ).first] = E200;
-            m[error_code_to_string( E301 ).first] = E301;
-            m[error_code_to_string( E400 ).first] = E400;
-            m[error_code_to_string( E403 ).first] = E403;
-            m[error_code_to_string( E404 ).first] = E404;
-            m[error_code_to_string( E405 ).first] = E405;
-            m[error_code_to_string( E408 ).first] = E408;
-            m[error_code_to_string( E500 ).first] = E500;
-            m[error_code_to_string( E502 ).first] = E502;
-            m[error_code_to_string( E505 ).first] = E505;
-            return m;
-        }
-    };
-    static const map_type m( f::init() );
-    return m;
-}
-
-const std::string &HTTP::Response::version() {
-    static const std::string s( "HTTP/1.1" );
-    return s;
-}
-
-std::string HTTP::Response::stringify() const {
-    std::string s( version() + ' ' + error_code_to_string( code ).first + ' '
-                   + error_code_to_string( code ).second + "\r\n" );
-    for ( std::map< e_header_key, std::string >::const_iterator it
-          = header.begin();
-          it != header.end();
-          it++ ) {
-        s += _header_key_name().at( it->first ) + ": " + it->second + "\r\n";
-    }
-    return s + "\r\n" + _content;
-}
-
-const std::map< HTTP::Response::e_header_key, std::string > &
-HTTP::Response::_header_key_name() {
-    struct f {
-        static std::map< e_header_key, std::string > init() {
-            std::map< e_header_key, std::string > m;
-            m[HOST]           = "Host";
-            m[CONTENT_TYPE]   = "Content-Type";
-            m[CONTENT_LENGTH] = "Content-Length";
-            m[LOCATION]       = "Location";
-            return m;
-        }
-    };
-    static const std::map< e_header_key, std::string > m( f::init() );
-    return m;
 }
 
 /* -------------------------------------------------------------------------- */

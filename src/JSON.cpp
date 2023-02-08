@@ -20,7 +20,7 @@ JSON::String::operator std::string() const { return _s; }
 
 /* --------------------------------- Number --------------------------------- */
 
-JSON::Number::Number( double n ) : _n( n ) {}
+JSON::Number::Number( size_t n ) : _n( n ) {}
 
 JSON::Value *JSON::Number::clone() const { return new JSON::Number( *this ); }
 
@@ -30,7 +30,7 @@ std::string JSON::Number::stringify() const {
     return oss.str();
 }
 
-JSON::Number::operator double() const { return _n; }
+JSON::Number::operator size_t() const { return _n; }
 
 /* --------------------------------- Object --------------------------------- */
 
@@ -159,7 +159,7 @@ JSON::Number JSON::Parse::_parse_number( std::queue< std::string > &q ) {
     if ( !q.size() ) { throw ParsingError(); }
     q.pop();
     std::stringstream ss( s );
-    double            n;
+    size_t            n;
     ss >> n;
     return Number( n );
 }

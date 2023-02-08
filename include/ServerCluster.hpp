@@ -27,6 +27,7 @@ class ServerCluster {
     public:
         VirtualHostMapper( const ServerConf &default_conf );
 
+        Ptr::Shared< ServerConf > get_default() const;
         Ptr::Shared< ServerConf > operator[]( const std::string &s ) const;
         void                      add( const ServerConf &conf );
     };

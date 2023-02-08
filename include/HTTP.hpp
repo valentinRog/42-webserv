@@ -8,6 +8,50 @@
 
 namespace HTTP {
 
+/* -------------------------------- Response -------------------------------- */
+
+struct Response : public Trait::Stringify {
+    enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION };
+
+    enum e_error_code {
+        E200,
+        E301,
+        E400,
+        E403,
+        E404,
+        E405,
+        E408,
+        E413,
+        E500,
+        E502,
+        E505
+    };
+    static const std::pair< std::string, std::string > &
+    error_code_to_string( e_error_code code );
+    static const std::map< std::string, e_error_code > &string_to_error_code();
+
+    static const std::string &version();
+
+    Response( e_error_code code ) : code( code ) {}
+
+    e_error_code                          code;
+    std::map< e_header_key, std::string > header;
+
+private:
+    std::string _content;
+
+public:
+    void set_content( const std::string &s ) {
+        _content               = s;
+        header[CONTENT_LENGTH] = Str::from( _content.size() );
+    }
+
+    std::string stringify() const;
+
+private:
+    static const std::map< e_header_key, std::string > &_header_key_name();
+};
+
 /* --------------------------------- Request -------------------------------- */
 
 class Request {
@@ -54,12 +98,13 @@ public:
         };
 
     private:
-        std::string            _line;
-        std::string            _sep;
-        e_step                 _step;
-        Ptr::Shared< Request > _request;
-        size_t                 _content_length;
-        bool                   _chunked;
+        std::string                            _line;
+        std::string                            _sep;
+        e_step                                 _step;
+        Ptr::Shared< Request >                 _request;
+        size_t                                 _content_length;
+        bool                                   _chunked;
+        Option< HTTP::Response::e_error_code > _error;
 
     public:
         DynamicParser();
@@ -67,6 +112,8 @@ public:
         void                   add( const char *s, size_t n );
         e_step                 step() const;
         Ptr::Shared< Request > request();
+
+        HTTP::Response::e_error_code error() const;
 
     private:
         void _parse_line();
@@ -78,49 +125,6 @@ public:
     };
 
     /* -------------------------------------------------------------------------- */
-};
-
-/* -------------------------------- Response -------------------------------- */
-
-struct Response : public Trait::Stringify {
-    enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION };
-
-    enum e_error_code {
-        E200,
-        E301,
-        E400,
-        E403,
-        E404,
-        E405,
-        E408,
-        E500,
-        E502,
-        E505
-    };
-    static const std::pair< std::string, std::string > &
-    error_code_to_string( e_error_code code );
-    static const std::map< std::string, e_error_code > &string_to_error_code();
-
-    static const std::string &version();
-
-    Response( e_error_code code ) : code( code ) {}
-
-    e_error_code                          code;
-    std::map< e_header_key, std::string > header;
-
-private:
-    std::string _content;
-
-public:
-    void set_content( const std::string &s ) {
-        _content               = s;
-        header[CONTENT_LENGTH] = Str::from( _content.size() );
-    }
-
-    std::string stringify() const;
-
-private:
-    static const std::map< e_header_key, std::string > &_header_key_name();
 };
 
 /* -------------------------------------------------------------------------- */
