@@ -180,7 +180,7 @@ HTTP::Request::DynamicParser::DynamicParser()
 
 void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
     const char *p( s );
-    while ( !( _step & ( DONE | FAILED ) ) ) {
+    while ( !( _step & ( DONE | FAILED ) ) && p < s + n ) {
         if ( _step != CONTENT ) {
             for ( ; p < s + n && !( _step & ( CONTENT | FAILED ) ); p++ ) {
                 if ( *p == '\r' || *p == '\n' ) {
@@ -195,7 +195,7 @@ void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
                 }
             }
         }
-        if ( _step == CONTENT ) { _append_to_content( p, n - ( p - s ) ); }
+        if ( _step == CONTENT ) { p += _append_to_content( p, n - ( p - s ) ); }
     }
 }
 
@@ -277,12 +277,12 @@ void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
     _step = _content_length ? CONTENT : DONE;
 }
 
-void HTTP::Request::DynamicParser::_append_to_content( const char *s,
-                                                       size_t      n ) {
+size_t HTTP::Request::DynamicParser::_append_to_content( const char *s,
+                                                         size_t      n ) {
     if ( _request->_content.size() + n > 10 ) {
         _step  = FAILED;
         _error = Response::E413;
-        return;
+        return 0;
     }
     n = std::min( n, _content_length - _request->_content.size() );
     _request->_content.append( s, n );
@@ -291,6 +291,7 @@ void HTTP::Request::DynamicParser::_append_to_content( const char *s,
     } else if ( _request->_content.size() >= _content_length ) {
         _step = DONE;
     }
+    return n;
 }
 
 /* -------------------------------------------------------------------------- */

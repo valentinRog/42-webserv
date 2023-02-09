@@ -116,12 +116,12 @@ public:
         HTTP::Response::e_error_code error() const;
 
     private:
-        void _parse_line();
-        void _parse_request_line();
-        void _parse_host_line();
-        void _parse_header_line();
-        void _parse_chunk_size_line();
-        void _append_to_content( const char *s, size_t n );
+        void   _parse_line();
+        void   _parse_request_line();
+        void   _parse_host_line();
+        void   _parse_header_line();
+        void   _parse_chunk_size_line();
+        size_t _append_to_content( const char *s, size_t n );
     };
 
     /* -------------------------------------------------------------------------- */
