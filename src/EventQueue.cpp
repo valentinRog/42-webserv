@@ -6,7 +6,8 @@ CallbackBase::CallbackBase( time_t con_to, time_t idle_to )
     : _con_to( con_to ),
       _t0( time( 0 ) ),
       _idle_to( idle_to ),
-      _last_t( time( 0 ) ) {}
+      _last_t( time( 0 ) ),
+      _kill_me( false ) {}
 
 CallbackBase::~CallbackBase() {}
 
@@ -14,6 +15,8 @@ time_t CallbackBase::con_to() const { return _con_to; }
 time_t CallbackBase::t0() const { return _t0; }
 time_t CallbackBase::idle_to() const { return _idle_to; }
 time_t CallbackBase::last_t() const { return _last_t; }
+bool   CallbackBase::get_kill_me() const { return _kill_me; }
+void   CallbackBase::kill_me() { _kill_me = true; }
 void   CallbackBase::update_last_t() { _last_t = time( 0 ); }
 
 /* ----------------------------- EventQueueBase ----------------------------- */
@@ -60,7 +63,9 @@ void EventQueue::wait() {
     int n_events = epoll_wait( _epoll_fd, _events, _max_events, 1000 );
     if ( n_events == -1 ) { throw std::runtime_error( "epoll_wait" ); }
     for ( int i = 0; i < n_events; i++ ) {
-        if ( _callbacks.find( _events[i].data.fd ) == _callbacks.end() ) {
+        if ( !_callbacks.count( _events[i].data.fd ) ) { continue; }
+        if ( _callbacks.at( _events[i].data.fd )->get_kill_me() ) {
+            remove( _events[i].data.fd );
             continue;
         }
         if ( _events[i].events & EPOLLIN ) {

@@ -18,7 +18,7 @@
           "root": "html/cgi/form/",
           "methods": ["POST"],
           "cgi": {
-            ".py": "/Users/vrogiste/goinfre/.brew/bin/python3"
+            ".py": "/usr/bin/python3"
           }
         },
         "/upload": {
@@ -31,9 +31,9 @@
           "autoindex": true,
           "methods": ["GET"],
           "cgi": {
-            ".py": "/Users/vrogiste/goinfre/.brew/bin/python3",
+            ".py": "/usr/bin/python3",
             ".php": "/usr/bin/php-cgi",
-            ".js": "/Users/vrogiste/goinfre/.brew/bin/node",
+            ".js": "/usr/local/bin/node",
             ".rb": "/usr/bin/ruby",
             ".sh": "/bin/sh"
           }

@@ -56,6 +56,28 @@ const std::string &HTTP::Response::version() {
     return s;
 }
 
+HTTP::Response
+HTTP::Response::make_error_response( HTTP::Response::e_error_code code ) {
+    Response r( code );
+    r.set_content( "<h1>" + Response::error_code_to_string( code ).first
+                   + "</h1>" + "<p>"
+                   + Response::error_code_to_string( code ).second + "</p>" );
+    return r;
+}
+
+HTTP::Response HTTP::Response::make_error_response(
+    e_error_code                                 code,
+    const std::map< e_error_code, std::string > &error_pages ) {
+    if ( !error_pages.count( code ) ) { return make_error_response( code ); }
+    std::string        page( error_pages.at( code ) );
+    std::ostringstream oss;
+    std::ifstream      f( page.c_str() );
+    oss << f.rdbuf();
+    Response r( code );
+    r.set_content( oss.str() );
+    return r;
+}
+
 std::string HTTP::Response::stringify() const {
     std::string s( version() + ' ' + error_code_to_string( code ).first + ' '
                    + error_code_to_string( code ).second + "\r\n" );

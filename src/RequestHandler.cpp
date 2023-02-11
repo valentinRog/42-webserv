@@ -56,35 +56,18 @@ RequestHandler::RequestHandler( Ptr::Shared< HTTP::Request > request,
     }
 }
 
-HTTP::Response
-RequestHandler::make_error_response( HTTP::Response::e_error_code code,
-                                     const ServerConf            *conf ) {
-    HTTP::Response r( code );
-    std::string    content;
-    if ( conf && conf->code_to_error_page().count( code ) ) {
-        std::string        page( conf->code_to_error_page().at( code ) );
-        std::ostringstream oss;
-        std::ifstream      f( page.c_str() );
-        oss << f.rdbuf();
-        content = oss.str();
-        r.set_content( content );
-    } else {
-        r.set_content(
-            "<h1>" + HTTP::Response::error_code_to_string( code ).first
-            + "</h1>" + "<p>"
-            + HTTP::Response::error_code_to_string( code ).second + "</p>" );
-    }
-    return r;
-}
-
 std::string RequestHandler::make_raw_response() {
     if ( !_route ) {
-        return make_error_response( HTTP::Response::E404, _conf.operator->() )
+        return HTTP::Response::make_error_response(
+                   HTTP::Response::E404,
+                   _conf->code_to_error_page() )
             .stringify();
     }
     if ( !_route->methods().count(
              HTTP::Request::method_to_string( _request->method() ) ) ) {
-        return make_error_response( HTTP::Response::E405, _conf.operator->() )
+        return HTTP::Response::make_error_response(
+                   HTTP::Response::E405,
+                   _conf->code_to_error_page() )
             .stringify();
     }
     for ( std::map< std::string, std::string >::const_iterator it
@@ -96,8 +79,9 @@ std::string RequestHandler::make_raw_response() {
                 std::string cgi = _cgi( it->second );
                 return ( cgi );
             } catch ( const std::runtime_error & ) {
-                return make_error_response( HTTP::Response::E500,
-                                            _conf.operator->() )
+                return HTTP::Response::make_error_response(
+                           HTTP::Response::E500,
+                           _conf->code_to_error_page() )
                     .stringify();
             }
         }
@@ -113,10 +97,12 @@ std::string RequestHandler::make_raw_response() {
 HTTP::Response RequestHandler::_get() {
     struct stat s;
     if ( stat( _path.c_str(), &s ) ) {
-        return errno == ENOENT ? make_error_response( HTTP::Response::E404,
-                                                      _conf.operator->() )
-                               : make_error_response( HTTP::Response::E500,
-                                                      _conf.operator->() );
+        return errno == ENOENT ? HTTP::Response::make_error_response(
+                   HTTP::Response::E404,
+                   _conf->code_to_error_page() )
+                               : HTTP::Response::make_error_response(
+                                   HTTP::Response::E500,
+                                   _conf->code_to_error_page() );
     }
     if ( s.st_mode & S_IFDIR ) {
         for ( std::list< std::string >::const_iterator it(
@@ -135,11 +121,15 @@ HTTP::Response RequestHandler::_get() {
             }
         }
         if ( _route->autoindex() ) { return _autoindex(); }
-        return make_error_response( HTTP::Response::E404, _conf.operator->() );
+        return HTTP::Response::make_error_response(
+            HTTP::Response::E404,
+            _conf->code_to_error_page() );
     }
     std::ifstream f( _path.c_str() );
     if ( !f.is_open() ) {
-        return make_error_response( HTTP::Response::E404, _conf.operator->() );
+        return HTTP::Response::make_error_response(
+            HTTP::Response::E404,
+            _conf->code_to_error_page() );
     }
     HTTP::Response r( HTTP::Response::E200 );
     r.set_content( std::string( ( std::istreambuf_iterator< char >( f ) ),
@@ -170,10 +160,12 @@ HTTP::Response RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
     std::string    contentEnd = "</h1></body></html>";
-    DIR           *dir;
+    DIR *          dir;
     dir = opendir( _path.c_str() );
     if ( !dir )
-        return make_error_response( HTTP::Response::E500, _conf.operator->() );
+        return HTTP::Response::make_error_response(
+            HTTP::Response::E500,
+            _conf->code_to_error_page() );
     while ( ( file = readdir( dir ) ) != NULL ) {
         content += std::string( "<p><a href='" )
                    + _conf->route_mapper().route_name( _request->url() )
@@ -199,9 +191,9 @@ HTTP::Response RequestHandler::_redir() {
 std::string RequestHandler::_cgi( const std::string &bin_path ) {
     std::string bp( bin_path );
     std::string p( _path );
-    char       *args[] = { const_cast< char       *>( bp.c_str() ),
-                           const_cast< char       *>( p.c_str() ),
-                           0 };
+    char *      args[] = { const_cast< char * >( bp.c_str() ),
+                     const_cast< char * >( p.c_str() ),
+                     0 };
     CGI::Env    env;
     env[CGI::PATH_INFO] = _path;
     env[CGI::REQUEST_METHOD]

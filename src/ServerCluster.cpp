@@ -135,13 +135,11 @@ void ServerCluster::_bind( uint16_t port ) {
 /* ---------------------- ServerCluster::ClientCallback --------------------- */
 
 ServerCluster::ClientCallback::ClientCallback( int                      fd,
-                                               ServerCluster           &server,
                                                const VirtualHostMapper &vhm,
                                                time_t                   con_to,
                                                time_t idle_to )
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
-      _server( server ),
       _vhm( vhm ) {}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
@@ -158,33 +156,28 @@ void ServerCluster::ClientCallback::handle_read() {
 
 void ServerCluster::ClientCallback::handle_write() {
     if ( _http_parser.step() == HTTP::Request::DynamicParser::FAILED ) {
-        std::string response( RequestHandler::make_error_response(
+        std::string response( HTTP::Response::make_error_response(
                                   _http_parser.error(),
-                                  _vhm.get_default().operator->() )
+                                  _vhm.get_default()->code_to_error_page() )
                                   .stringify() );
-        std::cout << write( _fd, response.c_str(), response.size() )
-                  << std::endl;
-        std::cout << response << std::endl;
-        _server._q.remove( _fd );
+        kill_me();
     } else if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         std::cout << request->content() << std::endl;
         RequestHandler rh( request, _vhm[request->host()] );
         std::string    response = rh.make_raw_response();
         write( _fd, response.c_str(), response.size() );
-        _server._q.remove( _fd );
+        kill_me();
     }
 }
 
-void ServerCluster::ClientCallback::handle_timeout() {
-    _server._q.remove( _fd );
-}
+void ServerCluster::ClientCallback::handle_timeout() { kill_me(); }
 
 /* ---------------------- ServerCluster::SocketCallback --------------------- */
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster     &server )
+                                               ServerCluster &    server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -200,13 +193,13 @@ void ServerCluster::SocketCallback::handle_read() {
     int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type          &m( _server._vh.at( addr.sin_port ) );
+    const map_type &         m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {
         close( fd );
     } else {
-        _server._q.add( fd, ClientCallback( fd, _server, it->second ) );
+        _server._q.add( fd, ClientCallback( fd, it->second ) );
     }
 }
 

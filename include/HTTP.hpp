@@ -27,7 +27,7 @@ struct Response : public Trait::Stringify {
         E505
     };
     static const std::pair< std::string, std::string > &
-    error_code_to_string( e_error_code code );
+                                                        error_code_to_string( e_error_code code );
     static const std::map< std::string, e_error_code > &string_to_error_code();
 
     static const std::string &version();
@@ -36,6 +36,11 @@ struct Response : public Trait::Stringify {
 
     e_error_code                          code;
     std::map< e_header_key, std::string > header;
+
+    static Response make_error_response( e_error_code code );
+    static Response make_error_response(
+        e_error_code                                 code,
+        const std::map< e_error_code, std::string > &error_pages );
 
 private:
     std::string _content;
@@ -75,12 +80,12 @@ public:
 
 public:
     e_method                                     method() const;
-    const std::string                           &url() const;
-    const std::string                           &version() const;
-    const std::string                           &host() const;
+    const std::string &                          url() const;
+    const std::string &                          version() const;
+    const std::string &                          host() const;
     const std::map< e_header_key, std::string > &defined_header() const;
-    const std::map< std::string, std::string, Str::CaseInsensitiveCmp >                    &
-    header() const;
+    const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
+                       header() const;
     const std::string &content() const;
 
     /* ------------------------- Request::DynamicParser ------------------------- */

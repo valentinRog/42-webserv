@@ -11,6 +11,7 @@ class CallbackBase : public Trait::CloneCRTP< CallbackBase > {
     time_t _t0;
     time_t _idle_to;
     time_t _last_t;
+    bool   _kill_me;
 
 public:
     CallbackBase( time_t con_to, time_t idle_to );
@@ -26,9 +27,11 @@ public:
     time_t t0() const;
     time_t idle_to() const;
     time_t last_t() const;
+    bool   get_kill_me() const;
 
 protected:
     void update_last_t();
+    void kill_me();
 };
 
 /* ----------------------------- EventQueueBase ----------------------------- */

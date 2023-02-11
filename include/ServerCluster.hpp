@@ -41,13 +41,11 @@ class ServerCluster {
 
     class ClientCallback : public CallbackBase {
         int                          _fd;
-        ServerCluster               &_server;
         HTTP::Request::DynamicParser _http_parser;
-        const VirtualHostMapper     &_vhm;
+        const VirtualHostMapper &    _vhm;
 
     public:
         ClientCallback( int                      fd,
-                        ServerCluster           &server,
                         const VirtualHostMapper &vhm,
                         time_t                   con_to  = _connection_timeout,
                         time_t                   idle_to = _idle_timeout );

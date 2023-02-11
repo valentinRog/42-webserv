@@ -8,7 +8,7 @@
 class RequestHandler {
     Ptr::Shared< HTTP::Request > _request;
     Ptr::Shared< ServerConf >    _conf;
-    const ServerConf::Route     *_route;
+    const ServerConf::Route *    _route;
     std::string                  _path;
 
     struct CGI {
@@ -35,7 +35,7 @@ class RequestHandler {
         static const std::string &env_key_to_string( e_env_key key );
 
         struct Env : public std::map< e_env_key, std::string > {
-            char      **c_arr() const;
+            char **     c_arr() const;
             static void clear_c_env( char **envp );
         };
     };
@@ -43,10 +43,6 @@ class RequestHandler {
 public:
     RequestHandler( Ptr::Shared< HTTP::Request > request,
                     Ptr::Shared< ServerConf >    conf );
-
-    static HTTP::Response
-    make_error_response( HTTP::Response::e_error_code code,
-                         const ServerConf            *conf = 0 );
 
     std::string make_raw_response();
 
