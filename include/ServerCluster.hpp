@@ -10,7 +10,7 @@
 
 class ServerCluster {
     static const int    _max_events         = 4000;
-    static const size_t _buffer_size        = 1024;
+    static const size_t _buffer_size        = 8192 ;
     static const time_t _connection_timeout = 30;
     static const time_t _idle_timeout       = 5;
 

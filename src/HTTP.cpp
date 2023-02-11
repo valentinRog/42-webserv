@@ -116,6 +116,7 @@ const std::string &HTTP::Request::key_to_string( e_header_key k ) {
             m[CONTENT_LENGTH]    = "Content-Length";
             m[TRANSFER_ENCODING] = "Transfer-Encoding";
             m[COOKIE]            = "Cookie";
+            m[CONNECTION]        = "Connection";
             return m;
         }
     };
@@ -134,6 +135,7 @@ const std::
             m[key_to_string( CONTENT_LENGTH )]    = CONTENT_LENGTH;
             m[key_to_string( TRANSFER_ENCODING )] = TRANSFER_ENCODING;
             m[key_to_string( COOKIE )]            = COOKIE;
+            m[key_to_string( CONNECTION )]        = CONNECTION;
             return m;
         }
     };
@@ -173,6 +175,8 @@ HTTP::Request::string_to_method() {
     return m;
 }
 
+HTTP::Request::Request() : _keep_alive( false ) {}
+
 HTTP::Request::e_method HTTP::Request::method() const { return _method; }
 
 const std::string &HTTP::Request::url() const { return _url; }
@@ -190,6 +194,8 @@ const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
 HTTP::Request::header() const {
     return _header;
 }
+
+bool HTTP::Request::keep_alive() const { return _keep_alive; }
 
 const std::string &HTTP::Request::content() const { return _content; }
 
@@ -264,6 +270,10 @@ void HTTP::Request::DynamicParser::_parse_host_line() {
 void HTTP::Request::DynamicParser::_parse_header_line() {
     std::istringstream iss( _line );
     if ( !iss.str().size() ) {
+        if ( _request->defined_header().count( CONNECTION )
+             && _request->defined_header().at( CONNECTION ) == "keep-alive" ) {
+            _request->_keep_alive = true;
+        }
         if ( _request->_defined_header.count( TRANSFER_ENCODING )
              && _request->_defined_header.at( TRANSFER_ENCODING )
                     == "chunked" ) {

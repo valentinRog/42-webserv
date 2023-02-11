@@ -8,6 +8,35 @@
 
 namespace HTTP {
 
+/* ------------------------------ HeaderParser ------------------------------ */
+
+class Parser {
+    std::map< std::string, std::string > _header;
+    std::string                          _line;
+
+public:
+    void add( const char *s, size_t n ) {
+        const char *p( s );
+        for ( ; p < s + n; p++ ) {
+            if ( *p == '\n' ) {
+                std::istringstream iss( _line );
+                std::string        k;
+                std::string        v;
+                iss >> k;
+                k          = k.substr( 0, k.size() - 1 );
+                v          = iss.str().substr( k.size() + 2, iss.str().size() );
+                _header[k] = v;
+                _line.clear();
+            } else {
+                _line += *p;
+            }
+        }
+    }
+    const std::map< std::string, std::string > &header() const {
+        return _header;
+    }
+};
+
 /* -------------------------------- Response -------------------------------- */
 
 struct Response : public Trait::Stringify {
@@ -61,7 +90,7 @@ private:
 
 class Request {
 public:
-    enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING, COOKIE };
+    enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING, COOKIE, CONNECTION };
     static const std::string &key_to_string( e_header_key k );
     static const std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
         &string_to_key();
@@ -76,9 +105,12 @@ public:
     std::string                           _host;
     std::map< e_header_key, std::string > _defined_header;
     std::map< std::string, std::string, Str::CaseInsensitiveCmp > _header;
+    bool                                                          _keep_alive;
     std::string                                                   _content;
 
 public:
+    Request();
+
     e_method                                     method() const;
     const std::string &                          url() const;
     const std::string &                          version() const;
@@ -86,6 +118,7 @@ public:
     const std::map< e_header_key, std::string > &defined_header() const;
     const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
                        header() const;
+    bool               keep_alive() const;
     const std::string &content() const;
 
     /* ------------------------- Request::DynamicParser ------------------------- */

@@ -149,8 +149,10 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
-    write( STDOUT_FILENO, buff, n );
     _http_parser.add( buff, n );
+    if ( _http_parser.step() > HTTP::Request::DynamicParser::HOST ) {
+        std::cout << _fd << ": " << _http_parser.request()->url() << std::endl;
+    }
     update_last_t();
 }
 
@@ -160,14 +162,24 @@ void ServerCluster::ClientCallback::handle_write() {
                                   _http_parser.error(),
                                   _vhm.get_default()->code_to_error_page() )
                                   .stringify() );
-        kill_me();
+        write( _fd, response.c_str(), response.size() );
+        if ( !_http_parser.request()->keep_alive() ) {
+            kill_me();
+        } else {
+            _http_parser = HTTP::Request::DynamicParser();
+        }
     } else if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         std::cout << request->content() << std::endl;
         RequestHandler rh( request, _vhm[request->host()] );
         std::string    response = rh.make_raw_response();
         write( _fd, response.c_str(), response.size() );
-        kill_me();
+        if ( !_http_parser.request()->keep_alive() ) {
+            kill_me();
+        } else {
+            _http_parser = HTTP::Request::DynamicParser();
+            std::cout << "reseting" << std::endl;
+        }
     }
 }
 
