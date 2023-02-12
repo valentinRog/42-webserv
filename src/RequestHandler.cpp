@@ -56,19 +56,17 @@ RequestHandler::RequestHandler( Ptr::Shared< HTTP::Request > request,
     }
 }
 
-std::string RequestHandler::make_raw_response() {
+HTTP::Response RequestHandler::make_response() {
     if ( !_route ) {
         return HTTP::Response::make_error_response(
-                   HTTP::Response::E404,
-                   _conf->code_to_error_page() )
-            .stringify();
+            HTTP::Response::E404,
+            _conf->code_to_error_page() );
     }
     if ( !_route->methods().count(
-             HTTP::Request::method_to_string( _request->method() ) ) ) {
+             HTTP::Request::method_to_string().at( _request->method() ) ) ) {
         return HTTP::Response::make_error_response(
-                   HTTP::Response::E405,
-                   _conf->code_to_error_page() )
-            .stringify();
+            HTTP::Response::E405,
+            _conf->code_to_error_page() );
     }
     for ( std::map< std::string, std::string >::const_iterator it
           = _route->cgis().begin();
@@ -76,21 +74,19 @@ std::string RequestHandler::make_raw_response() {
           it++ ) {
         if ( Str::ends_with( _path, it->first ) ) {
             try {
-                std::string cgi = _cgi( it->second );
-                return ( cgi );
+                return _cgi( it->second );
             } catch ( const std::runtime_error & ) {
                 return HTTP::Response::make_error_response(
-                           HTTP::Response::E500,
-                           _conf->code_to_error_page() )
-                    .stringify();
+                    HTTP::Response::E500,
+                    _conf->code_to_error_page() );
             }
         }
     }
-    if ( _route->redir().size() ) { return _redir().stringify(); }
+    if ( _route->redir().size() ) { return _redir(); }
     switch ( _request->method() ) {
-    case HTTP::Request::GET: return _get().stringify();
-    case HTTP::Request::POST: return _post().stringify();
-    case HTTP::Request::DELETE: return _delete().stringify();
+    case HTTP::Request::GET: return _get();
+    case HTTP::Request::POST: return _post();
+    case HTTP::Request::DELETE: return _delete();
     }
 }
 
@@ -116,7 +112,7 @@ HTTP::Response RequestHandler::_get() {
                 r.set_content(
                     std::string( ( std::istreambuf_iterator< char >( f ) ),
                                  std::istreambuf_iterator< char >() ) );
-                r.header[HTTP::Response::CONTENT_TYPE] = _content_type( *it );
+                r.header["Content-Type"] = _content_type( *it );
                 return r;
             }
         }
@@ -134,7 +130,7 @@ HTTP::Response RequestHandler::_get() {
     HTTP::Response r( HTTP::Response::E200 );
     r.set_content( std::string( ( std::istreambuf_iterator< char >( f ) ),
                                 std::istreambuf_iterator< char >() ) );
-    r.header[HTTP::Response::CONTENT_TYPE] = _content_type( _path );
+    r.header["Content-Type"] = _content_type( _path );
     return r;
 }
 
@@ -178,17 +174,17 @@ HTTP::Response RequestHandler::_autoindex() {
     closedir( dir );
     HTTP::Response r( HTTP::Response::E200 );
     r.set_content( content );
-    r.header[HTTP::Response::CONTENT_TYPE] = _content_type( ".html" );
+    r.header["Content-Type"] = _content_type( ".html" );
     return r;
 }
 
 HTTP::Response RequestHandler::_redir() {
     HTTP::Response r( HTTP::Response::E301 );
-    r.header[HTTP::Response::LOCATION] = _route->redir();
+    r.header["Location"] = _route->redir();
     return r;
 }
 
-std::string RequestHandler::_cgi( const std::string &bin_path ) {
+HTTP::Response RequestHandler::_cgi( const std::string &bin_path ) {
     std::string bp( bin_path );
     std::string p( _path );
     char *      args[] = { const_cast< char * >( bp.c_str() ),
@@ -197,7 +193,7 @@ std::string RequestHandler::_cgi( const std::string &bin_path ) {
     CGI::Env    env;
     env[CGI::PATH_INFO] = _path;
     env[CGI::REQUEST_METHOD]
-        = HTTP::Request::method_to_string( _request->method() );
+        = HTTP::Request::method_to_string().at( _request->method() );
     if ( _request->header().count( "Content-Type" ) ) {
         env[CGI::CONTENT_TYPE] = _request->header().at( "Content-Type" );
     }
@@ -205,9 +201,10 @@ std::string RequestHandler::_cgi( const std::string &bin_path ) {
     env[CGI::QUERY_STRING]    = "";
     env[CGI::REDIRECT_STATUS] = "200";
     env[CGI::SCRIPT_FILENAME] = _path;
-    if ( _request->defined_header().count( HTTP::Request::COOKIE ) ) {
-        env[CGI::HTTP_COOKIE]
-            = _request->defined_header().at( HTTP::Request::COOKIE );
+    if ( _request->header().count(
+             HTTP::Request::key_to_string().at( HTTP::Request::COOKIE ) ) ) {
+        env[CGI::HTTP_COOKIE] = _request->header().at(
+            HTTP::Request::key_to_string().at( HTTP::Request::COOKIE ) );
     }
     int i_pipe[2];
     int o_pipe[2];
@@ -255,9 +252,13 @@ std::string RequestHandler::_cgi( const std::string &bin_path ) {
     if ( !WIFEXITED( exit_code ) | WEXITSTATUS( exit_code ) ) {
         throw std::runtime_error( "execve" );
     }
-    return Str::trim_right( HTTP::Response( HTTP::Response::E200 ).stringify(),
-                            "\r\n" )
-           + "\r\n" + s;
+    HTTP::Response r( HTTP::Response::E200 );
+    std::string    raw_header
+        = s.substr( 0, std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) );
+    r.header.add_raw( raw_header );
+    r.set_content(
+        s.substr( std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) ) );
+    return r;
 }
 
 const std::string &

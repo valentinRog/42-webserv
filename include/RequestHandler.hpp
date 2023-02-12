@@ -44,7 +44,7 @@ public:
     RequestHandler( Ptr::Shared< HTTP::Request > request,
                     Ptr::Shared< ServerConf >    conf );
 
-    std::string make_raw_response();
+    HTTP::Response make_response();
 
 private:
     HTTP::Response _redir();
@@ -52,7 +52,7 @@ private:
     HTTP::Response _get();
     HTTP::Response _post();
     HTTP::Response _delete();
-    std::string    _cgi( const std::string &bin_path );
+    HTTP::Response _cgi( const std::string &bin_path );
 
     const std::string &_content_type( const std::string &path ) const;
 };

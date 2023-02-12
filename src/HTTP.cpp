@@ -1,9 +1,44 @@
 #include "HTTP.hpp"
 
+/* --------------------------------- Header --------------------------------- */
+
+void HTTP::Header::add_raw( const std::string &raw ) {
+    clear();
+    std::vector< std::string > v;
+    Str::split( v, raw, "\n" );
+    for ( std::vector< std::string >::const_iterator it( v.begin() );
+          it != v.end();
+          it++ ) {
+        std::istringstream iss( *it );
+        std::string        k;
+        std::string        v;
+        iss >> k;
+        k            = k.substr( 0, k.size() - 1 );
+        v            = iss.str().substr( k.size() + 2, iss.str().size() );
+        ( *this )[k] = v;
+    }
+}
+
 /* -------------------------------- Response -------------------------------- */
 
+const BiMap< HTTP::Response::e_header_key, std::string > &
+HTTP::Response::key_to_string() {
+    struct f {
+        static BiMap< e_header_key, std::string > init() {
+            BiMap< e_header_key, std::string > m;
+            m.insert( std::make_pair( HOST, "Host" ) );
+            m.insert( std::make_pair( CONTENT_TYPE, "Content-Type" ) );
+            m.insert( std::make_pair( CONTENT_LENGTH, "Content-Length" ) );
+            m.insert( std::make_pair( LOCATION, "Location" ) );
+            return m;
+        }
+    };
+    static const BiMap< e_header_key, std::string > m( f::init() );
+    return m;
+}
+
 const std::pair< std::string, std::string > &
-HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
+HTTP::Response::code_to_string( HTTP::Response::e_error_code code ) {
     struct f {
         static std::map< e_error_code, std::pair< std::string, std::string > >
         init() {
@@ -28,22 +63,22 @@ HTTP::Response::error_code_to_string( HTTP::Response::e_error_code code ) {
 }
 
 const std::map< std::string, HTTP::Response::e_error_code > &
-HTTP::Response::string_to_error_code() {
+HTTP::Response::string_to_code() {
     typedef std::map< std::string, e_error_code > map_type;
     struct f {
         static map_type init() {
             map_type m;
-            m[error_code_to_string( E200 ).first] = E200;
-            m[error_code_to_string( E301 ).first] = E301;
-            m[error_code_to_string( E400 ).first] = E400;
-            m[error_code_to_string( E403 ).first] = E403;
-            m[error_code_to_string( E404 ).first] = E404;
-            m[error_code_to_string( E405 ).first] = E405;
-            m[error_code_to_string( E408 ).first] = E408;
-            m[error_code_to_string( E413 ).first] = E413;
-            m[error_code_to_string( E500 ).first] = E500;
-            m[error_code_to_string( E502 ).first] = E502;
-            m[error_code_to_string( E505 ).first] = E505;
+            m[code_to_string( E200 ).first] = E200;
+            m[code_to_string( E301 ).first] = E301;
+            m[code_to_string( E400 ).first] = E400;
+            m[code_to_string( E403 ).first] = E403;
+            m[code_to_string( E404 ).first] = E404;
+            m[code_to_string( E405 ).first] = E405;
+            m[code_to_string( E408 ).first] = E408;
+            m[code_to_string( E413 ).first] = E413;
+            m[code_to_string( E500 ).first] = E500;
+            m[code_to_string( E502 ).first] = E502;
+            m[code_to_string( E505 ).first] = E505;
             return m;
         }
     };
@@ -59,9 +94,8 @@ const std::string &HTTP::Response::version() {
 HTTP::Response
 HTTP::Response::make_error_response( HTTP::Response::e_error_code code ) {
     Response r( code );
-    r.set_content( "<h1>" + Response::error_code_to_string( code ).first
-                   + "</h1>" + "<p>"
-                   + Response::error_code_to_string( code ).second + "</p>" );
+    r.set_content( "<h1>" + Response::code_to_string( code ).first + "</h1>"
+                   + "<p>" + Response::code_to_string( code ).second + "</p>" );
     return r;
 }
 
@@ -79,99 +113,48 @@ HTTP::Response HTTP::Response::make_error_response(
 }
 
 std::string HTTP::Response::stringify() const {
-    std::string s( version() + ' ' + error_code_to_string( code ).first + ' '
-                   + error_code_to_string( code ).second + "\r\n" );
-    for ( std::map< e_header_key, std::string >::const_iterator it
+    std::string s( version() + ' ' + code_to_string( code ).first + ' '
+                   + code_to_string( code ).second + "\r\n" );
+    for ( std::map< std::string, std::string >::const_iterator it
           = header.begin();
           it != header.end();
           it++ ) {
-        s += _header_key_name().at( it->first ) + ": " + it->second + "\r\n";
+        s += it->first + ": " + it->second + "\r\n";
     }
     return s + "\r\n" + _content;
 }
 
-const std::map< HTTP::Response::e_header_key, std::string > &
-HTTP::Response::_header_key_name() {
-    struct f {
-        static std::map< e_header_key, std::string > init() {
-            std::map< e_header_key, std::string > m;
-            m[HOST]           = "Host";
-            m[CONTENT_TYPE]   = "Content-Type";
-            m[CONTENT_LENGTH] = "Content-Length";
-            m[LOCATION]       = "Location";
-            return m;
-        }
-    };
-    static const std::map< e_header_key, std::string > m( f::init() );
-    return m;
-}
-
 /* --------------------------------- Request -------------------------------- */
 
-const std::string &HTTP::Request::key_to_string( e_header_key k ) {
-    typedef std::map< e_header_key, std::string > map_type;
+const BiMap< HTTP::Request::e_header_key, std::string > &
+HTTP::Request::key_to_string() {
     struct f {
-        static map_type init() {
-            map_type m;
-            m[CONTENT_LENGTH]    = "Content-Length";
-            m[TRANSFER_ENCODING] = "Transfer-Encoding";
-            m[COOKIE]            = "Cookie";
-            m[CONNECTION]        = "Connection";
+        static BiMap< e_header_key, std::string > init() {
+            BiMap< e_header_key, std::string > m;
+            m.insert( std::make_pair( CONTENT_LENGTH, "Content-Length" ) );
+            m.insert(
+                std::make_pair( TRANSFER_ENCODING, "Transfert-encoding" ) );
+            m.insert( std::make_pair( COOKIE, "Cookie" ) );
+            m.insert( std::make_pair( CONNECTION, "Connection" ) );
             return m;
         }
     };
-    static const map_type m( f::init() );
-    return m.at( k );
-}
-
-const std::
-    map< std::string, HTTP::Request::e_header_key, Str::CaseInsensitiveCmp > &
-    HTTP::Request::string_to_key() {
-    typedef std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
-        map_type;
-    struct f {
-        static map_type init() {
-            map_type m;
-            m[key_to_string( CONTENT_LENGTH )]    = CONTENT_LENGTH;
-            m[key_to_string( TRANSFER_ENCODING )] = TRANSFER_ENCODING;
-            m[key_to_string( COOKIE )]            = COOKIE;
-            m[key_to_string( CONNECTION )]        = CONNECTION;
-            return m;
-        }
-    };
-    static const map_type m( f::init() );
+    static const BiMap< e_header_key, std::string > m( f::init() );
     return m;
 }
 
-const std::string &
-HTTP::Request::method_to_string( HTTP::Request::e_method method ) {
-    typedef std::map< e_method, std::string > map_type;
+const BiMap< HTTP::Request::e_method, std::string > &
+HTTP::Request::method_to_string() {
     struct f {
-        static map_type init() {
-            map_type m;
-            m[GET]    = "GET";
-            m[POST]   = "POST";
-            m[DELETE] = "DELETE";
+        static BiMap< HTTP::Request::e_method, std::string > init() {
+            BiMap< HTTP::Request::e_method, std::string > m;
+            m.insert( std::make_pair( GET, "GET" ) );
+            m.insert( std::make_pair( POST, "POST" ) );
+            m.insert( std::make_pair( DELETE, "DELETE" ) );
             return m;
         }
     };
-    static const map_type m( f::init() );
-    return m.at( method );
-}
-
-const std::map< std::string, HTTP::Request::e_method > &
-HTTP::Request::string_to_method() {
-    typedef std::map< std::string, e_method > map_type;
-    struct f {
-        static map_type init() {
-            map_type m;
-            m[method_to_string( GET )]    = GET;
-            m[method_to_string( POST )]   = POST;
-            m[method_to_string( DELETE )] = DELETE;
-            return m;
-        }
-    };
-    static const map_type m( f::init() );
+    static const BiMap< HTTP::Request::e_method, std::string > m( f::init() );
     return m;
 }
 
@@ -185,15 +168,7 @@ const std::string &HTTP::Request::version() const { return _version; }
 
 const std::string &HTTP::Request::host() const { return _host; }
 
-const std::map< HTTP::Request::e_header_key, std::string > &
-HTTP::Request::defined_header() const {
-    return _defined_header;
-}
-
-const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
-HTTP::Request::header() const {
-    return _header;
-}
+const HTTP::Header &HTTP::Request::header() const { return _header; }
 
 bool HTTP::Request::keep_alive() const { return _keep_alive; }
 
@@ -254,7 +229,7 @@ void HTTP::Request::DynamicParser::_parse_request_line() {
     std::istringstream iss( _line );
     std::string        s;
     iss >> s;
-    _request->_method = Request::string_to_method().at( s );
+    _request->_method = Request::method_to_string().at( s );
     iss >> _request->_url;
     iss >> _request->_version;
     _step = HOST;
@@ -270,34 +245,28 @@ void HTTP::Request::DynamicParser::_parse_host_line() {
 void HTTP::Request::DynamicParser::_parse_header_line() {
     std::istringstream iss( _line );
     if ( !iss.str().size() ) {
-        if ( _request->defined_header().count( CONNECTION )
-             && _request->defined_header().at( CONNECTION ) == "keep-alive" ) {
+        _request->_header.add_raw( _raw_header );
+        if ( _request->header().count( key_to_string().at( CONNECTION ) )
+             && _request->header().at( key_to_string().at( CONNECTION ) )
+                    == "keep-alive" ) {
             _request->_keep_alive = true;
         }
-        if ( _request->_defined_header.count( TRANSFER_ENCODING )
-             && _request->_defined_header.at( TRANSFER_ENCODING )
+        if ( _request->_header.count( key_to_string().at( TRANSFER_ENCODING ) )
+             && _request->_header.at( key_to_string().at( TRANSFER_ENCODING ) )
                     == "chunked" ) {
             _chunked = true;
             _step    = CHUNK_SIZE;
-        } else if ( _request->_defined_header.count( CONTENT_LENGTH ) ) {
+        } else if ( _request->_header.count(
+                        key_to_string().at( CONTENT_LENGTH ) ) ) {
             std::istringstream iss(
-                _request->_defined_header.at( CONTENT_LENGTH ) );
+                _request->_header.at( key_to_string().at( CONTENT_LENGTH ) ) );
             iss >> _content_length;
             _step = CONTENT;
         } else {
             _step = DONE;
         }
     } else {
-        std::string k;
-        std::string v;
-        iss >> k;
-        k = k.substr( 0, k.size() - 1 );
-        v = iss.str().substr( k.size() + 2, iss.str().size() );
-        if ( Request::string_to_key().count( k ) ) {
-            _request->_defined_header[Request::string_to_key().at( k )] = v;
-        } else {
-            _request->_header[k] = v;
-        }
+        _raw_header += _line + "\r\n";
     }
 }
 

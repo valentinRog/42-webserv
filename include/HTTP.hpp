@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BiMap.hpp"
 #include "JSON.hpp"
 #include "Option.hpp"
 #include "Ptr.hpp"
@@ -8,39 +9,18 @@
 
 namespace HTTP {
 
-/* ------------------------------ HeaderParser ------------------------------ */
+/* --------------------------------- Header --------------------------------- */
 
-class Parser {
-    std::map< std::string, std::string > _header;
-    std::string                          _line;
-
-public:
-    void add( const char *s, size_t n ) {
-        const char *p( s );
-        for ( ; p < s + n; p++ ) {
-            if ( *p == '\n' ) {
-                std::istringstream iss( _line );
-                std::string        k;
-                std::string        v;
-                iss >> k;
-                k          = k.substr( 0, k.size() - 1 );
-                v          = iss.str().substr( k.size() + 2, iss.str().size() );
-                _header[k] = v;
-                _line.clear();
-            } else {
-                _line += *p;
-            }
-        }
-    }
-    const std::map< std::string, std::string > &header() const {
-        return _header;
-    }
+struct Header
+    : public std::map< std::string, std::string, Str::CaseInsensitiveCmp > {
+    void add_raw( const std::string &raw );
 };
 
 /* -------------------------------- Response -------------------------------- */
 
 struct Response : public Trait::Stringify {
     enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION };
+    static const BiMap< e_header_key, std::string > &key_to_string();
 
     enum e_error_code {
         E200,
@@ -56,15 +36,15 @@ struct Response : public Trait::Stringify {
         E505
     };
     static const std::pair< std::string, std::string > &
-                                                        error_code_to_string( e_error_code code );
-    static const std::map< std::string, e_error_code > &string_to_error_code();
+                                                        code_to_string( e_error_code code );
+    static const std::map< std::string, e_error_code > &string_to_code();
 
     static const std::string &version();
 
     Response( e_error_code code ) : code( code ) {}
 
-    e_error_code                          code;
-    std::map< e_header_key, std::string > header;
+    e_error_code code;
+    Header       header;
 
     static Response make_error_response( e_error_code code );
     static Response make_error_response(
@@ -76,14 +56,11 @@ private:
 
 public:
     void set_content( const std::string &s ) {
-        _content               = s;
-        header[CONTENT_LENGTH] = Str::from( _content.size() );
+        _content                 = s;
+        header["Content-Length"] = Str::from( _content.size() );
     }
 
     std::string stringify() const;
-
-private:
-    static const std::map< e_header_key, std::string > &_header_key_name();
 };
 
 /* --------------------------------- Request -------------------------------- */
@@ -91,33 +68,27 @@ private:
 class Request {
 public:
     enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING, COOKIE, CONNECTION };
-    static const std::string &key_to_string( e_header_key k );
-    static const std::map< std::string, e_header_key, Str::CaseInsensitiveCmp >
-        &string_to_key();
+    static const BiMap< e_header_key, std::string > &key_to_string();
 
     enum e_method { GET, POST, DELETE };
-    static const std::string &method_to_string( e_method );
-    static const std::map< std::string, e_method > &string_to_method();
+    static const BiMap< e_method, std::string > &method_to_string();
 
-    e_method                              _method;
-    std::string                           _url;
-    std::string                           _version;
-    std::string                           _host;
-    std::map< e_header_key, std::string > _defined_header;
-    std::map< std::string, std::string, Str::CaseInsensitiveCmp > _header;
-    bool                                                          _keep_alive;
-    std::string                                                   _content;
+    e_method    _method;
+    std::string _url;
+    std::string _version;
+    std::string _host;
+    Header      _header;
+    bool        _keep_alive;
+    std::string _content;
 
 public:
     Request();
 
-    e_method                                     method() const;
-    const std::string &                          url() const;
-    const std::string &                          version() const;
-    const std::string &                          host() const;
-    const std::map< e_header_key, std::string > &defined_header() const;
-    const std::map< std::string, std::string, Str::CaseInsensitiveCmp > &
-                       header() const;
+    e_method           method() const;
+    const std::string &url() const;
+    const std::string &version() const;
+    const std::string &host() const;
+    const Header &     header() const;
     bool               keep_alive() const;
     const std::string &content() const;
 
@@ -141,6 +112,7 @@ public:
         e_step                                 _step;
         Ptr::Shared< Request >                 _request;
         size_t                                 _content_length;
+        std::string                            _raw_header;
         bool                                   _chunked;
         Option< HTTP::Response::e_error_code > _error;
 

@@ -172,7 +172,7 @@ void ServerCluster::ClientCallback::handle_write() {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         std::cout << request->content() << std::endl;
         RequestHandler rh( request, _vhm[request->host()] );
-        std::string    response = rh.make_raw_response();
+        std::string    response = rh.make_response().stringify();
         write( _fd, response.c_str(), response.size() );
         if ( !_http_parser.request()->keep_alive() ) {
             kill_me();
