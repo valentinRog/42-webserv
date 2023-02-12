@@ -35,9 +35,8 @@ struct Response : public Trait::Stringify {
         E502,
         E505
     };
-    static const std::pair< std::string, std::string > &
-                                                        code_to_string( e_error_code code );
-    static const std::map< std::string, e_error_code > &string_to_code();
+    static const BiMap< e_error_code, std::string > &code_to_string();
+    static const std::string &code_to_message( e_error_code code );
 
     static const std::string &version();
 

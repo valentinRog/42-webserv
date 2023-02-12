@@ -37,53 +37,50 @@ HTTP::Response::key_to_string() {
     return m;
 }
 
-const std::pair< std::string, std::string > &
-HTTP::Response::code_to_string( HTTP::Response::e_error_code code ) {
+const BiMap< HTTP::Response::e_error_code, std::string > &
+HTTP::Response::code_to_string() {
     struct f {
-        static std::map< e_error_code, std::pair< std::string, std::string > >
-        init() {
-            std::map< e_error_code, std::pair< std::string, std::string > > m;
-            m[E200] = std::make_pair( "200", "OK" );
-            m[E301] = std::make_pair( "301", "Move Permanently" );
-            m[E400] = std::make_pair( "400", "Bad Request" );
-            m[E403] = std::make_pair( "403", "Forbidden" );
-            m[E404] = std::make_pair( "404", "Not Found" );
-            m[E405] = std::make_pair( "405", "Method Not Allowed" );
-            m[E408] = std::make_pair( "408", "Request Timeout" );
-            m[E413] = std::make_pair( "413", "Request Entity Too Large" );
-            m[E500] = std::make_pair( "500", "Internal Server Error" );
-            m[E502] = std::make_pair( "502", "Bad Gateway" );
-            m[E505] = std::make_pair( "505", "Version Not Supported" );
+        static BiMap< e_error_code, std::string > init() {
+            BiMap< e_error_code, std::string > m;
+            m.insert( std::make_pair( E200, "200" ) );
+            m.insert( std::make_pair( E301, "301" ) );
+            m.insert( std::make_pair( E400, "400" ) );
+            m.insert( std::make_pair( E403, "403" ) );
+            m.insert( std::make_pair( E404, "404" ) );
+            m.insert( std::make_pair( E405, "405" ) );
+            m.insert( std::make_pair( E408, "408" ) );
+            m.insert( std::make_pair( E413, "413" ) );
+            m.insert( std::make_pair( E500, "500" ) );
+            m.insert( std::make_pair( E502, "502" ) );
+            m.insert( std::make_pair( E505, "505" ) );
             return m;
         }
     };
-    static const std::map< e_error_code, std::pair< std::string, std::string > >
-        m( f::init() );
-    return m.at( code );
+    static const BiMap< e_error_code, std::string > m( f::init() );
+    return m;
 }
 
-const std::map< std::string, HTTP::Response::e_error_code > &
-HTTP::Response::string_to_code() {
-    typedef std::map< std::string, e_error_code > map_type;
+const std::string &
+HTTP::Response::code_to_message( HTTP::Response::e_error_code code ) {
     struct f {
-        static map_type init() {
-            map_type m;
-            m[code_to_string( E200 ).first] = E200;
-            m[code_to_string( E301 ).first] = E301;
-            m[code_to_string( E400 ).first] = E400;
-            m[code_to_string( E403 ).first] = E403;
-            m[code_to_string( E404 ).first] = E404;
-            m[code_to_string( E405 ).first] = E405;
-            m[code_to_string( E408 ).first] = E408;
-            m[code_to_string( E413 ).first] = E413;
-            m[code_to_string( E500 ).first] = E500;
-            m[code_to_string( E502 ).first] = E502;
-            m[code_to_string( E505 ).first] = E505;
+        static std::map< e_error_code, std::string > init() {
+            std::map< e_error_code, std::string > m;
+            m[E200] = "OK";
+            m[E301] = "Move Permanently";
+            m[E400] = "Bad Request";
+            m[E403] = "Forbidden";
+            m[E404] = "Not Found";
+            m[E405] = "Method Not Allowed";
+            m[E408] = "Request Timeout";
+            m[E413] = "Request Entity Too Large";
+            m[E500] = "Internal Server Error";
+            m[E502] = "Bad Gateway";
+            m[E505] = "Version Not Supported";
             return m;
         }
     };
-    static const map_type m( f::init() );
-    return m;
+    static const std::map< e_error_code, std::string > m( f::init() );
+    return m.at( code );
 }
 
 const std::string &HTTP::Response::version() {
@@ -94,8 +91,8 @@ const std::string &HTTP::Response::version() {
 HTTP::Response
 HTTP::Response::make_error_response( HTTP::Response::e_error_code code ) {
     Response r( code );
-    r.set_content( "<h1>" + Response::code_to_string( code ).first + "</h1>"
-                   + "<p>" + Response::code_to_string( code ).second + "</p>" );
+    r.set_content( "<h1>" + Response::code_to_string().at( code ) + "</h1>"
+                   + "<p>" + Response::code_to_message( code ) + "</p>" );
     return r;
 }
 
@@ -113,8 +110,8 @@ HTTP::Response HTTP::Response::make_error_response(
 }
 
 std::string HTTP::Response::stringify() const {
-    std::string s( version() + ' ' + code_to_string( code ).first + ' '
-                   + code_to_string( code ).second + "\r\n" );
+    std::string s( version() + ' ' + code_to_string().at( code ) + ' '
+                   + code_to_message( code ) + "\r\n" );
     for ( std::map< std::string, std::string >::const_iterator it
           = header.begin();
           it != header.end();

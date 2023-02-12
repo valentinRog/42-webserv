@@ -242,16 +242,16 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path ) {
     char        buff[1024];
     size_t      n;
     std::string s;
-    while ( ( n = ::read( o_pipe[0], buff, 1024 ) ) == 1024 ) {
-        s.append( buff, n );
-    }
-    ::close( o_pipe[0] );
-    s.append( buff, n );
     int exit_code;
     wait( &exit_code );
     if ( !WIFEXITED( exit_code ) | WEXITSTATUS( exit_code ) ) {
         throw std::runtime_error( "execve" );
     }
+    while ( ( n = ::read( o_pipe[0], buff, 1024 ) ) == 1024 ) {
+        s.append( buff, n );
+    }
+    ::close( o_pipe[0] );
+    s.append( buff, n );
     HTTP::Response r( HTTP::Response::E200 );
     std::string    raw_header
         = s.substr( 0, std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) );

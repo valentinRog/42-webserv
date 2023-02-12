@@ -1,1 +1,3 @@
-console.log("Content-Type: text/html\n\nHello from js")
+console.log("Content-Type: text/html");
+console.log("");
+console.log("Hello from js");

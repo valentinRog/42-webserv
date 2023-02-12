@@ -183,7 +183,7 @@ ServerConf::ServerConf(
                 for ( JSON::Array::const_iterator it2( a.begin() );
                       it2 != a.end();
                       it2++ ) {
-                    _code_to_error_page[HTTP::Response::string_to_code().at(
+                    _code_to_error_page[HTTP::Response::code_to_string().at(
                         it2->unwrap< JSON::String >() )]
                         = it->first;
                 }

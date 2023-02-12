@@ -136,6 +136,10 @@ void EventQueue::wait() {
         if ( _callbacks.find( _events[i].ident ) == _callbacks.end() ) {
             continue;
         }
+        if ( _callbacks.at( _events[i].ident )->get_kill_me() ) {
+            remove( _events[i].ident );
+            continue;
+        }
         switch ( _events[i].filter ) {
         case EVFILT_READ:
             _callbacks.at( _events[i].ident )->handle_read();
