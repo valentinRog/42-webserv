@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BiMap.hpp"
 #include "EventQueue.hpp"
 #include "HTTP.hpp"
 #include "RequestHandler.hpp"
@@ -10,13 +11,12 @@
 
 class ServerCluster {
     static const int    _max_events         = 4000;
-    static const size_t _buffer_size        = 8192 ;
+    static const size_t _buffer_size        = 8192;
     static const time_t _connection_timeout = 30;
     static const time_t _idle_timeout       = 5;
 
     enum e_config_key { MIME_FILE, SERVERS };
-    static const std::string &key_to_string( e_config_key key );
-    static const std::map< std::string, e_config_key > &string_to_key();
+    static const BiMap< e_config_key, std::string > &key_to_string();
 
     /* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 

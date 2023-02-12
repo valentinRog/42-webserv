@@ -2,33 +2,17 @@
 
 /* ------------------------------ ServerCluster ----------------------------- */
 
-const std::string &
-ServerCluster::key_to_string( ServerCluster::e_config_key key ) {
-    typedef std::map< e_config_key, std::string > map_type;
+const BiMap< ServerCluster::e_config_key, std::string > &
+ServerCluster::key_to_string() {
     struct f {
-        static map_type init() {
-            map_type m;
-            m[MIME_FILE] = "mime_file";
-            m[SERVERS]   = "servers";
+        static BiMap< e_config_key, std::string > init() {
+            BiMap< e_config_key, std::string > m;
+            m.insert( std::make_pair( MIME_FILE, "mime_file" ) );
+            m.insert( std::make_pair( SERVERS, "servers" ) );
             return m;
         }
     };
-    static const map_type m( f::init() );
-    return m.at( key );
-}
-
-const std::map< std::string, ServerCluster::e_config_key > &
-ServerCluster::string_to_key() {
-    typedef std::map< std::string, e_config_key > map_type;
-    struct f {
-        static map_type init() {
-            map_type m;
-            m[key_to_string( MIME_FILE )] = MIME_FILE;
-            m[key_to_string( SERVERS )]   = SERVERS;
-            return m;
-        }
-    };
-    static const map_type m( f::init() );
+    static const BiMap< e_config_key, std::string > m( f::init() );
     return m;
 }
 
@@ -62,13 +46,13 @@ void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
 
 ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
     for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
-        string_to_key().at( it->first );
+        key_to_string().at( it->first );
     }
     Ptr::Shared< std::map< std::string, std::string > > mime(
         new std::map< std::string, std::string > );
     JSON::Object mime_o(
         JSON::Parse::from_file(
-            o.at( key_to_string( MIME_FILE ) ).unwrap< JSON::String >() )
+            o.at( key_to_string().at( MIME_FILE ) ).unwrap< JSON::String >() )
             .unwrap< JSON::Object >() );
     for ( JSON::Object::const_iterator it( mime_o.begin() ); it != mime_o.end();
           it++ ) {
@@ -78,7 +62,8 @@ ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
             ( *mime )[nit->unwrap< JSON::String >()] = it->first;
         }
     }
-    JSON::Array a( o.at( key_to_string( SERVERS ) ).unwrap< JSON::Array >() );
+    JSON::Array a(
+        o.at( key_to_string().at( SERVERS ) ).unwrap< JSON::Array >() );
     std::vector< ServerConf > v;
     for ( JSON::Array::const_iterator it( a.begin() ); it != a.end(); it++ ) {
         v.push_back( ServerConf( it->unwrap< JSON::Object >(), mime ) );
