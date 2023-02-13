@@ -1,57 +1,54 @@
-{
-  "mime_file": "mime.json",
-  "servers": [
-    {
-      "error_pages": {
-        "html/error.html": ["404", "405"]
+[
+  {
+    "error_pages": {
+      "html/error.html": ["404", "405"]
+    },
+    "client_max_body_size": 80,
+    "listen": ["0.0.0.0", 80],
+    "names": ["localhost"],
+    "routes": {
+      "/": {
+        "root": "html",
+        "index": ["index.html"],
+        "methods": ["GET"]
       },
-      "client_max_body_size": 80,
-      "listen": ["0.0.0.0", 80],
-      "names": ["localhost"],
-      "routes": {
-        "/": {
-          "root": "html",
-          "index": ["index.html"],
-          "methods": ["GET"]
-        },
-        "/cgi/form": {
-          "root": "html/cgi/form/",
-          "methods": ["POST"],
-          "cgi": {
-            ".py": "/usr/bin/python3"
-          }
-        },
-        "/upload": {
-          "root": "html/upload",
-          "methods": ["GET", "DELETE"],
-          "autoindex": true
-        },
-        "/hello": {
-          "root": "html/cgi/hello/",
-          "autoindex": true,
-          "methods": ["GET"],
-          "cgi": {
-            ".py": "/usr/bin/python3",
-            ".php": "/usr/bin/php-cgi",
-            ".js": "/usr/local/bin/node",
-            ".rb": "/usr/bin/ruby",
-            ".sh": "/bin/sh"
-          }
-        },
-        "/redir": {
-          "root": "html",
-          "methods": ["GET"],
-          "redir": "http://noboardchess.org"
-        },
-        "/cookies": {
-          "root": "html/cgi",
-          "index": ["cookies.py"],
-          "methods": ["GET"],
-          "cgi": {
-            ".py": "/usr/bin/python3"
-          }
+      "/cgi/form": {
+        "root": "html/cgi/form/",
+        "methods": ["POST"],
+        "cgi": {
+          ".py": "/usr/bin/python3"
+        }
+      },
+      "/upload": {
+        "root": "html/upload",
+        "methods": ["GET", "DELETE"],
+        "autoindex": true
+      },
+      "/hello": {
+        "root": "html/cgi/hello/",
+        "autoindex": true,
+        "methods": ["GET"],
+        "cgi": {
+          ".py": "/usr/bin/python3",
+          ".php": "/usr/bin/php-cgi",
+          ".js": "/usr/local/bin/node",
+          ".rb": "/usr/bin/ruby",
+          ".sh": "/bin/sh"
+        }
+      },
+      "/redir": {
+        "root": "html",
+        "methods": ["GET"],
+        "redir": "http://noboardchess.org"
+      },
+      "/cookies": {
+        "root": "html/cgi",
+        "index": ["cookies.py"],
+        "methods": ["GET"],
+        "cgi": {
+          ".py": "/usr/bin/python3"
         }
       }
     }
-  ]
-}
+  }
+]

@@ -242,7 +242,7 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path ) {
     char        buff[1024];
     size_t      n;
     std::string s;
-    int exit_code;
+    int         exit_code;
     wait( &exit_code );
     if ( !WIFEXITED( exit_code ) | WEXITSTATUS( exit_code ) ) {
         throw std::runtime_error( "execve" );
@@ -267,8 +267,10 @@ RequestHandler::_content_type( const std::string &path ) const {
     size_t                   found( path.find_last_of( '.' ) );
     if ( found == std::string::npos ) return ( default_type );
     std::string last( path, found + 1 );
-    if ( !_conf->mime().count( last ) ) { return default_type; }
-    return _conf->mime().at( last );
+    if ( !HTTP::Mime::extension_to_type().count( last ) ) {
+        return default_type;
+    }
+    return HTTP::Mime::extension_to_type().at( last );
 }
 
 /* -------------------------------------------------------------------------- */

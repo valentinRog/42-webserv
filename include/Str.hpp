@@ -22,16 +22,28 @@ struct Str {
 
     static std::string to_upper( const std::string &s );
 
-    static std::string trim_left(const std::string &s, const std::string &charset);
+    static std::string trim_left( const std::string &s,
+                                  const std::string &charset );
 
-    static std::string trim_right(const std::string &s, const std::string &charset);
+    static std::string trim_right( const std::string &s,
+                                   const std::string &charset );
 
-    static std::string trim(const std::string &s, const std::string &charset);
+    static std::string trim( const std::string &s, const std::string &charset );
 
-    static char *dup(const std::string &s);
+    static char *dup( const std::string &s );
 
-    template<typename TI, typename TO>
-    static void split(TO& output, const TI& input, const std::string& charset);
+    template < typename TI, typename TO >
+    static void
+    split( TO &output, const TI &input, const std::string &charset );
+
+    /* ------------------------------ Str::CIString ----------------------------- */
+
+    struct CIString : public std::string {
+        CIString();
+        CIString( const std::string &other );
+
+        bool operator==( const std::string &other ) const;
+    };
 
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 

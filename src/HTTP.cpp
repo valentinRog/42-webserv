@@ -1,5 +1,22 @@
 #include "HTTP.hpp"
 
+/* ---------------------------------- Mime ---------------------------------- */
+
+const std::map< std::string, std::string > &HTTP::Mime::extension_to_type() {
+    struct f {
+        static std::map< std::string, std::string > init() {
+            std::map< std::string, std::string > m;
+            m["html"] = "text/html";
+            m["css"]  = "text/css";
+            m["js"]   = "application/javascript";
+            m["json"] = "application/json";
+            return m;
+        }
+    };
+    static const std::map< std::string, std::string > m( f::init() );
+    return m;
+}
+
 /* --------------------------------- Header --------------------------------- */
 
 void HTTP::Header::add_raw( const std::string &raw ) {

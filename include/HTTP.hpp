@@ -9,6 +9,12 @@
 
 namespace HTTP {
 
+/* ---------------------------------- Mime ---------------------------------- */
+
+struct Mime {
+    static const std::map< std::string, std::string > &extension_to_type();
+};
+
 /* --------------------------------- Header --------------------------------- */
 
 struct Header

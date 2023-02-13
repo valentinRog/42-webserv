@@ -73,7 +73,7 @@ class ServerCluster {
     /* -------------------------------------------------------------------------- */
 
 public:
-    ServerCluster( const JSON::Object &o );
+    ServerCluster();
 
     void bind( const ServerConf &conf );
     void run();

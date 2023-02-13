@@ -51,9 +51,9 @@ public:
         std::string  suffix( const std::string &s ) const;
     };
 
-    /* ------------------ ServerConf::RouteMapper::ConfigError ------------------ */
+    /* -------------------- ServerConf::InvalidConfiguration -------------------- */
 
-    class ConfigError : public std::exception {
+    struct ConfigError : public std::exception {
         virtual const char *what() const throw();
     };
 
@@ -63,7 +63,6 @@ private:
     sockaddr_in                                           _addr;
     std::set< std::string >                               _names;
     RouteMapper                                           _route_mapper;
-    Ptr::Shared< std::map< std::string, std::string > >   _mime;
     std::map< HTTP::Response::e_error_code, std::string > _code_to_error_page;
     size_t                                                _client_max_body_size;
 
@@ -77,13 +76,11 @@ public:
     };
     static const BiMap< e_config_key, std::string > &key_to_string();
 
-    ServerConf( const JSON::Object &                                o,
-                Ptr::Shared< std::map< std::string, std::string > > mime );
+    ServerConf( const JSON::Object &o );
 
-    const sockaddr_in &                         addr() const;
-    const std::set< std::string > &             names() const;
-    const RouteMapper &                         route_mapper() const;
-    const std::map< std::string, std::string > &mime() const;
+    const sockaddr_in &            addr() const;
+    const std::set< std::string > &names() const;
+    const RouteMapper &            route_mapper() const;
     const std::map< HTTP::Response::e_error_code, std::string > &
            code_to_error_page() const;
     size_t client_max_body_size() const;

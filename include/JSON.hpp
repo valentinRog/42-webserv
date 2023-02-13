@@ -12,9 +12,9 @@ struct Value : public Trait::CloneCRTP< Value >,
                public Trait::Stringify,
                public Trait::Repr {
     virtual ~Value();
-    virtual Value      *clone() const     = 0;
+    virtual Value *     clone() const     = 0;
     virtual std::string stringify() const = 0;
-    std::ostream       &repr( std::ostream &os ) const;
+    std::ostream &      repr( std::ostream &os ) const;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -28,7 +28,7 @@ class String : public Value {
 
 public:
     String( const std::string &s );
-    Value      *clone() const;
+    Value *     clone() const;
     std::string stringify() const;
 
     operator std::string() const;
@@ -41,7 +41,7 @@ class Number : public Value {
 
 public:
     Number( size_t n );
-    Value      *clone() const;
+    Value *     clone() const;
     std::string stringify() const;
 
     operator size_t() const;
@@ -50,14 +50,14 @@ public:
 /* --------------------------------- Object --------------------------------- */
 
 struct Object : public Value, public std::map< std::string, Wrapper > {
-    Value      *clone() const;
+    Value *     clone() const;
     std::string stringify() const;
 };
 
 /* ---------------------------------- Array --------------------------------- */
 
 struct Array : public Value, public std::vector< Wrapper > {
-    Value      *clone() const;
+    Value *     clone() const;
     std::string stringify() const;
 };
 
@@ -68,7 +68,7 @@ class Boolean : public Value {
 
 public:
     Boolean( bool b );
-    Value      *clone() const;
+    Value *     clone() const;
     std::string stringify() const;
 
     operator bool() const;
@@ -78,7 +78,7 @@ public:
 
 class Null : public Value {
 public:
-    Value      *clone() const;
+    Value *     clone() const;
     std::string stringify() const;
 };
 
@@ -106,7 +106,7 @@ public:
 
     /* --------------------------- Parse::ParsingError -------------------------- */
 
-    class ParsingError : public std::exception {
+    struct ParsingError : public std::exception {
         virtual const char *what() const throw();
     };
 

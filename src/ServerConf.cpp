@@ -130,11 +130,8 @@ ServerConf::key_to_string() {
     return m;
 }
 
-ServerConf::ServerConf(
-    const JSON::Object &                                o,
-    Ptr::Shared< std::map< std::string, std::string > > mime )
-    : _mime( mime ),
-      _client_max_body_size( std::numeric_limits< std::size_t >::max() ) {
+ServerConf::ServerConf( const JSON::Object &o )
+    : _client_max_body_size( std::numeric_limits< std::size_t >::max() ) {
     try {
         for ( JSON::Object::const_iterator it( o.begin() ); it != o.end();
               it++ ) {
@@ -200,10 +197,6 @@ const std::set< std::string > &ServerConf::names() const { return _names; }
 
 const ServerConf::RouteMapper &ServerConf::route_mapper() const {
     return _route_mapper;
-}
-
-const std::map< std::string, std::string > &ServerConf::mime() const {
-    return *_mime;
 }
 
 const std::map< HTTP::Response::e_error_code, std::string > &
