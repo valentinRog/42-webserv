@@ -46,26 +46,21 @@ struct Response : public Trait::Stringify {
 
     static const std::string &version();
 
-    Response( e_error_code code ) : code( code ) {}
-
-    e_error_code code;
-    Header       header;
-
     static Response make_error_response( e_error_code code );
     static Response make_error_response(
         e_error_code                                 code,
         const std::map< e_error_code, std::string > &error_pages );
 
+    e_error_code code;
+    Header       header;
+
+    Response( e_error_code code );
+
+    void        set_content( const std::string &s );
+    std::string stringify() const;
+
 private:
     std::string _content;
-
-public:
-    void set_content( const std::string &s ) {
-        _content                 = s;
-        header["Content-Length"] = Str::from( _content.size() );
-    }
-
-    std::string stringify() const;
 };
 
 /* --------------------------------- Request -------------------------------- */
@@ -121,12 +116,14 @@ public:
         std::string                            _raw_header;
         bool                                   _chunked;
         Option< HTTP::Response::e_error_code > _error;
+        size_t                                 _max_body_size;
 
     public:
-        DynamicParser();
+        DynamicParser( size_t max_body_size = SIZE_MAX );
 
         void                   add( const char *s, size_t n );
-        e_step                 step() const;
+        bool                   done() const;
+        bool                   failed() const;
         Ptr::Shared< Request > request();
 
         HTTP::Response::e_error_code error() const;

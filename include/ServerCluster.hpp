@@ -15,9 +15,6 @@ class ServerCluster {
     static const time_t _connection_timeout = 30;
     static const time_t _idle_timeout       = 5;
 
-    enum e_config_key { MIME_FILE, SERVERS };
-    static const BiMap< e_config_key, std::string > &key_to_string();
-
     /* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 
     class VirtualHostMapper {
@@ -40,8 +37,8 @@ class ServerCluster {
     /* ---------------------- ServerCluster::ClientCallback --------------------- */
 
     class ClientCallback : public CallbackBase {
-        int                          _fd;
         HTTP::Request::DynamicParser _http_parser;
+        int                          _fd;
         const VirtualHostMapper &    _vhm;
 
     public:

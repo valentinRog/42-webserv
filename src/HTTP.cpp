@@ -10,6 +10,7 @@ const std::map< std::string, std::string > &HTTP::Mime::extension_to_type() {
             m["css"]  = "text/css";
             m["js"]   = "application/javascript";
             m["json"] = "application/json";
+            m["png"]  = "image/png";
             return m;
         }
     };
@@ -126,6 +127,13 @@ HTTP::Response HTTP::Response::make_error_response(
     return r;
 }
 
+HTTP::Response::Response( HTTP::Response::e_error_code code ) : code( code ) {}
+
+void HTTP::Response::set_content( const std::string &s ) {
+    _content                 = s;
+    header["Content-Length"] = Str::from( _content.size() );
+}
+
 std::string HTTP::Response::stringify() const {
     std::string s( version() + ' ' + code_to_string().at( code ) + ' '
                    + code_to_message( code ) + "\r\n" );
@@ -190,11 +198,12 @@ const std::string &HTTP::Request::content() const { return _content; }
 
 /* ------------------------- Request::DynamicParser ------------------------- */
 
-HTTP::Request::DynamicParser::DynamicParser()
+HTTP::Request::DynamicParser::DynamicParser( size_t max_body_size )
     : _step( REQUEST ),
       _content_overflow( 0 ),
       _request( new Request() ),
-      _chunked( false ) {}
+      _chunked( false ),
+      _max_body_size( max_body_size ) {}
 
 void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
     const char *p( s );
@@ -217,10 +226,9 @@ void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
     }
 }
 
-HTTP::Request::DynamicParser::e_step
-HTTP::Request::DynamicParser::step() const {
-    return _step;
-}
+bool HTTP::Request::DynamicParser::done() const { return _step == DONE; }
+
+bool HTTP::Request::DynamicParser::failed() const { return _step == FAILED; }
 
 Ptr::Shared< HTTP::Request > HTTP::Request::DynamicParser::request() {
     return _request;
@@ -242,9 +250,14 @@ void HTTP::Request::DynamicParser::_parse_line() {
 
 void HTTP::Request::DynamicParser::_parse_request_line() {
     std::istringstream iss( _line );
-    std::string        s;
-    iss >> s;
-    _request->_method = Request::method_to_string().at( s );
+    std::string        method;
+    iss >> method;
+    if ( !Request::method_to_string().count( method ) ) {
+        _step  = FAILED;
+        _error = Response::E400;
+        return;
+    }
+    _request->_method = Request::method_to_string().at( method );
     iss >> _request->_url;
     iss >> _request->_version;
     _step = HOST;
@@ -296,7 +309,7 @@ void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
 size_t HTTP::Request::DynamicParser::_append_to_content( const char *s,
                                                          size_t      n ) {
     n = std::min( n, _content_length - _request->_content.size() );
-    if ( n + _request->_content.size() > 10 ) {
+    if ( n + _request->_content.size() > _max_body_size ) {
         _content_overflow += n;
     } else {
         _request->_content.append( s, n );

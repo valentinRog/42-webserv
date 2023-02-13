@@ -3,7 +3,7 @@
     "error_pages": {
       "html/error.html": ["404", "405"]
     },
-    "client_max_body_size": 80,
+    "client_max_body_size": 500,
     "listen": ["0.0.0.0", 80],
     "names": ["localhost"],
     "routes": {

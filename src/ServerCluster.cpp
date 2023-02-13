@@ -1,21 +1,5 @@
 #include "ServerCluster.hpp"
 
-/* ------------------------------ ServerCluster ----------------------------- */
-
-const BiMap< ServerCluster::e_config_key, std::string > &
-ServerCluster::key_to_string() {
-    struct f {
-        static BiMap< e_config_key, std::string > init() {
-            BiMap< e_config_key, std::string > m;
-            m.insert( std::make_pair( MIME_FILE, "mime_file" ) );
-            m.insert( std::make_pair( SERVERS, "servers" ) );
-            return m;
-        }
-    };
-    static const BiMap< e_config_key, std::string > m( f::init() );
-    return m;
-}
-
 /* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 
 ServerCluster::VirtualHostMapper::VirtualHostMapper(
@@ -109,17 +93,9 @@ void ServerCluster::ClientCallback::handle_read() {
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    typedef HTTP::Request::DynamicParser DynamicParser;
-    const DynamicParser::e_step          DONE( DynamicParser::DONE );
-    const DynamicParser::e_step          FAILED( DynamicParser::FAILED );
-    if ( _http_parser.step() & ( DONE | FAILED ) ) {
-        std::cout << CYAN << '[' << _fd << ']' << RESET << ' '
-                  << HTTP::Request::method_to_string().at(
-                         _http_parser.request()->method() )
-                  << ' ' << _http_parser.request()->url() << BLUE << " -> "
-                  << RESET;
-    }
-    if ( _http_parser.step() == FAILED ) {
+    if ( !_http_parser.done() && !_http_parser.failed() ) { return; }
+    std::cout << CYAN << '[' << _fd << ']' << RESET << ' ';
+    if ( _http_parser.failed() ) {
         std::string response( HTTP::Response::make_error_response(
                                   _http_parser.error(),
                                   _vhm.get_default()->code_to_error_page() )
@@ -134,9 +110,13 @@ void ServerCluster::ClientCallback::handle_write() {
             kill_me();
             std::cout << CYAN << '[' << _fd << ']' << RESET << " closed\n";
         } else {
-            _http_parser = DynamicParser();
+            _http_parser = HTTP::Request::DynamicParser();
         }
-    } else if ( _http_parser.step() == DONE ) {
+    } else {
+        std::cout << HTTP::Request::method_to_string().at(
+            _http_parser.request()->method() )
+                  << ' ' << _http_parser.request()->url() << BLUE << " -> "
+                  << RESET;
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         RequestHandler               rh( request, _vhm[request->host()] );
         HTTP::Response               response( rh.make_response() );
@@ -152,7 +132,7 @@ void ServerCluster::ClientCallback::handle_write() {
             std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed\n"
                       << RESET;
         } else {
-            _http_parser = DynamicParser();
+            _http_parser = HTTP::Request::DynamicParser();
         }
     }
 }
