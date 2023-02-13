@@ -109,6 +109,7 @@ public:
         std::string                            _line;
         std::string                            _sep;
         e_step                                 _step;
+        size_t                                 _content_overflow;
         Ptr::Shared< Request >                 _request;
         size_t                                 _content_length;
         std::string                            _raw_header;

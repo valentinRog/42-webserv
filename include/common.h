@@ -35,3 +35,5 @@
 #else
 #include <sys/event.h>
 #endif
+
+#include "color.h"

@@ -175,6 +175,7 @@ const std::string &HTTP::Request::content() const { return _content; }
 
 HTTP::Request::DynamicParser::DynamicParser()
     : _step( REQUEST ),
+      _content_overflow( 0 ),
       _request( new Request() ),
       _chunked( false ) {}
 
@@ -245,7 +246,7 @@ void HTTP::Request::DynamicParser::_parse_header_line() {
         _request->_header.add_raw( _raw_header );
         if ( _request->header().count( key_to_string().at( CONNECTION ) )
              && _request->header().at( key_to_string().at( CONNECTION ) )
-                    == "keep-alive" ) {
+                    == "keep-alive\r" ) {
             _request->_keep_alive = true;
         }
         if ( _request->_header.count( key_to_string().at( TRANSFER_ENCODING ) )
@@ -277,17 +278,18 @@ void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
 
 size_t HTTP::Request::DynamicParser::_append_to_content( const char *s,
                                                          size_t      n ) {
-    if ( _request->_content.size() + n > 10 ) {
-        _step  = FAILED;
-        _error = Response::E413;
-        return 0;
-    }
     n = std::min( n, _content_length - _request->_content.size() );
-    _request->_content.append( s, n );
+    if ( n + _request->_content.size() > 10 ) {
+        _content_overflow += n;
+    } else {
+        _request->_content.append( s, n );
+    }
     if ( _chunked ) {
         _step = CHUNK_SIZE;
-    } else if ( _request->_content.size() >= _content_length ) {
-        _step = DONE;
+    } else if ( _request->_content.size() + _content_overflow
+                >= _content_length ) {
+        _step = _content_overflow ? FAILED : DONE;
+        if ( _step == FAILED ) { _error = Response::E413; }
     }
     return n;
 }

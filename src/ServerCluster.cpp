@@ -48,6 +48,8 @@ ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
     for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
         key_to_string().at( it->first );
     }
+
+    // mime
     Ptr::Shared< std::map< std::string, std::string > > mime(
         new std::map< std::string, std::string > );
     JSON::Object mime_o(
@@ -62,6 +64,8 @@ ServerCluster::ServerCluster( const JSON::Object &o ) : _q( _max_events ) {
             ( *mime )[nit->unwrap< JSON::String >()] = it->first;
         }
     }
+
+    // servers
     JSON::Array a(
         o.at( key_to_string().at( SERVERS ) ).unwrap< JSON::Array >() );
     std::vector< ServerConf > v;
@@ -106,7 +110,6 @@ void ServerCluster::_bind( uint16_t port ) {
     if ( ::setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &ra, sizeof( ra ) ) < 0 ) {
         throw std::runtime_error( "setsockopt" );
     }
-    std::cout << "binding " << port << std::endl;
     if ( ::bind( fd, reinterpret_cast< sockaddr * >( &addr ), sizeof( addr ) )
          == -1 ) {
         throw std::runtime_error( "bind" );
@@ -135,40 +138,62 @@ void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
     _http_parser.add( buff, n );
-    if ( _http_parser.step() > HTTP::Request::DynamicParser::HOST ) {
-        std::cout << _fd << ": " << _http_parser.request()->url() << std::endl;
-    }
     update_last_t();
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    if ( _http_parser.step() == HTTP::Request::DynamicParser::FAILED ) {
+    typedef HTTP::Request::DynamicParser DynamicParser;
+    const DynamicParser::e_step          DONE( DynamicParser::DONE );
+    const DynamicParser::e_step          FAILED( DynamicParser::FAILED );
+    if ( _http_parser.step() & ( DONE | FAILED ) ) {
+        std::cout << CYAN << '[' << _fd << ']' << RESET << ' '
+                  << HTTP::Request::method_to_string().at(
+                         _http_parser.request()->method() )
+                  << ' ' << _http_parser.request()->url() << BLUE << " -> "
+                  << RESET;
+    }
+    if ( _http_parser.step() == FAILED ) {
         std::string response( HTTP::Response::make_error_response(
                                   _http_parser.error(),
                                   _vhm.get_default()->code_to_error_page() )
                                   .stringify() );
         write( _fd, response.c_str(), response.size() );
+        std::cout << RED
+                  << HTTP::Response::code_to_string().at( _http_parser.error() )
+                  << RESET << ' '
+                  << HTTP::Response::code_to_message( _http_parser.error() )
+                  << std::endl;
         if ( !_http_parser.request()->keep_alive() ) {
             kill_me();
+            std::cout << CYAN << '[' << _fd << ']' << RESET << " closed\n";
         } else {
-            _http_parser = HTTP::Request::DynamicParser();
+            _http_parser = DynamicParser();
         }
-    } else if ( _http_parser.step() == HTTP::Request::DynamicParser::DONE ) {
+    } else if ( _http_parser.step() == DONE ) {
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
-        std::cout << request->content() << std::endl;
-        RequestHandler rh( request, _vhm[request->host()] );
-        std::string    response = rh.make_response().stringify();
-        write( _fd, response.c_str(), response.size() );
+        RequestHandler               rh( request, _vhm[request->host()] );
+        HTTP::Response               response( rh.make_response() );
+        std::string                  s( response.stringify() );
+        write( _fd, s.c_str(), s.size() );
+        std::cout << ( response.code == HTTP::Response::E200 ? GREEN : RED );
+        std::cout << HTTP::Response::code_to_string().at( response.code )
+                  << RESET << ' '
+                  << HTTP::Response::code_to_message( response.code )
+                  << std::endl;
         if ( !_http_parser.request()->keep_alive() ) {
             kill_me();
+            std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed\n"
+                      << RESET;
         } else {
-            _http_parser = HTTP::Request::DynamicParser();
-            std::cout << "reseting" << std::endl;
+            _http_parser = DynamicParser();
         }
     }
 }
 
-void ServerCluster::ClientCallback::handle_timeout() { kill_me(); }
+void ServerCluster::ClientCallback::handle_timeout() {
+    kill_me();
+    std::cout << CYAN << '[' << _fd << ']' << YELLOW << " timed out\n" << RESET;
+}
 
 /* ---------------------- ServerCluster::SocketCallback --------------------- */
 
@@ -187,7 +212,13 @@ CallbackBase *ServerCluster::SocketCallback::clone() const {
 void ServerCluster::SocketCallback::handle_read() {
     sockaddr_in addr( _addr );
     socklen_t   l = sizeof( addr );
-    int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
+    int  fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
+    char buff[INET_ADDRSTRLEN];
+    inet_ntop( AF_INET, &addr.sin_addr, buff, sizeof( buff ) );
+    std::cout << CYAN << '[' << fd << "] " << RESET << buff << ':'
+              << ntohs( _addr.sin_port ) << BLUE << " -> " << YELLOW
+              << " created tcp connection\n"
+              << RESET;
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
     const map_type &         m( _server._vh.at( addr.sin_port ) );
