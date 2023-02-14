@@ -37,9 +37,11 @@ class ServerCluster {
     /* ---------------------- ServerCluster::ClientCallback --------------------- */
 
     class ClientCallback : public CallbackBase {
-        HTTP::Request::DynamicParser _http_parser;
         int                          _fd;
         const VirtualHostMapper &    _vhm;
+        HTTP::Request::DynamicParser _http_parser;
+        bool                         _to;
+        bool                         _read;
 
     public:
         ClientCallback( int                      fd,

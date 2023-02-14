@@ -338,7 +338,7 @@ void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
 void HTTP::Request::DynamicParser::_append_to_content( const char *s,
                                                        size_t      n ) {
     n = std::min( n, _content_length - _request->_content.size() );
-    if ( n + _request->_content.size() > _max_body_size ) {
+    if ( n + _request->_content.size() + _content_overflow > _max_body_size ) {
         _content_overflow += n;
     } else {
         _request->_content.append( s, n );

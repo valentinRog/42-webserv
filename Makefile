@@ -24,4 +24,4 @@ fclean: clean
 re: fclean all
 
 run: $(NAME)
-	./$(NAME) test/config.json
+	./$(NAME) test/test.json

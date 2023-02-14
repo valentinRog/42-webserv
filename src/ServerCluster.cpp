@@ -79,13 +79,15 @@ ServerCluster::ClientCallback::ClientCallback( int                      fd,
                                                time_t idle_to )
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
-      _vhm( vhm ) {}
+      _vhm( vhm ),
+      _http_parser( _vhm.get_default()->client_max_body_size() ){}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
     return new ClientCallback( *this );
 }
 
 void ServerCluster::ClientCallback::handle_read() {
+    _read = true;
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
     _http_parser.add( buff, n );
@@ -97,8 +99,8 @@ void ServerCluster::ClientCallback::handle_write() {
     std::cout << CYAN << '[' << _fd << ']' << RESET << ' ';
     if ( _http_parser.failed() ) {
         std::string response( HTTP::Response::make_error_response(
-                                  _http_parser.error(),
-                                  _vhm.get_default()->code_to_error_page() )
+                                   _http_parser.error(),
+                                   _vhm.get_default()->code_to_error_page() )
                                   .stringify() );
         write( _fd, response.c_str(), response.size() );
         std::cout << RED
@@ -110,7 +112,8 @@ void ServerCluster::ClientCallback::handle_write() {
             kill_me();
             std::cout << CYAN << '[' << _fd << ']' << RESET << " closed\n";
         } else {
-            _http_parser = HTTP::Request::DynamicParser();
+            _http_parser = HTTP::Request::DynamicParser(
+                _vhm.get_default()->client_max_body_size() );
         }
     } else {
         std::cout << HTTP::Request::method_to_string().at(
@@ -132,13 +135,14 @@ void ServerCluster::ClientCallback::handle_write() {
             std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed"
                       << RESET << std::endl;
         } else {
-            _http_parser = HTTP::Request::DynamicParser();
+            _http_parser = HTTP::Request::DynamicParser(
+                _vhm.get_default()->client_max_body_size() );
         }
     }
 }
 
 void ServerCluster::ClientCallback::handle_timeout() {
-    kill_me();
+        kill_me();
     std::cout << CYAN << '[' << _fd << ']' << YELLOW << " timed out" << RESET
               << std::endl;
 }

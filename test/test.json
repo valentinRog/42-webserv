@@ -1,6 +1,7 @@
 [
   {
     "listen": ["0.0.0.0", 80],
+    "client_max_body_size": 200000,
     "routes": {
       "/": {
         "root": "test/www",
@@ -23,8 +24,13 @@
           ".py": "/usr/bin/python3"
         }
       },
+      "/upload": {
+        "root": "test/www/upload",
+        "methods": ["GET", "DELETE"],
+        "autoindex": true
+      },
       "/hello": {
-        "root": "test/www/hello/",
+        "root": "test/www/hello",
         "autoindex": true,
         "methods": ["GET"],
         "cgi": {
@@ -39,17 +45,6 @@
         "root": "test/www",
         "methods": ["GET"],
         "redir": "http://google.com"
-      }
-    }
-  },
-  {
-    "listen": ["0.0.0.0", 80],
-    "names": ["localhost"],
-    "routes": {
-      "/": {
-        "root": "test/www",
-        "index": "other.html",
-        "methods": ["GET"]
       }
     }
   }

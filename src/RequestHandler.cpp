@@ -96,15 +96,17 @@ HTTP::Response RequestHandler::_get() {
                                    _conf->code_to_error_page() );
     }
     if ( s.st_mode & S_IFDIR ) {
-        std::ifstream f( ( _path + '/' + _route->index() ).c_str() );
-        if ( f.is_open() ) {
-            _path += '/' + _route->index();
-            HTTP::Response r( HTTP::Response::E200 );
-            r.set_content(
-                std::string( ( std::istreambuf_iterator< char >( f ) ),
-                             std::istreambuf_iterator< char >() ) );
-            r.header["Content-Type"] = _content_type( _route->index() );
-            return r;
+        if ( _route->index().size() ) {
+            std::ifstream f( ( _path + '/' + _route->index() ).c_str() );
+            if ( f.is_open() ) {
+                _path += '/' + _route->index();
+                HTTP::Response r( HTTP::Response::E200 );
+                r.set_content(
+                    std::string( ( std::istreambuf_iterator< char >( f ) ),
+                                 std::istreambuf_iterator< char >() ) );
+                r.header["Content-Type"] = _content_type( _route->index() );
+                return r;
+            }
         }
 
         if ( _route->autoindex() ) { return _autoindex(); }
