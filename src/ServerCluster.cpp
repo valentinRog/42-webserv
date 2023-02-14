@@ -80,14 +80,13 @@ ServerCluster::ClientCallback::ClientCallback( int                      fd,
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
       _vhm( vhm ),
-      _http_parser( _vhm.get_default()->client_max_body_size() ){}
+      _http_parser( _vhm.get_default()->client_max_body_size() ) {}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
     return new ClientCallback( *this );
 }
 
 void ServerCluster::ClientCallback::handle_read() {
-    _read = true;
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
     _http_parser.add( buff, n );
@@ -96,18 +95,13 @@ void ServerCluster::ClientCallback::handle_read() {
 
 void ServerCluster::ClientCallback::handle_write() {
     if ( !_http_parser.done() && !_http_parser.failed() ) { return; }
-    std::cout << CYAN << '[' << _fd << ']' << RESET << ' ';
     if ( _http_parser.failed() ) {
         std::string response( HTTP::Response::make_error_response(
-                                   _http_parser.error(),
-                                   _vhm.get_default()->code_to_error_page() )
+                                  _http_parser.error(),
+                                  _vhm.get_default()->code_to_error_page() )
                                   .stringify() );
         write( _fd, response.c_str(), response.size() );
-        std::cout << RED
-                  << HTTP::Response::code_to_string().at( _http_parser.error() )
-                  << RESET << ' '
-                  << HTTP::Response::code_to_message( _http_parser.error() )
-                  << std::endl;
+        _log_write_failure( _http_parser.error() );
         if ( !_http_parser.request()->keep_alive() ) {
             kill_me();
             std::cout << CYAN << '[' << _fd << ']' << RESET << " closed\n";
@@ -116,20 +110,12 @@ void ServerCluster::ClientCallback::handle_write() {
                 _vhm.get_default()->client_max_body_size() );
         }
     } else {
-        std::cout << HTTP::Request::method_to_string().at(
-            _http_parser.request()->method() )
-                  << ' ' << _http_parser.request()->url() << BLUE << " -> "
-                  << RESET;
         Ptr::Shared< HTTP::Request > request( _http_parser.request() );
         RequestHandler               rh( request, _vhm[request->host()] );
         HTTP::Response               response( rh.make_response() );
         std::string                  s( response.stringify() );
         write( _fd, s.c_str(), s.size() );
-        std::cout << ( response.code == HTTP::Response::E200 ? GREEN : RED );
-        std::cout << HTTP::Response::code_to_string().at( response.code )
-                  << RESET << ' '
-                  << HTTP::Response::code_to_message( response.code )
-                  << std::endl;
+        _log_write_response( response.code );
         if ( !_http_parser.request()->keep_alive() ) {
             kill_me();
             std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed"
@@ -142,9 +128,27 @@ void ServerCluster::ClientCallback::handle_write() {
 }
 
 void ServerCluster::ClientCallback::handle_timeout() {
-        kill_me();
+    kill_me();
     std::cout << CYAN << '[' << _fd << ']' << YELLOW << " timed out" << RESET
               << std::endl;
+}
+
+void ServerCluster::ClientCallback::_log_write_failure(
+    HTTP::Response::e_error_code code ) const {
+    std::cout << CYAN << '[' << _fd << ']' << RESET << ' ' << RED
+              << HTTP::Response::code_to_string().at( code ) << RESET << ' '
+              << HTTP::Response::code_to_message( code ) << std::endl;
+}
+
+void ServerCluster::ClientCallback::_log_write_response(
+    HTTP::Response::e_error_code code ) const {
+    std::cout << CYAN << '[' << _fd << ']' << RESET << ' '
+              << HTTP::Request::method_to_string().at(
+                     _http_parser.request()->method() )
+              << ' ' << _http_parser.request()->url() << BLUE << " -> " << RESET
+              << ( code == HTTP::Response::E200 ? GREEN : RED )
+              << HTTP::Response::code_to_string().at( code ) << RESET << ' '
+              << HTTP::Response::code_to_message( code ) << std::endl;
 }
 
 /* ---------------------- ServerCluster::SocketCallback --------------------- */

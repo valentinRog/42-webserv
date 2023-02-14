@@ -40,8 +40,6 @@ class ServerCluster {
         int                          _fd;
         const VirtualHostMapper &    _vhm;
         HTTP::Request::DynamicParser _http_parser;
-        bool                         _to;
-        bool                         _read;
 
     public:
         ClientCallback( int                      fd,
@@ -52,6 +50,10 @@ class ServerCluster {
         void          handle_read();
         void          handle_write();
         void          handle_timeout();
+
+    private:
+        void _log_write_failure( HTTP::Response::e_error_code code ) const;
+        void _log_write_response(HTTP::Response::e_error_code code) const;
     };
 
     /* ---------------------- ServerCluster::SocketCallback --------------------- */

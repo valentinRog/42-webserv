@@ -134,7 +134,7 @@ public:
         void                   add( const char *s, size_t n );
         bool                   done() const;
         bool                   failed() const;
-        Ptr::Shared< Request > request();
+        Ptr::Shared< Request > request() const;
 
         HTTP::Response::e_error_code error() const;
 

@@ -265,7 +265,7 @@ bool HTTP::Request::DynamicParser::done() const { return _step == DONE; }
 
 bool HTTP::Request::DynamicParser::failed() const { return _step == FAILED; }
 
-Ptr::Shared< HTTP::Request > HTTP::Request::DynamicParser::request() {
+Ptr::Shared< HTTP::Request > HTTP::Request::DynamicParser::request() const {
     return _request;
 }
 
