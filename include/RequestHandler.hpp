@@ -32,7 +32,7 @@ class RequestHandler {
             SCRIPT_NAME,
             REDIRECT_STATUS
         };
-        static const std::string &env_key_to_string( e_env_key key );
+        static const std::string &key_to_string( e_env_key k );
 
         struct Env : public std::map< e_env_key, std::string > {
             char **     c_arr() const;
@@ -52,7 +52,7 @@ private:
     HTTP::Response _get();
     HTTP::Response _post();
     HTTP::Response _delete();
-    HTTP::Response _cgi( const std::string &bin_path );
+    HTTP::Response _cgi( const std::string &bin_path, const std::string &path );
 
     const std::string &_content_type( const std::string &path ) const;
 };

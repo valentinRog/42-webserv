@@ -29,7 +29,7 @@
         "autoindex": true,
         "methods": ["GET"],
         "cgi": {
-          ".py": "/usr/bin/python3",
+          ".py": "/root/goinfre/42-webserv/venv/bin/python3",
           ".php": "/usr/bin/php-cgi",
           ".js": "/usr/local/bin/node",
           ".rb": "/usr/bin/ruby",

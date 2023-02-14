@@ -19,7 +19,11 @@ struct Mime {
 
 struct Header
     : public std::map< std::string, std::string, Str::CaseInsensitiveCmp > {
+    static Option< std::pair< std::string, std::string > >
+    parse_line( const std::string &line );
+
     void add_raw( const std::string &raw );
+    bool check_field( const std::string &k, const std::string &v ) const;
 };
 
 /* -------------------------------- Response -------------------------------- */
@@ -37,6 +41,7 @@ struct Response : public Trait::Stringify {
         E405,
         E408,
         E413,
+        E414,
         E500,
         E502,
         E505
@@ -73,6 +78,7 @@ public:
     enum e_method { GET, POST, DELETE };
     static const BiMap< e_method, std::string > &method_to_string();
 
+private:
     e_method    _method;
     std::string _url;
     std::string _version;
@@ -91,6 +97,10 @@ public:
     const Header &     header() const;
     bool               keep_alive() const;
     const std::string &content() const;
+
+    size_t             count_header( e_header_key k ) const;
+    const std::string &at_header( e_header_key k ) const;
+    bool check_header_field( e_header_key k, const std::string &v ) const;
 
     /* ------------------------- Request::DynamicParser ------------------------- */
 
@@ -129,12 +139,12 @@ public:
         HTTP::Response::e_error_code error() const;
 
     private:
-        void   _parse_line();
-        void   _parse_request_line();
-        void   _parse_host_line();
-        void   _parse_header_line();
-        void   _parse_chunk_size_line();
-        size_t _append_to_content( const char *s, size_t n );
+        void _parse_line();
+        void _parse_request_line();
+        void _parse_host_line();
+        void _parse_header_line();
+        void _parse_chunk_size_line();
+        void _append_to_content( const char *s, size_t n );
     };
 
     /* -------------------------------------------------------------------------- */

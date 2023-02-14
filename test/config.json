@@ -1,0 +1,56 @@
+[
+  {
+    "listen": ["0.0.0.0", 80],
+    "routes": {
+      "/": {
+        "root": "test/www",
+        "index": "index.html",
+        "methods": ["GET"]
+      },
+      "/form/add": {
+        "root": "test/www/",
+        "handler": "test/www/cgi/add.py",
+        "methods": ["POST"],
+        "cgi": {
+          ".py": "/usr/bin/python3"
+        }
+      },
+      "/form/upload": {
+        "root": "test/www/upload",
+        "handler": "extensions/upload/upload.py",
+        "methods": ["POST"],
+        "cgi": {
+          ".py": "/usr/bin/python3"
+        }
+      },
+      "/hello": {
+        "root": "test/www/hello/",
+        "autoindex": true,
+        "methods": ["GET"],
+        "cgi": {
+          ".py": "/usr/bin/python3",
+          ".php": "/usr/bin/php-cgi",
+          ".js": "/usr/local/bin/node",
+          ".rb": "/usr/bin/ruby",
+          ".sh": "/bin/sh"
+        }
+      },
+      "/redir": {
+        "root": "test/www",
+        "methods": ["GET"],
+        "redir": "http://google.com"
+      }
+    }
+  },
+  {
+    "listen": ["0.0.0.0", 80],
+    "names": ["localhost"],
+    "routes": {
+      "/": {
+        "root": "test/www",
+        "index": "other.html",
+        "methods": ["GET"]
+      }
+    }
+  }
+]

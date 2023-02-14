@@ -13,6 +13,7 @@ ServerConf::Route::key_to_string() {
             m.insert( std::make_pair( CGI, "cgi" ) );
             m.insert( std::make_pair( AUTOINDEX, "autoindex" ) );
             m.insert( std::make_pair( REDIR, "redir" ) );
+            m.insert( std::make_pair( HANDLER, "handler" ) );
             return m;
         }
     };
@@ -26,12 +27,7 @@ ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
     }
     _root = o.at( key_to_string().at( ROOT ) ).unwrap< JSON::String >();
     if ( o.count( key_to_string().at( INDEX ) ) ) {
-        JSON::Array a(
-            o.at( key_to_string().at( INDEX ) ).unwrap< JSON::Array >() );
-        for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
-              it++ ) {
-            _index.push_back( it->unwrap< JSON::String >() );
-        }
+        _index = o.at( key_to_string().at( INDEX ) ).unwrap< JSON::String >();
     }
     if ( o.count( key_to_string().at( AUTOINDEX ) ) ) {
         _autoindex
@@ -57,13 +53,15 @@ ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
             _cgis[it->first] = it->second.unwrap< JSON::String >();
         }
     }
+    if ( o.count( key_to_string().at( HANDLER ) ) ) {
+        _handler
+            = o.at( key_to_string().at( HANDLER ) ).unwrap< JSON::String >();
+    }
 }
 
 const std::string &ServerConf::Route::root() const { return _root; }
 
-const std::list< std::string > &ServerConf::Route::index() const {
-    return _index;
-}
+const std::string &ServerConf::Route::index() const { return _index; }
 
 const std::set< std::string > &ServerConf::Route::methods() const {
     return _methods;
@@ -76,6 +74,8 @@ const std::string &ServerConf::Route::redir() const { return _redir; }
 const std::map< std::string, std::string > &ServerConf::Route::cgis() const {
     return _cgis;
 }
+
+const std::string &ServerConf::Route::handler() const { return _handler; }
 
 /* ------------------------- ServerConf::RouteMapper ------------------------ */
 

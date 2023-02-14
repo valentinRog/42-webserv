@@ -3,16 +3,16 @@
 #include "common.h"
 
 template < typename T > class Option {
-    bool _is_some;
-    union {
-        T    _data;
-        char _sentinel;
-    };
+    T   * _data;
 
 public:
     Option();
     Option( const T &value );
-    Option &operator=( const T &value );
+    Option(const Option &other);
+    ~Option();
+
+    Option &operator=( const Option & );
+
     bool    is_some() const;
     bool    is_none() const;
 

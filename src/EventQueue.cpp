@@ -66,9 +66,7 @@ void EventQueue::wait() {
         if ( !_callbacks.count( _events[i].data.fd ) ) { continue; }
         if ( _callbacks.at( _events[i].data.fd )->get_kill_me() ) {
             remove( _events[i].data.fd );
-            continue;
-        }
-        if ( _events[i].events & EPOLLIN ) {
+        } else if ( _events[i].events & EPOLLIN ) {
             _callbacks.at( _events[i].data.fd )->handle_read();
         } else if ( _events[i].events & EPOLLOUT ) {
             _callbacks.at( _events[i].data.fd )->handle_write();
@@ -133,9 +131,7 @@ void EventQueue::wait() {
     int n_events       = kevent( _kqueue_fd, 0, 0, _events, _max_events, &ts );
     if ( n_events == -1 ) { throw std::runtime_error( "kevent" ); }
     for ( int i = 0; i < n_events; i++ ) {
-        if ( _callbacks.find( _events[i].ident ) == _callbacks.end() ) {
-            continue;
-        }
+        if ( !_callbacks.count( _events[i].ident ) ) { continue; }
         if ( _callbacks.at( _events[i].ident )->get_kill_me() ) {
             remove( _events[i].ident );
             continue;

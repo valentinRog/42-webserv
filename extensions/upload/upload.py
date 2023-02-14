@@ -1,11 +1,13 @@
 import cgi
+import os
 
 form = cgi.FieldStorage()
+upload_dir = os.environ["QUERY_STRING"]
 
 if "file" in form:
     file = form["file"]
     if isinstance(file, cgi.FieldStorage) and file.filename:
-        with open(f"html/upload/{file.filename}", "wb") as f:
+        with open(f"{upload_dir}/{file.filename}", "wb") as f:
             f.write(file.file.read())
         content = "Successfully uploaded"
     else:

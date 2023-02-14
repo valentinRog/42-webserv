@@ -11,6 +11,7 @@ const std::map< std::string, std::string > &HTTP::Mime::extension_to_type() {
             m["js"]   = "application/javascript";
             m["json"] = "application/json";
             m["png"]  = "image/png";
+            m["pdf"]  = "application/pdf";
             return m;
         }
     };
@@ -20,6 +21,21 @@ const std::map< std::string, std::string > &HTTP::Mime::extension_to_type() {
 
 /* --------------------------------- Header --------------------------------- */
 
+Option< std::pair< std::string, std::string > >
+HTTP::Header::parse_line( const std::string &line ) {
+    std::istringstream iss( line );
+    std::string        k;
+    std::string        v;
+    iss >> k;
+    if ( iss.fail() ) {
+        return Option< std::pair< std::string, std::string > >();
+    }
+    k = k.substr( 0, k.size() - 1 );
+    v = iss.str().substr( k.size() + 2, iss.str().size() );
+    return Option< std::pair< std::string, std::string > >(
+        std::make_pair( k, Str::trim_right( v, "\r" ) ) );
+}
+
 void HTTP::Header::add_raw( const std::string &raw ) {
     clear();
     std::vector< std::string > v;
@@ -27,14 +43,15 @@ void HTTP::Header::add_raw( const std::string &raw ) {
     for ( std::vector< std::string >::const_iterator it( v.begin() );
           it != v.end();
           it++ ) {
-        std::istringstream iss( *it );
-        std::string        k;
-        std::string        v;
-        iss >> k;
-        k            = k.substr( 0, k.size() - 1 );
-        v            = iss.str().substr( k.size() + 2, iss.str().size() );
-        ( *this )[k] = v;
+        std::pair< std::string, std::string > p = parse_line( *it ).unwrap();
+        insert( p );
     }
+}
+
+bool HTTP::Header::check_field( const std::string &k,
+                                const std::string &v ) const {
+    const_iterator it( find( k ) );
+    return it == end() ? false : it->second == v;
 }
 
 /* -------------------------------- Response -------------------------------- */
@@ -68,6 +85,7 @@ HTTP::Response::code_to_string() {
             m.insert( std::make_pair( E405, "405" ) );
             m.insert( std::make_pair( E408, "408" ) );
             m.insert( std::make_pair( E413, "413" ) );
+            m.insert( std::make_pair( E414, "414" ) );
             m.insert( std::make_pair( E500, "500" ) );
             m.insert( std::make_pair( E502, "502" ) );
             m.insert( std::make_pair( E505, "505" ) );
@@ -91,6 +109,7 @@ HTTP::Response::code_to_message( HTTP::Response::e_error_code code ) {
             m[E405] = "Method Not Allowed";
             m[E408] = "Request Timeout";
             m[E413] = "Request Entity Too Large";
+            m[E414] = "URI Too Long";
             m[E500] = "Internal Server Error";
             m[E502] = "Bad Gateway";
             m[E505] = "Version Not Supported";
@@ -152,12 +171,12 @@ const BiMap< HTTP::Request::e_header_key, std::string > &
 HTTP::Request::key_to_string() {
     struct f {
         static BiMap< e_header_key, std::string > init() {
-            BiMap< e_header_key, std::string > m;
-            m.insert( std::make_pair( CONTENT_LENGTH, "Content-Length" ) );
-            m.insert(
-                std::make_pair( TRANSFER_ENCODING, "Transfert-encoding" ) );
-            m.insert( std::make_pair( COOKIE, "Cookie" ) );
-            m.insert( std::make_pair( CONNECTION, "Connection" ) );
+            BiMap< e_header_key, std::string >             m;
+            typedef std::pair< e_header_key, std::string > value_type;
+            m.insert( value_type( CONTENT_LENGTH, "Content-Length" ) );
+            m.insert( value_type( TRANSFER_ENCODING, "Transfert-encoding" ) );
+            m.insert( value_type( COOKIE, "Cookie" ) );
+            m.insert( value_type( CONNECTION, "Connection" ) );
             return m;
         }
     };
@@ -196,6 +215,19 @@ bool HTTP::Request::keep_alive() const { return _keep_alive; }
 
 const std::string &HTTP::Request::content() const { return _content; }
 
+size_t HTTP::Request::count_header( e_header_key k ) const {
+    return _header.count( key_to_string().at( k ) );
+}
+
+const std::string &HTTP::Request::at_header( e_header_key k ) const {
+    return _header.at( key_to_string().at( k ) );
+}
+
+bool HTTP::Request::check_header_field( e_header_key       k,
+                                        const std::string &v ) const {
+    return _header.check_field( key_to_string().at( k ), v );
+}
+
 /* ------------------------- Request::DynamicParser ------------------------- */
 
 HTTP::Request::DynamicParser::DynamicParser( size_t max_body_size )
@@ -222,7 +254,10 @@ void HTTP::Request::DynamicParser::add( const char *s, size_t n ) {
                 }
             }
         }
-        if ( _step == CONTENT ) { p += _append_to_content( p, n - ( p - s ) ); }
+        if ( _step == CONTENT ) {
+            _append_to_content( p, n - ( p - s ) );
+            p += n;
+        }
     }
 }
 
@@ -271,30 +306,24 @@ void HTTP::Request::DynamicParser::_parse_host_line() {
 }
 
 void HTTP::Request::DynamicParser::_parse_header_line() {
-    std::istringstream iss( _line );
-    if ( !iss.str().size() ) {
-        _request->_header.add_raw( _raw_header );
-        if ( _request->header().count( key_to_string().at( CONNECTION ) )
-             && _request->header().at( key_to_string().at( CONNECTION ) )
-                    == "keep-alive\r" ) {
-            _request->_keep_alive = true;
-        }
-        if ( _request->_header.count( key_to_string().at( TRANSFER_ENCODING ) )
-             && _request->_header.at( key_to_string().at( TRANSFER_ENCODING ) )
-                    == "chunked" ) {
+    if ( !_line.size() ) {
+        _request->_keep_alive
+            = _request->check_header_field( CONNECTION, "keep-alive" );
+        if ( _request->check_header_field( TRANSFER_ENCODING, "chunked" ) ) {
+            std::cout << "chunked" << std::endl;
             _chunked = true;
             _step    = CHUNK_SIZE;
-        } else if ( _request->_header.count(
-                        key_to_string().at( CONTENT_LENGTH ) ) ) {
-            std::istringstream iss(
-                _request->_header.at( key_to_string().at( CONTENT_LENGTH ) ) );
+        } else if ( _request->count_header( CONTENT_LENGTH ) ) {
+            std::istringstream iss( _request->at_header( CONTENT_LENGTH ) );
             iss >> _content_length;
             _step = CONTENT;
         } else {
             _step = DONE;
         }
     } else {
-        _raw_header += _line + "\r\n";
+        std::pair< std::string, std::string > p
+            = Header::parse_line( _line ).unwrap();
+        _request->_header.insert( p );
     }
 }
 
@@ -306,8 +335,8 @@ void HTTP::Request::DynamicParser::_parse_chunk_size_line() {
     _step = _content_length ? CONTENT : DONE;
 }
 
-size_t HTTP::Request::DynamicParser::_append_to_content( const char *s,
-                                                         size_t      n ) {
+void HTTP::Request::DynamicParser::_append_to_content( const char *s,
+                                                       size_t      n ) {
     n = std::min( n, _content_length - _request->_content.size() );
     if ( n + _request->_content.size() > _max_body_size ) {
         _content_overflow += n;
@@ -321,7 +350,6 @@ size_t HTTP::Request::DynamicParser::_append_to_content( const char *s,
         _step = _content_overflow ? FAILED : DONE;
         if ( _step == FAILED ) { _error = Response::E413; }
     }
-    return n;
 }
 
 /* -------------------------------------------------------------------------- */

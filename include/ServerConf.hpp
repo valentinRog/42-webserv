@@ -14,25 +14,35 @@ public:
     /* ---------------------------- ServerConf::Route --------------------------- */
 
     class Route {
-        enum e_config_key { ROOT, INDEX, METHODS, CGI, AUTOINDEX, REDIR };
+        enum e_config_key {
+            ROOT,
+            INDEX,
+            METHODS,
+            CGI,
+            AUTOINDEX,
+            REDIR,
+            HANDLER
+        };
         static const BiMap< e_config_key, std::string > &key_to_string();
 
         std::string                          _root;
-        std::list< std::string >             _index;
+        std::string                          _index;
         std::set< std::string >              _methods;
         bool                                 _autoindex;
         std::string                          _redir;
         std::map< std::string, std::string > _cgis;
+        std::string                          _handler;
 
     public:
         Route( const JSON::Object &o );
 
         const std::string &                         root() const;
-        const std::list< std::string > &            index() const;
+        const std::string &                         index() const;
         const std::set< std::string > &             methods() const;
         bool                                        autoindex() const;
         const std::string &                         redir() const;
         const std::map< std::string, std::string > &cgis() const;
+        const std::string &                         handler() const;
     };
 
     /* ------------------------- ServerConf::RouteMapper ------------------------ */

@@ -129,8 +129,8 @@ void ServerCluster::ClientCallback::handle_write() {
                   << std::endl;
         if ( !_http_parser.request()->keep_alive() ) {
             kill_me();
-            std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed\n"
-                      << RESET;
+            std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed"
+                      << RESET << std::endl;
         } else {
             _http_parser = HTTP::Request::DynamicParser();
         }
@@ -139,7 +139,8 @@ void ServerCluster::ClientCallback::handle_write() {
 
 void ServerCluster::ClientCallback::handle_timeout() {
     kill_me();
-    std::cout << CYAN << '[' << _fd << ']' << YELLOW << " timed out\n" << RESET;
+    std::cout << CYAN << '[' << _fd << ']' << YELLOW << " timed out" << RESET
+              << std::endl;
 }
 
 /* ---------------------- ServerCluster::SocketCallback --------------------- */
@@ -159,7 +160,8 @@ CallbackBase *ServerCluster::SocketCallback::clone() const {
 void ServerCluster::SocketCallback::handle_read() {
     sockaddr_in addr( _addr );
     socklen_t   l = sizeof( addr );
-    int  fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
+    int fd = ::accept( _fd, reinterpret_cast< sockaddr * >( &addr ), &l );
+    if ( fd < 0 || fcntl( fd, F_SETFL, O_NONBLOCK ) < 0 ) { return; }
     char buff[INET_ADDRSTRLEN];
     inet_ntop( AF_INET, &addr.sin_addr, buff, sizeof( buff ) );
     std::cout << CYAN << '[' << fd << "] " << RESET << buff << ':'
