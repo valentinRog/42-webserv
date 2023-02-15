@@ -28,5 +28,5 @@ def  test_bad_method():
     s.connect((ADDRESS, PORT))
     s.send(BAD_METHOD_REQUEST.encode())
     data = s.recv(1024)
-    assert data.decode().startswith("HTTP/1.1 400 Bad Request")
+    assert data.decode().startswith("HTTP/1.1 405")
     s.close()

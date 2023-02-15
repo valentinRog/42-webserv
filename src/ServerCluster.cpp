@@ -155,7 +155,7 @@ void ServerCluster::ClientCallback::_log_write_response(
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster &    server )
+                                               ServerCluster     &server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -178,7 +178,7 @@ void ServerCluster::SocketCallback::handle_read() {
               << RESET;
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type &         m( _server._vh.at( addr.sin_port ) );
+    const map_type          &m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {

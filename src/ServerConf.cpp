@@ -116,13 +116,14 @@ const BiMap< ServerConf::e_config_key, std::string > &
 ServerConf::key_to_string() {
     struct f {
         static BiMap< e_config_key, std::string > init() {
-            BiMap< e_config_key, std::string > m;
-            m.insert( std::make_pair( LISTEN, "listen" ) );
-            m.insert( std::make_pair( SERVER_NAMES, "names" ) );
-            m.insert( std::make_pair( CLIENT_MAX_BODY_SIZE,
-                                      "client_max_body_size" ) );
-            m.insert( std::make_pair( ROUTES, "routes" ) );
-            m.insert( std::make_pair( ERROR_PAGES, "error_pages" ) );
+            typedef std::pair< e_config_key, std::string > value_type;
+            BiMap< e_config_key, std::string >             m;
+            m.insert( value_type( LISTEN, "listen" ) );
+            m.insert( value_type( SERVER_NAMES, "names" ) );
+            m.insert(
+                value_type( CLIENT_MAX_BODY_SIZE, "client_max_body_size" ) );
+            m.insert( value_type( ROUTES, "routes" ) );
+            m.insert( value_type( ERROR_PAGES, "error_pages" ) );
             return m;
         }
     };

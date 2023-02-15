@@ -26,6 +26,19 @@ struct Header
     bool check_field( const std::string &k, const std::string &v ) const;
 };
 
+/* ---------------------------------- Body ---------------------------------- */
+
+class BodyParser {
+    size_t      _body_max_size;
+    std::string _content;
+
+public:
+    BodyParser( size_t body_max_size = SIZE_MAX )
+        : _body_max_size( body_max_size ) {}
+
+    void feed( const std::string &s );
+};
+
 /* -------------------------------- Response -------------------------------- */
 
 struct Response : public Trait::Stringify {
@@ -94,7 +107,7 @@ public:
     const std::string &url() const;
     const std::string &version() const;
     const std::string &host() const;
-    const Header &     header() const;
+    const Header      &header() const;
     bool               keep_alive() const;
     const std::string &content() const;
 

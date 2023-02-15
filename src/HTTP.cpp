@@ -289,7 +289,8 @@ void HTTP::Request::DynamicParser::_parse_request_line() {
     iss >> method;
     if ( !Request::method_to_string().count( method ) ) {
         _step  = FAILED;
-        _error = Response::E400;
+        _request->_keep_alive = true;
+        _error = Response::E405;
         return;
     }
     _request->_method = Request::method_to_string().at( method );
