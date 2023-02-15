@@ -1,18 +1,11 @@
-#Request::DynamicParser error handling:
-    throw custom exceptions and imediately return HTTP::Response::make_error_response in ServerCluster + close the client
+#CGI env variables (QUERY_STRING, PATH_INFO, ...)
 
-#max client body size
+#Option for optionnal variables
 
-#Clean and universal way to upload files
+#Test cookies
 
-#fcntl ?
+#Test cgi
 
-#CGI env variables
+#Response connection closed/keep-alive
 
-#If no content_length is returned from the CGI, EOF will mark the end of the returned data
-
-#Our CGis probably sucks
-
-#Test in python ?
-
-#Send error on timeout (408)
+#compile with c++
