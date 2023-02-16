@@ -38,10 +38,12 @@ class ServerCluster {
 
     class ClientCallback : public CallbackBase {
         int                                _fd;
-        const VirtualHostMapper &          _vhm;
+        const VirtualHostMapper           &_vhm;
         HTTP::Request::DynamicParser       _http_parser;
         std::string                        _accu;
         Option< HTTP::ContentAccumulator > _content;
+        std::string                        _raw_request_line;
+        std::string                        _raw_header_line;
 
     public:
         ClientCallback( int                      fd,

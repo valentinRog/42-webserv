@@ -63,21 +63,6 @@ char *Str::dup( const std::string &s ) {
     return res;
 }
 
-/* ------------------------------ Str::CIString ----------------------------- */
-
-Str::CIString::CIString() {}
-
-Str::CIString::CIString( const std::string &other ) : std::string( other ) {}
-
-bool Str::CIString::operator==( const std::string &other ) const {
-    if ( this->size() != other.size() ) { return false; }
-    CIString lhs( *this );
-    CIString rhs( other );
-    std::transform( lhs.begin(), lhs.end(), lhs.begin(), ::tolower );
-    std::transform( rhs.begin(), rhs.end(), rhs.begin(), ::tolower );
-    return lhs == rhs;
-}
-
 /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
 bool Str::CaseInsensitiveCmp::operator()( const std::string &s1,

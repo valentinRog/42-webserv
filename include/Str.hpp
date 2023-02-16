@@ -32,18 +32,13 @@ struct Str {
 
     static char *dup( const std::string &s );
 
-    template < typename TI, typename TO >
+    template < typename T >
     static void
-    split( TO &output, const TI &input, const std::string &charset );
+    split( T &output, const std::string &input, const std::string &charset );
 
-    /* ------------------------------ Str::CIString ----------------------------- */
-
-    struct CIString : public std::string {
-        CIString();
-        CIString( const std::string &other );
-
-        bool operator==( const std::string &other ) const;
-    };
+    template < typename T >
+    static size_t
+    cat_until( std::string &s, T first, T last, const std::string &end );
 
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
