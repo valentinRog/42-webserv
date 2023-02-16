@@ -28,15 +28,28 @@ struct Header
 
 /* ---------------------------------- Body ---------------------------------- */
 
-class BodyParser {
+class ContentAccumulator {
     size_t      _body_max_size;
     std::string _content;
+    size_t      _content_length;
+    bool        _done;
 
 public:
-    BodyParser( size_t body_max_size = SIZE_MAX )
-        : _body_max_size( body_max_size ) {}
+    ContentAccumulator( size_t content_length, size_t body_max_size = SIZE_MAX )
+        : _body_max_size( body_max_size ),
+          _content_length( content_length ),
+          _done( false ) {}
 
-    void feed( const std::string &s );
+    void feed( const std::string &s ) {
+        _content += s;
+        if ( _content.size() >= _content_length ) {
+            _content = _content.substr( 0, _content_length );
+            _done    = true;
+        }
+    }
+
+    bool done() const { return _done; }
+    const std::string& content() const { return _content; }
 };
 
 /* -------------------------------- Response -------------------------------- */
@@ -107,13 +120,34 @@ public:
     const std::string &url() const;
     const std::string &version() const;
     const std::string &host() const;
-    const Header      &header() const;
+    const Header &     header() const;
     bool               keep_alive() const;
     const std::string &content() const;
 
     size_t             count_header( e_header_key k ) const;
     const std::string &at_header( e_header_key k ) const;
     bool check_header_field( e_header_key k, const std::string &v ) const;
+
+    static Request from_string( const std::string &s ) {
+        Request     r;
+        std::string first_line = s.substr( 0, s.find( "\r\n" ) );
+        r._method              = method_to_string().at(
+            first_line.substr( 0, first_line.find( ' ' ) ) );
+        r._url     = first_line.substr( first_line.find( ' ' ) + 1,
+                                    first_line.rfind( ' ' )
+                                        - first_line.find( ' ' ) - 1 );
+        r._version = first_line.substr( first_line.rfind( ' ' ) + 1 );
+        std::string        line;
+        std::istringstream ss( s );
+        std::getline( ss, line );
+        while ( std::getline( ss, line ) ) {
+            if ( line == "\r" ) break;
+            std::string key   = line.substr( 0, line.find( ':' ) );
+            std::string value = line.substr( line.find( ':' ) + 1 );
+            r._header[key]    = value;
+        }
+        return r;
+    }
 
     /* ------------------------- Request::DynamicParser ------------------------- */
 
