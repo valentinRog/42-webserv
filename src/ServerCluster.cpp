@@ -80,7 +80,7 @@ ServerCluster::ClientCallback::ClientCallback( int                      fd,
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
       _vhm( vhm ),
-      _http_parser( _vhm.get_default()->client_max_body_size() ) {}
+      _step( HEADER ) {}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
     return new ClientCallback( *this );
@@ -89,49 +89,33 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 void ServerCluster::ClientCallback::handle_read() {
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
-    _http_parser.add( buff, n );
-    size_t ret = Str::cat_until( _raw_request_line, buff, buff + n, "\r\n" );
-    ret = Str::cat_until( _raw_header_line, buff + ret, buff + n, "\r\n\r\n" );
+    size_t ret = Str::append_until( _raw_request_line, buff, buff + n, "\r\n" );
+    ret        = Str::append_until( _raw_header_line,
+                             buff + ret,
+                             buff + n,
+                             "\r\n\r\n" );
+    _raw_content.append( buff + ret, buff + n );
     update_last_t();
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    if ( !_http_parser.done() && !_http_parser.failed() ) { return; }
-    std::cout << _raw_request_line << std::endl;
-    std::cout << _raw_header_line << std::endl;
-    if ( _content.is_some() ) {
-        std::cout << _content.unwrap().content() << std::endl;
+    if ( !Str::ends_with( _raw_request_line, "\r\n" )
+         || !Str::ends_with( _raw_header_line, "\r\n\r\n" ) ) {
+        return;
     }
-    if ( _http_parser.failed() ) {
-        std::string response( HTTP::Response::make_error_response(
-                                  _http_parser.error(),
-                                  _vhm.get_default()->code_to_error_page() )
-                                  .stringify() );
-        write( _fd, response.c_str(), response.size() );
-        _log_write_failure( _http_parser.error() );
-        if ( !_http_parser.request()->keep_alive() ) {
-            kill_me();
-            std::cout << CYAN << '[' << _fd << ']' << RESET << " closed\n";
-        } else {
-            _http_parser = HTTP::Request::DynamicParser(
-                _vhm.get_default()->client_max_body_size() );
-        }
-    } else {
-        Ptr::Shared< HTTP::Request > request( _http_parser.request() );
-        RequestHandler               rh( request, _vhm[request->host()] );
-        HTTP::Response               response( rh.make_response() );
-        std::string                  s( response.stringify() );
-        write( _fd, s.c_str(), s.size() );
-        _log_write_response( response.code );
-        if ( !_http_parser.request()->keep_alive() ) {
-            kill_me();
-            std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed"
-                      << RESET << std::endl;
-        } else {
-            _http_parser = HTTP::Request::DynamicParser(
-                _vhm.get_default()->client_max_body_size() );
-        }
-    }
+    Ptr::Shared< HTTP::Request > r
+        = new HTTP::Request( HTTP::Request::from_string( _raw_request_line,
+                                                         _raw_header_line,
+                                                         _raw_content )
+                                 .unwrap() );
+    RequestHandler rh( r, _vhm[r->host()] );
+    HTTP::Response response( rh.make_response() );
+    std::string    s( response.stringify() );
+    write( _fd, s.c_str(), s.size() );
+    _log_write_response( response.code );
+    kill_me();
+    std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed" << RESET
+              << std::endl;
 }
 
 void ServerCluster::ClientCallback::handle_timeout() {
@@ -151,8 +135,8 @@ void ServerCluster::ClientCallback::_log_write_response(
     HTTP::Response::e_error_code code ) const {
     std::cout << CYAN << '[' << _fd << ']' << RESET << ' '
               << HTTP::Request::method_to_string().at(
-                     _http_parser.request()->method() )
-              << ' ' << _http_parser.request()->url() << BLUE << " -> " << RESET
+                     _request.unwrap().method() )
+              << ' ' << _request.unwrap().url() << BLUE << " -> " << RESET
               << ( code == HTTP::Response::E200 ? GREEN : RED )
               << HTTP::Response::code_to_string().at( code ) << RESET << ' '
               << HTTP::Response::code_to_message( code ) << std::endl;

@@ -13,7 +13,7 @@ void Str::split( T                 &output,
 
 template < typename T >
 size_t
-Str::cat_until( std::string &s, T first, T last, const std::string &end ) {
+Str::append_until( std::string &s, T first, T last, const std::string &end ) {
     size_t i( 0 );
     for ( ; !ends_with( s, end ) && first != last; first++, i++ ) {
         s += *first;

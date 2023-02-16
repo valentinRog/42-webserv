@@ -11,7 +11,7 @@ public:
     Option(const Option &other);
     ~Option();
 
-    Option &operator=( const Option & );
+    Option &operator=( const Option &other );
 
     bool    is_some() const;
     bool    is_none() const;

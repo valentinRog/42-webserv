@@ -38,7 +38,7 @@ struct Str {
 
     template < typename T >
     static size_t
-    cat_until( std::string &s, T first, T last, const std::string &end );
+    append_until( std::string &s, T first, T last, const std::string &end );
 
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 

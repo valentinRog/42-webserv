@@ -48,8 +48,8 @@ public:
         }
     }
 
-    bool done() const { return _done; }
-    const std::string& content() const { return _content; }
+    bool               done() const { return _done; }
+    const std::string &content() const { return _content; }
 };
 
 /* -------------------------------- Response -------------------------------- */
@@ -105,13 +105,14 @@ public:
     static const BiMap< e_method, std::string > &method_to_string();
 
 private:
-    e_method    _method;
-    std::string _url;
-    std::string _version;
-    std::string _host;
-    Header      _header;
-    bool        _keep_alive;
-    std::string _content;
+    e_method                   _method;
+    std::string                _url;
+    std::string                _version;
+    std::string                _host;
+    Header                     _header;
+    bool                       _keep_alive;
+    std::string                _content;
+    Ptr::Shared< std::string > _content_ptr;
 
 public:
     Request();
@@ -120,7 +121,7 @@ public:
     const std::string &url() const;
     const std::string &version() const;
     const std::string &host() const;
-    const Header &     header() const;
+    const Header      &header() const;
     bool               keep_alive() const;
     const std::string &content() const;
 
@@ -128,73 +129,20 @@ public:
     const std::string &at_header( e_header_key k ) const;
     bool check_header_field( e_header_key k, const std::string &v ) const;
 
-    static Request from_string( const std::string &s ) {
-        Request     r;
-        std::string first_line = s.substr( 0, s.find( "\r\n" ) );
-        r._method              = method_to_string().at(
-            first_line.substr( 0, first_line.find( ' ' ) ) );
-        r._url     = first_line.substr( first_line.find( ' ' ) + 1,
-                                    first_line.rfind( ' ' )
-                                        - first_line.find( ' ' ) - 1 );
-        r._version = first_line.substr( first_line.rfind( ' ' ) + 1 );
-        std::string        line;
-        std::istringstream ss( s );
-        std::getline( ss, line );
-        while ( std::getline( ss, line ) ) {
-            if ( line == "\r" ) break;
-            std::string key   = line.substr( 0, line.find( ':' ) );
-            std::string value = line.substr( line.find( ':' ) + 1 );
-            r._header[key]    = value;
-        }
+    static Option< Request > from_string( const std::string &request_line,
+                                          const std::string &raw_header,
+                                          const std::string &content ) {
+        Request r;
+        r._content = content;
+        r._method  = method_to_string().at(
+            request_line.substr( 0, request_line.find( ' ' ) ) );
+        r._url     = request_line.substr( request_line.find( ' ' ) + 1,
+                                      request_line.rfind( ' ' )
+                                          - request_line.find( ' ' ) - 1 );
+        r._version = request_line.substr( request_line.rfind( ' ' ) + 1 );
+        r._header.add_raw( Str::trim_right( raw_header, "\r\n\r\n" ) );
         return r;
     }
-
-    /* ------------------------- Request::DynamicParser ------------------------- */
-
-    class DynamicParser {
-    public:
-        enum e_step {
-            REQUEST    = 1 << 0,
-            HOST       = 1 << 1,
-            HEADER     = 1 << 2,
-            CONTENT    = 1 << 3,
-            DONE       = 1 << 4,
-            FAILED     = 1 << 5,
-            CHUNK_SIZE = 1 << 6
-        };
-
-    private:
-        std::string                            _line;
-        std::string                            _sep;
-        e_step                                 _step;
-        size_t                                 _content_overflow;
-        Ptr::Shared< Request >                 _request;
-        size_t                                 _content_length;
-        std::string                            _raw_header;
-        bool                                   _chunked;
-        Option< HTTP::Response::e_error_code > _error;
-        size_t                                 _max_body_size;
-
-    public:
-        DynamicParser( size_t max_body_size = SIZE_MAX );
-
-        void                   add( const char *s, size_t n );
-        bool                   done() const;
-        bool                   failed() const;
-        Ptr::Shared< Request > request() const;
-
-        HTTP::Response::e_error_code error() const;
-
-    private:
-        void _parse_line();
-        void _parse_request_line();
-        void _parse_host_line();
-        void _parse_header_line();
-        void _parse_chunk_size_line();
-        void _append_to_content( const char *s, size_t n );
-    };
-
-    /* -------------------------------------------------------------------------- */
 };
 
 /* -------------------------------------------------------------------------- */
