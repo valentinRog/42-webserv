@@ -19,37 +19,11 @@ struct Mime {
 
 struct Header
     : public std::map< std::string, std::string, Str::CaseInsensitiveCmp > {
-    static Option< std::pair< std::string, std::string > >
-    parse_line( const std::string &line );
+    bool        check_field( const std::string &k, const std::string &v ) const;
+    std::string get( const std::string &k,
+                     const std::string &def = std::string() ) const;
 
-    void add_raw( const std::string &raw );
-    bool check_field( const std::string &k, const std::string &v ) const;
-};
-
-/* ---------------------------------- Body ---------------------------------- */
-
-class ContentAccumulator {
-    size_t      _body_max_size;
-    std::string _content;
-    size_t      _content_length;
-    bool        _done;
-
-public:
-    ContentAccumulator( size_t content_length, size_t body_max_size = SIZE_MAX )
-        : _body_max_size( body_max_size ),
-          _content_length( content_length ),
-          _done( false ) {}
-
-    void feed( const std::string &s ) {
-        _content += s;
-        if ( _content.size() >= _content_length ) {
-            _content = _content.substr( 0, _content_length );
-            _done    = true;
-        }
-    }
-
-    bool               done() const { return _done; }
-    const std::string &content() const { return _content; }
+    static Option< Header > from_string( const std::string &s );
 };
 
 /* -------------------------------- Response -------------------------------- */
@@ -94,6 +68,26 @@ private:
     std::string _content;
 };
 
+/* --------------------------- ContentAccumulator --------------------------- */
+
+class ContentAccumulator {
+    size_t                     _content_length;
+    size_t                     _body_max_size;
+    Ptr::Shared< std::string > _content;
+    bool                       _done;
+    bool                       _failed;
+
+public:
+    ContentAccumulator( size_t content_length,
+                        size_t body_max_size = SIZE_MAX );
+
+    void feed( const char *first, const char *last );
+
+    bool                       done() const;
+    bool                       failed() const;
+    Ptr::Shared< std::string > content() const;
+};
+
 /* --------------------------------- Request -------------------------------- */
 
 class Request {
@@ -110,41 +104,31 @@ private:
     std::string                _version;
     std::string                _host;
     Header                     _header;
-    bool                       _keep_alive;
-    std::string                _content;
-    Ptr::Shared< std::string > _content_ptr;
+    Ptr::Shared< std::string > _content;
 
 public:
     Request();
 
-    e_method           method() const;
-    const std::string &url() const;
-    const std::string &version() const;
-    const std::string &host() const;
-    const Header      &header() const;
-    bool               keep_alive() const;
-    const std::string &content() const;
+    //TODO use string here
+    e_method method() const;
+    //
+    const std::string &        url() const;
+    const std::string &        version() const;
+    const std::string &        host() const;
+    const Header &             header() const;
+    Ptr::Shared< std::string > content() const;
+
+    void set_content( Ptr::Shared< std::string > content ) {
+        _content = content;
+    }
 
     size_t             count_header( e_header_key k ) const;
     const std::string &at_header( e_header_key k ) const;
     bool check_header_field( e_header_key k, const std::string &v ) const;
 
     static Option< Request > from_string( const std::string &request_line,
-                                          const std::string &raw_header,
-                                          const std::string &content ) {
-        Request r;
-        r._content = content;
-        r._method  = method_to_string().at(
-            request_line.substr( 0, request_line.find( ' ' ) ) );
-        r._url     = request_line.substr( request_line.find( ' ' ) + 1,
-                                      request_line.rfind( ' ' )
-                                          - request_line.find( ' ' ) - 1 );
-        r._version = request_line.substr( request_line.rfind( ' ' ) + 1 );
-        r._header.add_raw( Str::trim_right( raw_header, "\r\n\r\n" ) );
-        return r;
-    }
+                                          const std::string &raw_header );
 };
 
 /* -------------------------------------------------------------------------- */
-
 }

@@ -21,37 +21,35 @@ const std::map< std::string, std::string > &HTTP::Mime::extension_to_type() {
 
 /* --------------------------------- Header --------------------------------- */
 
-Option< std::pair< std::string, std::string > >
-HTTP::Header::parse_line( const std::string &line ) {
-    std::istringstream iss( line );
-    std::string        k;
-    std::string        v;
-    iss >> k;
-    if ( iss.fail() ) {
-        return Option< std::pair< std::string, std::string > >();
-    }
-    k = k.substr( 0, k.size() - 1 );
-    v = iss.str().substr( k.size() + 2, iss.str().size() );
-    return Option< std::pair< std::string, std::string > >(
-        std::make_pair( k, Str::trim_right( v, "\r" ) ) );
-}
-
-void HTTP::Header::add_raw( const std::string &raw ) {
-    clear();
-    std::vector< std::string > v;
-    Str::split( v, raw, "\n" );
-    for ( std::vector< std::string >::const_iterator it( v.begin() );
-          it != v.end();
-          it++ ) {
-        std::pair< std::string, std::string > p = parse_line( *it ).unwrap();
-        insert( p );
-    }
-}
-
 bool HTTP::Header::check_field( const std::string &k,
                                 const std::string &v ) const {
     const_iterator it( find( k ) );
     return it == end() ? false : it->second == v;
+}
+
+std::string HTTP::Header::get( const std::string &k,
+                               const std::string &def ) const {
+    const_iterator it( find( k ) );
+    return it == end() ? def : it->second;
+}
+
+Option< HTTP::Header > HTTP::Header::from_string( const std::string &s ) {
+    Header                     h;
+    std::vector< std::string > v;
+    Str::split( v, s, "\n" );
+    for ( std::vector< std::string >::const_iterator it( v.begin() );
+          it != v.end();
+          ++it ) {
+        std::vector< std::string > kv;
+        Str::split( kv, *it, ":" );
+        for ( std::vector< std::string >::iterator it( kv.begin() );
+              it != kv.end();
+              ++it ) {
+            *it = Str::trim( *it, " \r" );
+        }
+        h[kv[0]] = kv[1];
+    }
+    return Option< Header >( h );
 }
 
 /* -------------------------------- Response -------------------------------- */
@@ -165,6 +163,32 @@ std::string HTTP::Response::stringify() const {
     return s + "\r\n" + _content;
 }
 
+/* --------------------------- ContentAccumulator --------------------------- */
+
+HTTP::ContentAccumulator::ContentAccumulator( size_t content_length,
+                                              size_t body_max_size )
+    : _content_length( content_length ),
+      _body_max_size( body_max_size ),
+      _content( new std::string() ),
+      _done( false ),
+      _failed( false ) {}
+
+void HTTP::ContentAccumulator::feed( const char *first, const char *last ) {
+    for ( ; first != last && _content->size() < _content_length; ++first ) {
+        *_content += *first;
+    }
+    _done   = _content->size() == _content_length;
+    _failed = _content->size() > _body_max_size;
+}
+
+bool HTTP::ContentAccumulator::done() const { return _done; }
+
+bool HTTP::ContentAccumulator::failed() const { return _failed; }
+
+Ptr::Shared< std::string > HTTP::ContentAccumulator::content() const {
+    return _content;
+}
+
 /* --------------------------------- Request -------------------------------- */
 
 const BiMap< HTTP::Request::e_header_key, std::string > &
@@ -199,7 +223,7 @@ HTTP::Request::method_to_string() {
     return m;
 }
 
-HTTP::Request::Request() : _keep_alive( false ) {}
+HTTP::Request::Request() {}
 
 HTTP::Request::e_method HTTP::Request::method() const { return _method; }
 
@@ -211,9 +235,7 @@ const std::string &HTTP::Request::host() const { return _host; }
 
 const HTTP::Header &HTTP::Request::header() const { return _header; }
 
-bool HTTP::Request::keep_alive() const { return _keep_alive; }
-
-const std::string &HTTP::Request::content() const { return _content; }
+Ptr::Shared< std::string > HTTP::Request::content() const { return _content; }
 
 size_t HTTP::Request::count_header( e_header_key k ) const {
     return _header.count( key_to_string().at( k ) );
@@ -226,6 +248,21 @@ const std::string &HTTP::Request::at_header( e_header_key k ) const {
 bool HTTP::Request::check_header_field( e_header_key       k,
                                         const std::string &v ) const {
     return _header.check_field( key_to_string().at( k ), v );
+}
+
+Option< HTTP::Request >
+HTTP::Request::from_string( const std::string &request_line,
+                            const std::string &raw_header ) {
+    Request r;
+    r._method = method_to_string().at(
+        request_line.substr( 0, request_line.find( ' ' ) ) );
+    r._url     = request_line.substr( request_line.find( ' ' ) + 1,
+                                  request_line.rfind( ' ' )
+                                      - request_line.find( ' ' ) - 1 );
+    r._version = request_line.substr( request_line.rfind( ' ' ) + 1 );
+    r._header = Header::from_string( Str::trim_right( raw_header, "\r\n\r\n" ) )
+                    .unwrap();
+    return r;
 }
 
 /* -------------------------------------------------------------------------- */

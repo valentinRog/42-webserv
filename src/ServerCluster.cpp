@@ -79,35 +79,58 @@ ServerCluster::ClientCallback::ClientCallback( int                      fd,
                                                time_t idle_to )
     : CallbackBase( con_to, idle_to ),
       _fd( fd ),
-      _vhm( vhm ),
-      _step( HEADER ) {}
+      _vhm( vhm ) {}
 
 CallbackBase *ServerCluster::ClientCallback::clone() const {
     return new ClientCallback( *this );
 }
 
 void ServerCluster::ClientCallback::handle_read() {
+    update_last_t();
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
-    size_t ret = Str::append_until( _raw_request_line, buff, buff + n, "\r\n" );
-    ret        = Str::append_until( _raw_header_line,
-                             buff + ret,
-                             buff + n,
-                             "\r\n\r\n" );
-    _raw_content.append( buff + ret, buff + n );
-    update_last_t();
+    size_t ret( 0 );
+    if ( _request.is_none() ) {
+        ret = Str::append_until( _raw_request, buff, buff + n, "\r\n" );
+        ret += Str::append_until( _raw_header,
+                                  buff + ret,
+                                  buff + n,
+                                  "\r\n\r\n" );
+        if ( Str::ends_with( _raw_header, "\r\n\r\n" ) ) {
+            _request = HTTP::Request::from_string( _raw_request, _raw_header );
+        }
+    }
+    if ( _request.is_some() && _accu.is_none()
+         && _request.unwrap().header().count( "Content-Length" ) ) {
+        size_t l;
+        std::istringstream( _request.unwrap().header().at( "Content-Length" ) )
+            >> l;
+        size_t max_body_size = _vhm[_request.unwrap().header().get( "Host" )]
+                                   ->client_max_body_size();
+        _accu = HTTP::ContentAccumulator( l, max_body_size );
+    }
+    if ( _accu.is_some() ) {
+        _accu.unwrap().feed( buff + ret, buff + n );
+        if ( _accu.unwrap().done() ) {
+            _raw_content = _accu.unwrap().content();
+            if ( _accu.unwrap().failed() ) { _error = HTTP::Response::E413; }
+            _accu = Option< HTTP::ContentAccumulator >();
+        }
+    }
 }
 
 void ServerCluster::ClientCallback::handle_write() {
-    if ( !Str::ends_with( _raw_request_line, "\r\n" )
-         || !Str::ends_with( _raw_header_line, "\r\n\r\n" ) ) {
+    if ( _error.is_some() ) {
+        std::string s = HTTP::Response::make_error_response( _error.unwrap() )
+                            .stringify();
+        write( _fd, s.c_str(), s.size() );
+        kill_me();
         return;
     }
-    Ptr::Shared< HTTP::Request > r
-        = new HTTP::Request( HTTP::Request::from_string( _raw_request_line,
-                                                         _raw_header_line,
-                                                         _raw_content )
-                                 .unwrap() );
+    if ( _request.is_none() || _accu.is_some() ) { return; }
+    Ptr::Shared< HTTP::Request > r = new HTTP::Request(
+        HTTP::Request::from_string( _raw_request, _raw_header ).unwrap() );
+    r->set_content( _raw_content );
     RequestHandler rh( r, _vhm[r->host()] );
     HTTP::Response response( rh.make_response() );
     std::string    s( response.stringify() );
@@ -146,7 +169,7 @@ void ServerCluster::ClientCallback::_log_write_response(
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster     &server )
+                                               ServerCluster &    server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -169,7 +192,7 @@ void ServerCluster::SocketCallback::handle_read() {
               << RESET;
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type          &m( _server._vh.at( addr.sin_port ) );
+    const map_type &         m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {

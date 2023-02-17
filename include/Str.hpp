@@ -40,6 +40,9 @@ struct Str {
     static size_t
     append_until( std::string &s, T first, T last, const std::string &end );
 
+    template < typename T >
+    static size_t append_max_len( std::string &s, T first, T last, size_t n );
+
     /* ------------------------- Str::CaseInsensitiveCmp ------------------------ */
 
     struct CaseInsensitiveCmp {

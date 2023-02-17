@@ -191,7 +191,7 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     if ( _request->header().count( "Content-Type" ) ) {
         env[CGI::CONTENT_TYPE] = _request->header().at( "Content-Type" );
     }
-    env[CGI::CONTENT_LENGTH]  = Str::from( _request->content().size() );
+    env[CGI::CONTENT_LENGTH]  = Str::from( _request->content()->size() );
     env[CGI::QUERY_STRING]    = _route->root();
     env[CGI::REDIRECT_STATUS] = "200";
     env[CGI::SCRIPT_FILENAME] = path;
@@ -227,8 +227,8 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     close( i_pipe[0] );
     close( o_pipe[1] );
     if ( write( i_pipe[1],
-                _request->content().c_str(),
-                _request->content().size() )
+                _request->content()->c_str(),
+                _request->content()->size() )
          == -1 ) {
         throw std::runtime_error( "write" );
     }
@@ -249,7 +249,7 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     HTTP::Response r( HTTP::Response::E200 );
     std::string    raw_header
         = s.substr( 0, std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) );
-    r.header.add_raw( raw_header );
+    r.header = HTTP::Header::from_string( raw_header ).unwrap();
     r.set_content(
         s.substr( std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) ) );
     return r;
