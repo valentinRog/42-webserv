@@ -61,8 +61,7 @@ HTTP::Response RequestHandler::make_response() {
             HTTP::Response::E404,
             _conf->code_to_error_page() );
     }
-    if ( !_route->methods().count(
-             HTTP::Request::method_to_string().at( _request->method() ) ) ) {
+    if ( !_route->methods().count( _request->method() ) ) {
         return HTTP::Response::make_error_response(
             HTTP::Response::E405,
             _conf->code_to_error_page() );
@@ -78,7 +77,7 @@ HTTP::Response RequestHandler::make_response() {
         }
     }
     if ( _route->redir().size() ) { return _redir(); }
-    switch ( _request->method() ) {
+    switch ( HTTP::Request::method_to_string().at( _request->method() ) ) {
     case HTTP::Request::GET: return _get();
     case HTTP::Request::POST: return _post();
     case HTTP::Request::DELETE: return _delete();

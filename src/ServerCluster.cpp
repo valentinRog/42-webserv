@@ -98,6 +98,10 @@ void ServerCluster::ClientCallback::handle_read() {
                                   "\r\n\r\n" );
         if ( Str::ends_with( _raw_header, "\r\n\r\n" ) ) {
             _request = HTTP::Request::from_string( _raw_request, _raw_header );
+            if ( _request.is_none() || true ) {
+                _error = HTTP::Response::E400;
+                return;
+            }
         }
     }
     if ( _request.is_some() && _accu.is_none()
@@ -125,6 +129,7 @@ void ServerCluster::ClientCallback::handle_write() {
                             .stringify();
         write( _fd, s.c_str(), s.size() );
         kill_me();
+        _log_write_failure(_error.unwrap());
         return;
     }
     if ( _request.is_none() || _accu.is_some() ) { return; }
@@ -157,9 +162,8 @@ void ServerCluster::ClientCallback::_log_write_failure(
 void ServerCluster::ClientCallback::_log_write_response(
     HTTP::Response::e_error_code code ) const {
     std::cout << CYAN << '[' << _fd << ']' << RESET << ' '
-              << HTTP::Request::method_to_string().at(
-                     _request.unwrap().method() )
-              << ' ' << _request.unwrap().url() << BLUE << " -> " << RESET
+              << _request.unwrap().method() << ' ' << _request.unwrap().url()
+              << BLUE << " -> " << RESET
               << ( code == HTTP::Response::E200 ? GREEN : RED )
               << HTTP::Response::code_to_string().at( code ) << RESET << ' '
               << HTTP::Response::code_to_message( code ) << std::endl;

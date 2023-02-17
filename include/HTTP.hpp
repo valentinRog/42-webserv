@@ -99,7 +99,7 @@ public:
     static const BiMap< e_method, std::string > &method_to_string();
 
 private:
-    e_method                   _method;
+    std::string                _method;
     std::string                _url;
     std::string                _version;
     std::string                _host;
@@ -110,7 +110,7 @@ public:
     Request();
 
     //TODO use string here
-    e_method method() const;
+    const std::string &method() const;
     //
     const std::string &        url() const;
     const std::string &        version() const;

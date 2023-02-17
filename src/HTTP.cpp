@@ -225,7 +225,7 @@ HTTP::Request::method_to_string() {
 
 HTTP::Request::Request() {}
 
-HTTP::Request::e_method HTTP::Request::method() const { return _method; }
+const std::string &HTTP::Request::method() const { return _method; }
 
 const std::string &HTTP::Request::url() const { return _url; }
 
@@ -254,8 +254,7 @@ Option< HTTP::Request >
 HTTP::Request::from_string( const std::string &request_line,
                             const std::string &raw_header ) {
     Request r;
-    r._method = method_to_string().at(
-        request_line.substr( 0, request_line.find( ' ' ) ) );
+    r._method  = request_line.substr( 0, request_line.find( ' ' ) );
     r._url     = request_line.substr( request_line.find( ' ' ) + 1,
                                   request_line.rfind( ' ' )
                                       - request_line.find( ' ' ) - 1 );
