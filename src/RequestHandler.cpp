@@ -1,5 +1,22 @@
 #include "RequestHandler.hpp"
 
+/* ----------------------------- RequestHandler ----------------------------- */
+
+const BiMap< RequestHandler::e_method, std::string > &
+RequestHandler::method_to_string() {
+    struct f {
+        static BiMap< e_method, std::string > init() {
+            BiMap< e_method, std::string > m;
+            m.insert( std::make_pair( GET, "GET" ) );
+            m.insert( std::make_pair( POST, "POST" ) );
+            m.insert( std::make_pair( DELETE, "DELETE" ) );
+            return m;
+        }
+    };
+    static const BiMap< e_method, std::string > m( f::init() );
+    return m;
+}
+
 /* --------------------------- RequestHandler::CGI -------------------------- */
 
 const std::string &
@@ -77,10 +94,10 @@ HTTP::Response RequestHandler::make_response() {
         }
     }
     if ( _route->redir().size() ) { return _redir(); }
-    switch ( HTTP::Request::method_to_string().at( _request->method() ) ) {
-    case HTTP::Request::GET: return _get();
-    case HTTP::Request::POST: return _post();
-    case HTTP::Request::DELETE: return _delete();
+    switch ( method_to_string().at( _request->method() ) ) {
+    case GET: return _get();
+    case POST: return _post();
+    case DELETE: return _delete();
     }
 }
 
@@ -184,9 +201,8 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                            const_cast< char       *>( p.c_str() ),
                            0 };
     CGI::Env    env;
-    env[CGI::PATH_INFO] = path;
-    env[CGI::REQUEST_METHOD]
-        = HTTP::Request::method_to_string().at( _request->method() );
+    env[CGI::PATH_INFO]      = path;
+    env[CGI::REQUEST_METHOD] = method_to_string().at( _request->method() );
     if ( _request->header().count( "Content-Type" ) ) {
         env[CGI::CONTENT_TYPE] = _request->header().at( "Content-Type" );
     }
@@ -199,9 +215,9 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     env[CGI::REDIRECT_STATUS] = "200";
     env[CGI::SCRIPT_FILENAME] = path;
     if ( _request->header().count(
-             HTTP::Request::key_to_string().at( HTTP::Request::COOKIE ) ) ) {
+             HTTP::Header::key_to_string().at( HTTP::Header::COOKIE ) ) ) {
         env[CGI::HTTP_COOKIE] = _request->header().at(
-            HTTP::Request::key_to_string().at( HTTP::Request::COOKIE ) );
+            HTTP::Header::key_to_string().at( HTTP::Header::COOKIE ) );
     }
     int i_pipe[2];
     int o_pipe[2];

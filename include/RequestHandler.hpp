@@ -11,6 +11,9 @@ class RequestHandler {
     const ServerConf::Route *    _route;
     std::string                  _path;
 
+    enum e_method { GET, POST, DELETE };
+    static const BiMap< e_method, std::string > &method_to_string();
+
     struct CGI {
         enum e_env_key {
             PATH_INFO,

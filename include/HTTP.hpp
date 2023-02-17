@@ -19,6 +19,17 @@ struct Mime {
 
 struct Header
     : public std::map< std::string, std::string, Str::CaseInsensitiveCmp > {
+    enum e_key {
+        CONTENT_LENGTH,
+        TRANSFER_ENCODING,
+        COOKIE,
+        CONNECTION,
+        HOST,
+        LOCATION,
+        CONTENT_TYPE
+    };
+    static const BiMap< e_key, std::string > &key_to_string();
+
     bool        check_field( const std::string &k, const std::string &v ) const;
     std::string get( const std::string &k,
                      const std::string &def = std::string() ) const;
@@ -29,9 +40,6 @@ struct Header
 /* -------------------------------- Response -------------------------------- */
 
 struct Response : public Trait::Stringify {
-    enum e_header_key { HOST, CONTENT_TYPE, CONTENT_LENGTH, LOCATION };
-    static const BiMap< e_header_key, std::string > &key_to_string();
-
     enum e_error_code {
         E200,
         E301,
@@ -91,13 +99,6 @@ public:
 /* --------------------------------- Request -------------------------------- */
 
 class Request {
-public:
-    enum e_header_key { CONTENT_LENGTH, TRANSFER_ENCODING, COOKIE, CONNECTION };
-    static const BiMap< e_header_key, std::string > &key_to_string();
-
-    enum e_method { GET, POST, DELETE };
-    static const BiMap< e_method, std::string > &method_to_string();
-
 private:
     std::string                _method;
     std::string                _url;
@@ -109,22 +110,16 @@ private:
 public:
     Request();
 
-    //TODO use string here
-    const std::string &method() const;
-    //
-    const std::string &        url() const;
-    const std::string &        version() const;
-    const std::string &        host() const;
-    const Header &             header() const;
+    const std::string         &method() const;
+    const std::string         &url() const;
+    const std::string         &version() const;
+    const std::string         &host() const;
+    const Header              &header() const;
     Ptr::Shared< std::string > content() const;
 
     void set_content( Ptr::Shared< std::string > content ) {
         _content = content;
     }
-
-    size_t             count_header( e_header_key k ) const;
-    const std::string &at_header( e_header_key k ) const;
-    bool check_header_field( e_header_key k, const std::string &v ) const;
 
     static Option< Request > from_string( const std::string &request_line,
                                           const std::string &raw_header );

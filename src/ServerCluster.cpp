@@ -140,6 +140,7 @@ void ServerCluster::ClientCallback::handle_write() {
     HTTP::Response response( rh.make_response() );
     std::string    s( response.stringify() );
     write( _fd, s.c_str(), s.size() );
+    std::cout << s << std::endl;
     _log_write_response( response.code );
     kill_me();
     std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed" << RESET

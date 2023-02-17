@@ -21,6 +21,25 @@ const std::map< std::string, std::string > &HTTP::Mime::extension_to_type() {
 
 /* --------------------------------- Header --------------------------------- */
 
+const BiMap< HTTP::Header::e_key, std::string > &HTTP::Header::key_to_string() {
+    struct f {
+        static BiMap< e_key, std::string > init() {
+            BiMap< e_key, std::string > m;
+            m.insert( std::make_pair( HOST, "Host" ) );
+            m.insert( std::make_pair( CONTENT_TYPE, "Content-Type" ) );
+            m.insert( std::make_pair( CONTENT_LENGTH, "Content-Length" ) );
+            m.insert( std::make_pair( LOCATION, "Location" ) );
+            m.insert(
+                std::make_pair( TRANSFER_ENCODING, "Transfer-Encoding" ) );
+            m.insert( std::make_pair( COOKIE, "Cookie" ) );
+            m.insert( std::make_pair( CONNECTION, "Connection" ) );
+            return m;
+        }
+    };
+    static const BiMap< e_key, std::string > m( f::init() );
+    return m;
+}
+
 bool HTTP::Header::check_field( const std::string &k,
                                 const std::string &v ) const {
     const_iterator it( find( k ) );
@@ -53,22 +72,6 @@ Option< HTTP::Header > HTTP::Header::from_string( const std::string &s ) {
 }
 
 /* -------------------------------- Response -------------------------------- */
-
-const BiMap< HTTP::Response::e_header_key, std::string > &
-HTTP::Response::key_to_string() {
-    struct f {
-        static BiMap< e_header_key, std::string > init() {
-            BiMap< e_header_key, std::string > m;
-            m.insert( std::make_pair( HOST, "Host" ) );
-            m.insert( std::make_pair( CONTENT_TYPE, "Content-Type" ) );
-            m.insert( std::make_pair( CONTENT_LENGTH, "Content-Length" ) );
-            m.insert( std::make_pair( LOCATION, "Location" ) );
-            return m;
-        }
-    };
-    static const BiMap< e_header_key, std::string > m( f::init() );
-    return m;
-}
 
 const BiMap< HTTP::Response::e_error_code, std::string > &
 HTTP::Response::code_to_string() {
@@ -191,38 +194,6 @@ Ptr::Shared< std::string > HTTP::ContentAccumulator::content() const {
 
 /* --------------------------------- Request -------------------------------- */
 
-const BiMap< HTTP::Request::e_header_key, std::string > &
-HTTP::Request::key_to_string() {
-    struct f {
-        static BiMap< e_header_key, std::string > init() {
-            BiMap< e_header_key, std::string >             m;
-            typedef std::pair< e_header_key, std::string > value_type;
-            m.insert( value_type( CONTENT_LENGTH, "Content-Length" ) );
-            m.insert( value_type( TRANSFER_ENCODING, "Transfert-encoding" ) );
-            m.insert( value_type( COOKIE, "Cookie" ) );
-            m.insert( value_type( CONNECTION, "Connection" ) );
-            return m;
-        }
-    };
-    static const BiMap< e_header_key, std::string > m( f::init() );
-    return m;
-}
-
-const BiMap< HTTP::Request::e_method, std::string > &
-HTTP::Request::method_to_string() {
-    struct f {
-        static BiMap< HTTP::Request::e_method, std::string > init() {
-            BiMap< HTTP::Request::e_method, std::string > m;
-            m.insert( std::make_pair( GET, "GET" ) );
-            m.insert( std::make_pair( POST, "POST" ) );
-            m.insert( std::make_pair( DELETE, "DELETE" ) );
-            return m;
-        }
-    };
-    static const BiMap< HTTP::Request::e_method, std::string > m( f::init() );
-    return m;
-}
-
 HTTP::Request::Request() {}
 
 const std::string &HTTP::Request::method() const { return _method; }
@@ -236,19 +207,6 @@ const std::string &HTTP::Request::host() const { return _host; }
 const HTTP::Header &HTTP::Request::header() const { return _header; }
 
 Ptr::Shared< std::string > HTTP::Request::content() const { return _content; }
-
-size_t HTTP::Request::count_header( e_header_key k ) const {
-    return _header.count( key_to_string().at( k ) );
-}
-
-const std::string &HTTP::Request::at_header( e_header_key k ) const {
-    return _header.at( key_to_string().at( k ) );
-}
-
-bool HTTP::Request::check_header_field( e_header_key       k,
-                                        const std::string &v ) const {
-    return _header.check_field( key_to_string().at( k ), v );
-}
 
 Option< HTTP::Request >
 HTTP::Request::from_string( const std::string &request_line,
