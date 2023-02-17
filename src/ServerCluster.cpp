@@ -86,6 +86,11 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 }
 
 void ServerCluster::ClientCallback::handle_read() {
+    const std::string CONTENT_LENGTH
+        = HTTP::Header::key_to_string().at( HTTP::Header::CONTENT_LENGTH );
+    const std::string HOST
+        = HTTP::Header::key_to_string().at( HTTP::Header::HOST );
+
     update_last_t();
     char   buff[_buffer_size];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
@@ -105,11 +110,12 @@ void ServerCluster::ClientCallback::handle_read() {
         }
     }
     if ( _request.is_some() && _accu.is_none()
-         && _request.unwrap().header().count( "Content-Length" ) ) {
+         && _request.unwrap().header().count( HTTP::Header::key_to_string().at(
+             HTTP::Header::CONTENT_LENGTH ) ) ) {
         size_t l;
-        std::istringstream( _request.unwrap().header().at( "Content-Length" ) )
+        std::istringstream( _request.unwrap().header().at( CONTENT_LENGTH ) )
             >> l;
-        size_t max_body_size = _vhm[_request.unwrap().header().get( "Host" )]
+        size_t max_body_size = _vhm[_request.unwrap().header().get( HOST )]
                                    ->client_max_body_size();
         _accu = HTTP::ContentAccumulator( l, max_body_size );
     }
@@ -129,7 +135,9 @@ void ServerCluster::ClientCallback::handle_write() {
                             .stringify();
         write( _fd, s.c_str(), s.size() );
         kill_me();
-        _log_write_failure(_error.unwrap());
+        std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed" << RESET
+                  << std::endl;
+        _log_write_failure( _error.unwrap() );
         return;
     }
     if ( _request.is_none() || _accu.is_some() ) { return; }
@@ -140,8 +148,16 @@ void ServerCluster::ClientCallback::handle_write() {
     HTTP::Response response( rh.make_response() );
     std::string    s( response.stringify() );
     write( _fd, s.c_str(), s.size() );
-    std::cout << s << std::endl;
     _log_write_response( response.code );
+    if ( _request.unwrap().header().get(
+             HTTP::Header::key_to_string().at( HTTP::Header::CONNECTION ) )
+         == "keep-alive" ) {
+        _request = Option< HTTP::Request >();
+        _raw_request.clear();
+        _raw_header.clear();
+        _raw_content = 0;
+        return;
+    }
     kill_me();
     std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed" << RESET
               << std::endl;
@@ -174,7 +190,7 @@ void ServerCluster::ClientCallback::_log_write_response(
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster &    server )
+                                               ServerCluster     &server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -197,7 +213,7 @@ void ServerCluster::SocketCallback::handle_read() {
               << RESET;
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type &         m( _server._vh.at( addr.sin_port ) );
+    const map_type          &m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {
