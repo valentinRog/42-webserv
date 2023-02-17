@@ -3,7 +3,6 @@ webserv
 .cache
 .vscode
 .clangd
-*.txt
 compile_commands.json
 venv
 __pycache__

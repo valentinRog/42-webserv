@@ -98,7 +98,7 @@ void ServerCluster::ClientCallback::handle_read() {
                                   "\r\n\r\n" );
         if ( Str::ends_with( _raw_header, "\r\n\r\n" ) ) {
             _request = HTTP::Request::from_string( _raw_request, _raw_header );
-            if ( _request.is_none() || true ) {
+            if ( _request.is_none() ) {
                 _error = HTTP::Response::E400;
                 return;
             }
