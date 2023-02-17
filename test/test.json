@@ -45,6 +45,14 @@
         "root": "test/www",
         "methods": ["GET"],
         "redir": "http://google.com"
+      },
+      "/cookies": {
+        "root": "test/www",
+        "methods": ["GET"],
+        "handler": "test/www/cgi/cookies.py",
+        "cgi": {
+          ".py": "/usr/bin/python3"
+        }
       }
     }
   }

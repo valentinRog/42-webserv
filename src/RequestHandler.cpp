@@ -148,7 +148,7 @@ HTTP::Response RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
     std::string    contentEnd = "</h1></body></html>";
-    DIR *          dir;
+    DIR           *dir;
     dir = opendir( _path.c_str() );
     if ( !dir )
         return HTTP::Response::make_error_response(
@@ -180,9 +180,9 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                                      const std::string &path ) {
     std::string bp( bin_path );
     std::string p( path );
-    char *      args[] = { const_cast< char * >( bp.c_str() ),
-                     const_cast< char * >( p.c_str() ),
-                     0 };
+    char       *args[] = { const_cast< char       *>( bp.c_str() ),
+                           const_cast< char       *>( p.c_str() ),
+                           0 };
     CGI::Env    env;
     env[CGI::PATH_INFO] = path;
     env[CGI::REQUEST_METHOD]
@@ -190,7 +190,11 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     if ( _request->header().count( "Content-Type" ) ) {
         env[CGI::CONTENT_TYPE] = _request->header().at( "Content-Type" );
     }
-    env[CGI::CONTENT_LENGTH]  = Str::from( _request->content()->size() );
+    if ( _request->content().operator->() ) {
+        env[CGI::CONTENT_LENGTH] = Str::from( _request->content()->size() );
+    } else {
+        env[CGI::CONTENT_LENGTH] = "0";
+    }
     env[CGI::QUERY_STRING]    = _route->root();
     env[CGI::REDIRECT_STATUS] = "200";
     env[CGI::SCRIPT_FILENAME] = path;
@@ -220,15 +224,16 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
         }
         ::close( o_pipe[0] );
         ::execve( *args, args, envp );
-        ::exit( EXIT_FAILURE );
         CGI::Env::clear_c_env( envp );
+        ::exit( EXIT_FAILURE );
     }
     close( i_pipe[0] );
     close( o_pipe[1] );
-    if ( write( i_pipe[1],
-                _request->content()->c_str(),
-                _request->content()->size() )
-         == -1 ) {
+    if ( _request->content().operator->()
+         && write( i_pipe[1],
+                   _request->content()->c_str(),
+                   _request->content()->size() )
+                == -1 ) {
         throw std::runtime_error( "write" );
     }
     close( i_pipe[1] );
@@ -238,7 +243,9 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     int         exit_code;
     wait( &exit_code );
     if ( !WIFEXITED( exit_code ) | WEXITSTATUS( exit_code ) ) {
-        throw std::runtime_error( "execve" );
+        return HTTP::Response::make_error_response(
+            HTTP::Response::E500,
+            _conf->code_to_error_page() );
     }
     while ( ( n = ::read( o_pipe[0], buff, 1024 ) ) == 1024 ) {
         s.append( buff, n );
