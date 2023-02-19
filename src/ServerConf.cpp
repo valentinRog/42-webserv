@@ -21,42 +21,69 @@ ServerConf::Route::key_to_string() {
     return m;
 }
 
-ServerConf::Route::Route( const JSON::Object &o ) : _autoindex( false ) {
+ServerConf::Route::Route() : _autoindex( false ) {}
+
+Option< ServerConf::Route >
+ServerConf::Route::from_json( const JSON::Object &o ) {
+    Route           r;
+    Option< Route > fail;
     for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
-        key_to_string().at( it->first );
+        if ( !key_to_string().count( it->first ) ) { return fail; }
     }
-    _root = o.at( key_to_string().at( ROOT ) ).unwrap< JSON::String >();
+    {
+        if ( !o.count( key_to_string().at( ROOT ) ) ) { return fail; }
+        const JSON::String *p
+            = o.at( key_to_string().at( ROOT ) ).dycast< JSON::String >();
+        if ( !p ) { return fail; }
+        r._root = *p;
+    }
     if ( o.count( key_to_string().at( INDEX ) ) ) {
-        _index = o.at( key_to_string().at( INDEX ) ).unwrap< JSON::String >();
+        const JSON::String *p
+            = o.at( key_to_string().at( INDEX ) ).dycast< JSON::String >();
+        if ( !p ) { return fail; }
+        r._index = *p;
     }
     if ( o.count( key_to_string().at( AUTOINDEX ) ) ) {
-        _autoindex
-            = o.at( key_to_string().at( AUTOINDEX ) ).unwrap< JSON::Boolean >();
+        const JSON::Boolean *p
+            = o.at( key_to_string().at( AUTOINDEX ) ).dycast< JSON::Boolean >();
+        if ( !p ) { return fail; }
+        r._autoindex = *p;
     }
     if ( o.count( key_to_string().at( METHODS ) ) ) {
-        JSON::Array a(
-            o.at( key_to_string().at( METHODS ) ).unwrap< JSON::Array >() );
-        for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
+        const JSON::Array *p
+            = o.at( key_to_string().at( METHODS ) ).dycast< JSON::Array >();
+        if ( !p ) { return fail; }
+        for ( JSON::Array::const_iterator it( p->begin() ); it != p->end();
               it++ ) {
-            _methods.insert( it->unwrap< JSON::String >() );
+            const JSON::String *p = it->dycast< JSON::String >();
+            if ( !p ) { return fail; }
+            r._methods.insert( *p );
         }
     }
     if ( o.count( key_to_string().at( REDIR ) ) ) {
-        _redir = o.at( key_to_string().at( REDIR ) ).unwrap< JSON::String >();
+        const JSON::String *p
+            = o.at( key_to_string().at( REDIR ) ).dycast< JSON::String >();
+        if ( !p ) { return fail; }
+        r._redir = *p;
     }
     if ( o.count( key_to_string().at( CGI ) ) ) {
-        JSON::Object cgi_o(
-            o.at( key_to_string().at( CGI ) ).unwrap< JSON::Object >() );
-        for ( JSON::Object::const_iterator it = cgi_o.begin();
-              it != cgi_o.end();
+        const JSON::Object *p
+            = o.at( key_to_string().at( CGI ) ).dycast< JSON::Object >();
+        if ( !p ) { return fail; }
+        for ( JSON::Object::const_iterator it = p->begin(); it != p->end();
               it++ ) {
-            _cgis[it->first] = it->second.unwrap< JSON::String >();
+            const JSON::String *p = it->second.dycast< JSON::String >();
+            if ( !p ) { return fail; }
+            r._cgis[it->first] = *p;
         }
     }
     if ( o.count( key_to_string().at( HANDLER ) ) ) {
-        _handler
-            = o.at( key_to_string().at( HANDLER ) ).unwrap< JSON::String >();
+        const JSON::String *p
+            = o.at( key_to_string().at( HANDLER ) ).dycast< JSON::String >();
+        if ( !p ) { return fail; }
+        r._handler = *p;
     }
+    return r;
 }
 
 const std::string &ServerConf::Route::root() const { return _root; }
@@ -104,13 +131,9 @@ std::string ServerConf::RouteMapper::suffix( const std::string &s ) const {
     return s.substr( l, s.size() - l );
 }
 
-/* ------------------ ServerConf::RouteMapper::ConfigError ------------------ */
-
-const char *ServerConf::ConfigError::what() const throw() {
-    return "Invalid configuration";
-}
-
 /* ------------------------------- ServerConf ------------------------------- */
+
+ServerConf::ServerConf() : _client_max_body_size( SIZE_MAX ) {}
 
 const BiMap< ServerConf::e_config_key, std::string > &
 ServerConf::key_to_string() {
@@ -131,65 +154,84 @@ ServerConf::key_to_string() {
     return m;
 }
 
-ServerConf::ServerConf( const JSON::Object &o )
-    : _client_max_body_size( std::numeric_limits< std::size_t >::max() ) {
-    try {
-        for ( JSON::Object::const_iterator it( o.begin() ); it != o.end();
-              it++ ) {
-            key_to_string().at( it->first );
+Option< ServerConf > ServerConf::from_json( const JSON::Object &o ) {
+    ServerConf           r;
+    Option< ServerConf > fail;
+    for ( JSON::Object::const_iterator it( o.begin() ); it != o.end(); it++ ) {
+        if ( !key_to_string().count( it->first ) ) { return fail; }
+    }
+    ::bzero( &r._addr, sizeof r._addr );
+    r._addr.sin_family = AF_INET;
+    {
+        const JSON::Array *p
+            = o.at( key_to_string().at( LISTEN ) ).dycast< JSON::Array >();
+        if ( !p ) { return fail; }
+        {
+            const JSON::Number *p2 = ( *p )[1].dycast< JSON::Number >();
+            if ( !p2 ) { return fail; }
+            r._addr.sin_port = htons( *p2 );
         }
-        ::bzero( &_addr, sizeof _addr );
-        _addr.sin_family = AF_INET;
-        JSON::Array a(
-            o.at( key_to_string().at( LISTEN ) ).unwrap< JSON::Array >() );
-        _addr.sin_port = htons( a[1].unwrap< JSON::Number >() );
-        if ( ( _addr.sin_addr.s_addr = ::inet_addr(
-                   std::string( a[0].unwrap< JSON::String >() ).c_str() ) )
-             == INADDR_NONE ) {
-            throw std::runtime_error( "inet_addr" );
-        }
-        if ( o.count( key_to_string().at( SERVER_NAMES ) ) ) {
-            JSON::Array a( o.at( key_to_string().at( SERVER_NAMES ) )
-                               .unwrap< JSON::Array >() );
-            for ( JSON::Array::const_iterator it( a.begin() ); it != a.end();
-                  it++ ) {
-                _names.insert( it->unwrap< JSON::String >() );
+        {
+            const JSON::String *p2 = ( *p )[0].dycast< JSON::String >();
+            if ( !p2 ) { return fail; }
+            if ( ( r._addr.sin_addr.s_addr
+                   = ::inet_addr( std::string( *p2 ).c_str() ) )
+                 == INADDR_NONE ) {
+                throw std::runtime_error( "inet_addr" );
             }
         }
-        JSON::Object routes_o(
-            o.at( key_to_string().at( ROUTES ) ).unwrap< JSON::Object >() );
-        for ( JSON::Object::const_iterator it( routes_o.begin() );
-              it != routes_o.end();
+    }
+    if ( o.count( key_to_string().at( SERVER_NAMES ) ) ) {
+        const JSON::Array *p = o.at( key_to_string().at( SERVER_NAMES ) )
+                                   .dycast< JSON::Array >();
+        if ( !p ) { return fail; }
+        for ( JSON::Array::const_iterator it( p->begin() ); it != p->end();
               it++ ) {
-            _route_mapper.insert(
-                std::make_pair( it->first,
-                                it->second.unwrap< JSON::Object >() ) );
+            const JSON::String *p = it->dycast< JSON::String >();
+            if ( !p ) { return fail; }
+            r._names.insert( *p );
         }
-        if ( o.count( key_to_string().at( CLIENT_MAX_BODY_SIZE ) ) ) {
-            _client_max_body_size
-                = o.at( key_to_string().at( CLIENT_MAX_BODY_SIZE ) )
-                      .unwrap< JSON::Number >();
+    }
+    {
+        const JSON::Object *p
+            = o.at( key_to_string().at( ROUTES ) ).dycast< JSON::Object >();
+        if ( !p ) { return fail; }
+        for ( JSON::Object::const_iterator it( p->begin() ); it != p->end();
+              it++ ) {
+            const JSON::Object *p = it->second.dycast< JSON::Object >();
+            if ( !p ) { return fail; }
+            Option< Route > route = Route::from_json( *p );
+            if ( route.is_none() ) { return fail; }
+            r._route_mapper.insert(
+                std::make_pair( it->first, route.unwrap() ) );
         }
-        if ( o.count( key_to_string().at( ERROR_PAGES ) ) ) {
-            JSON::Object error_pages_o(
-                o.at( key_to_string().at( ERROR_PAGES ) )
-                    .unwrap< JSON::Object >() );
-            for ( JSON::Object::const_iterator it( error_pages_o.begin() );
-                  it != error_pages_o.end();
-                  it++ ) {
-                JSON::Array a( it->second.unwrap< JSON::Array >() );
-                for ( JSON::Array::const_iterator it2( a.begin() );
-                      it2 != a.end();
-                      it2++ ) {
-                    _code_to_error_page[HTTP::Response::code_to_string().at(
-                        it2->unwrap< JSON::String >() )]
-                        = it->first;
-                }
+    }
+    if ( o.count( key_to_string().at( CLIENT_MAX_BODY_SIZE ) ) ) {
+        const JSON::Number *p
+            = o.at( key_to_string().at( CLIENT_MAX_BODY_SIZE ) )
+                  .dycast< JSON::Number >();
+        if ( !p ) { return fail; }
+        r._client_max_body_size = *p;
+    }
+    if ( o.count( key_to_string().at( ERROR_PAGES ) ) ) {
+        const JSON::Object *p = o.at( key_to_string().at( ERROR_PAGES ) )
+                                    .dycast< JSON::Object >();
+        if ( !p ) { return fail; }
+        for ( JSON::Object::const_iterator it( p->begin() ); it != p->end();
+              it++ ) {
+            const JSON::Array *p = it->second.dycast< JSON::Array >();
+            if ( !p ) { return fail; }
+            for ( JSON::Array::const_iterator it2( p->begin() );
+                  it2 != p->end();
+                  it2++ ) {
+                const JSON::String *p = it2->dycast< JSON::String >();
+                if ( !p ) { return fail; }
+                r._code_to_error_page[HTTP::Response::code_to_string().at( *p )]
+                    = it->first;
             }
         }
-    } catch ( const std::out_of_range & ) {
-        throw ConfigError();
-    } catch ( const std::bad_cast & ) { throw ConfigError(); }
+    }
+    return r;
 }
 
 const sockaddr_in &ServerConf::addr() const { return _addr; }

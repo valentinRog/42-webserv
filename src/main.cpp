@@ -1,6 +1,12 @@
 #include "JSON.hpp"
+#include "Option.hpp"
 #include "ServerCluster.hpp"
 #include "common.h"
+
+static void failed() {
+    std::cerr << RED << "invalid configuration file" << RESET << std::endl;
+    exit( EXIT_FAILURE );
+}
 
 int main( int argc, char **argv ) {
     if ( argc != 2 ) {
@@ -9,29 +15,18 @@ int main( int argc, char **argv ) {
     }
     ServerCluster s;
     {
-        JSON::Array a;
-        try {
-            a = JSON::Parse::from_file( argv[1] ).unwrap< JSON::Array >();
-            for ( JSON::Array::const_iterator it = a.begin(); it != a.end();
-                  it++ ) {
-                it->unwrap< JSON::Object >();
-            }
-        } catch ( const JSON::Parse::ParsingError &e ) {
-            std::cerr << RED << e.what() << RESET << std::endl;
-            return EXIT_FAILURE;
-        } catch ( const std::bad_cast & ) {
-            std::cerr << RED << "Bad JSON schema\n" << RESET;
-            return EXIT_FAILURE;
-        }
-        for ( JSON::Array::const_iterator it = a.begin(); it != a.end();
+        Option< JSON::Wrapper > o = JSON::Parse::from_file( argv[1] );
+        if ( o.is_none() ) { failed(); }
+        const JSON::Array *p = o.unwrap().dycast< JSON::Array >();
+        if ( !p ) { failed(); }
+        for ( JSON::Array::const_iterator it = p->begin(); it != p->end();
               it++ ) {
-            JSON::Object o( it->unwrap< JSON::Object >() );
-            try {
-                s.bind( o );
-            } catch ( const ServerConf::ConfigError &e ) {
-                std::cerr << RED << e.what() << RESET << std::endl;
-                return EXIT_FAILURE;
-            }
+            if ( !it->dycast< JSON::Object >() ) { failed(); }
+            const JSON::Object *p = it->dycast< JSON::Object >();
+            if ( !p ) { failed(); }
+            Option< ServerConf > o = ServerConf::from_json( *p );
+            if ( o.is_none() ) { failed(); }
+            s.bind( o.unwrap() );
         }
     }
     s.run();

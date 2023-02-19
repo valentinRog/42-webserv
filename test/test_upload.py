@@ -26,8 +26,8 @@ def upload_too_large(filename):
 def test_upload_small():
     upload_and_delete("test.txt")
 
-# def test_upload_binary():
-#     upload_and_delete("fractol_compressed.png")
+def test_upload_binary():
+    upload_and_delete("fractol_compressed.png")
 
-# def test_upload_too_large():
-#     upload_too_large("fractol_less_compressed.png")
+def test_upload_too_large():
+    upload_too_large("fractol_less_compressed.png")

@@ -273,7 +273,7 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
         = s.substr( 0, std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) );
     r.header = HTTP::Header::from_string( raw_header ).unwrap();
     r.set_content(
-        s.substr( std::min( s.find( "\n\n" ), s.find( "\r\n\r\n" ) ) ) );
+        s.substr( std::min( s.find( "\n\n" ) + 2, s.find( "\r\n\r\n" ) ) ) );
     return r;
 }
 

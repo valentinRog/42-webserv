@@ -131,56 +131,76 @@ std::queue< std::string > JSON::Parse::_lexer( const std::string &s ) {
     return q;
 }
 
-JSON::Wrapper JSON::Parse::_parse( std::queue< std::string > &q ) {
-    if ( !q.size() ) { throw ParsingError(); }
-    if ( q.front()[0] == quote ) { return _parse_string( q ); }
-    if ( std::isdigit( q.front()[0] ) ) { return _parse_number( q ); }
-    if ( q.front() == "{" ) { return _parse_object( q ); }
-    if ( q.front() == "[" ) { return _parse_array( q ); }
-    if ( q.front() == "true" || q.front() == "false" ) {
-        return _parse_boolean( q );
+Option< JSON::Wrapper > JSON::Parse::_parse( std::queue< std::string > &q ) {
+    const Option< JSON::Wrapper > fail;
+    if ( !q.size() ) { return fail; }
+    if ( q.front()[0] == quote ) {
+        Option< String > o = _parse_string( q );
+        return o.is_some() ? Option< JSON::Wrapper >( o.unwrap() ) : fail;
     }
-    return _parse_null( q );
+    if ( std::isdigit( q.front()[0] ) ) {
+        Option< Number > o = _parse_number( q );
+        return o.is_some() ? Option< JSON::Wrapper >( o.unwrap() ) : fail;
+    }
+    if ( q.front() == "{" ) {
+        Option< Object > o = _parse_object( q );
+        return o.is_some() ? Option< JSON::Wrapper >( o.unwrap() ) : fail;
+    }
+    if ( q.front() == "[" ) {
+        Option< Array > o = _parse_array( q );
+        return o.is_some() ? Option< JSON::Wrapper >( o.unwrap() ) : fail;
+    }
+    if ( q.front() == "true" || q.front() == "false" ) {
+        Option< Boolean > o = _parse_boolean( q );
+        return o.is_some() ? Option< JSON::Wrapper >( o.unwrap() ) : fail;
+    }
+    Option< Null > o = _parse_null( q );
+    return o.is_some() ? Option< JSON::Wrapper >( o.unwrap() ) : fail;
 }
 
-JSON::String JSON::Parse::_parse_string( std::queue< std::string > &q ) {
-    if ( !q.size() ) { throw ParsingError(); }
+Option< JSON::String >
+JSON::Parse::_parse_string( std::queue< std::string > &q ) {
+    if ( !q.size() ) { return Option< JSON::String >(); }
     std::string s( q.front() );
     if ( s.size() < 2 || s[0] != quote || s[0] != s[s.size() - 1] ) {
-        throw ParsingError();
+        return Option< JSON::String >();
     }
     s = q.front().substr( 1, q.front().size() - 2 );
     q.pop();
     return String( s );
 }
 
-JSON::Number JSON::Parse::_parse_number( std::queue< std::string > &q ) {
+Option< JSON::Number >
+JSON::Parse::_parse_number( std::queue< std::string > &q ) {
     std::string s( q.front() );
-    if ( !q.size() ) { throw ParsingError(); }
+    if ( !q.size() ) { return Option< JSON::Number >(); }
     q.pop();
-    std::stringstream ss( s );
-    size_t            n;
-    ss >> n;
+    size_t n;
+    std::istringstream( s ) >> n;
     return Number( n );
 }
 
-JSON::Object JSON::Parse::_parse_object( std::queue< std::string > &q ) {
-    if ( q.size() < 2 || q.front() != "{" ) { throw ParsingError(); }
+Option< JSON::Object >
+JSON::Parse::_parse_object( std::queue< std::string > &q ) {
+    Option< Object > fail;
+    if ( q.size() < 2 || q.front() != "{" ) { return fail; }
     Object o;
     q.pop();
     while ( q.size() && q.front() != "}" ) {
         std::string tok( q.front() );
         if ( tok.size() < 3 || tok[0] != quote
              || tok[tok.size() - 1] != quote ) {
-            throw ParsingError();
+            return fail;
         }
         q.pop();
         std::string k = tok.substr( 1, tok.size() - 2 );
-        if ( q.front() != ":" ) { throw ParsingError(); }
+        if ( q.front() != ":" ) { return fail; }
         q.pop();
-        o.insert( Object::value_type( k, _parse( q ) ) );
+        Option< JSON::Wrapper > o2 = _parse( q );
+        if ( o2.is_none() ) { return fail; }
+        o.insert( Object::value_type( k, o2.unwrap() ) );
         if ( q.front() == "," ) {
-            if ( q.size() < 4 ) { throw ParsingError(); }
+            if ( q.size() < 4 ) { return fail; }
             q.pop();
         }
     }
@@ -188,54 +208,53 @@ JSON::Object JSON::Parse::_parse_object( std::queue< std::string > &q ) {
     return o;
 }
 
-JSON::Array JSON::Parse::_parse_array( std::queue< std::string > &q ) {
-    if ( q.size() < 3 || q.front() != "[" ) { throw ParsingError(); }
+Option< JSON::Array >
+JSON::Parse::_parse_array( std::queue< std::string > &q ) {
+    Option< Array > fail;
+    if ( q.size() < 3 || q.front() != "[" ) { return fail; }
     Array a;
     q.pop();
     while ( q.front() != "]" ) {
-        a.push_back( _parse( q ) );
+        Option< JSON::Wrapper > o = _parse( q );
+        if ( o.is_none() ) { return fail; }
+        a.push_back( o.unwrap() );
         if ( q.front() == "," ) {
-            if ( q.size() < 3 ) { throw ParsingError(); }
+            if ( q.size() < 3 ) { return fail; }
             q.pop();
         } else if ( q.front() != "]" ) {
-            throw ParsingError();
+            return fail;
         }
     }
     q.pop();
     return a;
 }
 
-JSON::Boolean JSON::Parse::_parse_boolean( std::queue< std::string > &q ) {
+Option< JSON::Boolean >
+JSON::Parse::_parse_boolean( std::queue< std::string > &q ) {
     std::string s( q.front() );
     if ( !q.size() || ( s != "true" && s != "false" ) ) {
-        throw ParsingError();
+        return Option< JSON::Boolean >();
     }
     q.pop();
     return s == "true" ? Boolean( true ) : Boolean( false );
 }
 
-JSON::Null JSON::Parse::_parse_null( std::queue< std::string > &q ) {
-    if ( !q.size() || q.front() != "null" ) { throw ParsingError(); }
+Option< JSON::Null > JSON::Parse::_parse_null( std::queue< std::string > &q ) {
+    if ( !q.size() || q.front() != "null" ) { return Option< JSON::Null >(); }
     q.pop();
     return Null();
 }
 
-JSON::Wrapper JSON::Parse::from_string( const std::string &s ) {
+Option< JSON::Wrapper > JSON::Parse::from_string( const std::string &s ) {
     std::queue< std::string > q( _lexer( s ) );
     return _parse( q );
 }
 
-JSON::Wrapper JSON::Parse::from_file( const std::string &filename ) {
-    std::stringstream ss;
-    ss << std::ifstream( filename.c_str() ).rdbuf();
-    std::queue< std::string > q( _lexer( ss.str() ) );
+Option< JSON::Wrapper > JSON::Parse::from_file( const std::string &filename ) {
+    std::ostringstream oss;
+    oss << std::ifstream( filename.c_str() ).rdbuf();
+    std::queue< std::string > q( _lexer( oss.str() ) );
     return _parse( q );
-}
-
-/* --------------------------- Parse::ParsingError -------------------------- */
-
-const char *JSON::Parse::ParsingError::what() const throw() {
-    return "Error while parsing JSON";
 }
 
 /* -------------------------------------------------------------------------- */

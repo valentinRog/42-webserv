@@ -2,6 +2,7 @@
 
 #include "HTTP.hpp"
 #include "JSON.hpp"
+#include "Option.hpp"
 #include "Ptr.hpp"
 #include "Str.hpp"
 #include "Trie.hpp"
@@ -25,6 +26,8 @@ public:
         };
         static const BiMap< e_config_key, std::string > &key_to_string();
 
+        Route();
+
         std::string                          _root;
         std::string                          _index;
         std::set< std::string >              _methods;
@@ -34,7 +37,7 @@ public:
         std::string                          _handler;
 
     public:
-        Route( const JSON::Object &o );
+        static Option< Route > from_json( const JSON::Object &o );
 
         const std::string &                         root() const;
         const std::string &                         index() const;
@@ -61,15 +64,11 @@ public:
         std::string  suffix( const std::string &s ) const;
     };
 
-    /* -------------------- ServerConf::InvalidConfiguration -------------------- */
-
-    struct ConfigError : public std::exception {
-        virtual const char *what() const throw();
-    };
-
     /* -------------------------------------------------------------------------- */
 
 private:
+    ServerConf();
+
     sockaddr_in                                           _addr;
     std::set< std::string >                               _names;
     RouteMapper                                           _route_mapper;
@@ -86,7 +85,7 @@ public:
     };
     static const BiMap< e_config_key, std::string > &key_to_string();
 
-    ServerConf( const JSON::Object &o );
+    static Option< ServerConf > from_json( const JSON::Object &o );
 
     const sockaddr_in &            addr() const;
     const std::set< std::string > &names() const;

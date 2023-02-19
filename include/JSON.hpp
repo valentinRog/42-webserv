@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Option.hpp"
 #include "PolymorphicWrapper.hpp"
 #include "Trait.hpp"
 #include "common.h"
@@ -92,25 +93,17 @@ class Parse {
     Parse();
 
     static std::queue< std::string > _lexer( const std::string &s );
-    static Wrapper                   _parse( std::queue< std::string > &q );
-    static String  _parse_string( std::queue< std::string > &q );
-    static Number  _parse_number( std::queue< std::string > &q );
-    static Object  _parse_object( std::queue< std::string > &q );
-    static Array   _parse_array( std::queue< std::string > &q );
-    static Boolean _parse_boolean( std::queue< std::string > &q );
-    static Null    _parse_null( std::queue< std::string > &q );
+    static Option< Wrapper >         _parse( std::queue< std::string > &q );
+    static Option< String >  _parse_string( std::queue< std::string > &q );
+    static Option< Number >  _parse_number( std::queue< std::string > &q );
+    static Option< Object >  _parse_object( std::queue< std::string > &q );
+    static Option< Array >   _parse_array( std::queue< std::string > &q );
+    static Option< Boolean > _parse_boolean( std::queue< std::string > &q );
+    static Option< Null >    _parse_null( std::queue< std::string > &q );
 
 public:
-    static Wrapper from_string( const std::string &s );
-    static Wrapper from_file( const std::string &filename );
-
-    /* --------------------------- Parse::ParsingError -------------------------- */
-
-    struct ParsingError : public std::exception {
-        virtual const char *what() const throw();
-    };
-
-    /* -------------------------------------------------------------------------- */
+    static Option< Wrapper > from_string( const std::string &s );
+    static Option< Wrapper > from_file( const std::string &filename );
 };
 
 /* -------------------------------------------------------------------------- */

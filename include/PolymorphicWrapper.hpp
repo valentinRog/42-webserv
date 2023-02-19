@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Option.hpp"
 #include "Ptr.hpp"
 #include "common.h"
 
@@ -13,14 +14,14 @@ public:
     PolymorphicWrapper( const PolymorphicWrapper &other );
     PolymorphicWrapper &operator=( const PolymorphicWrapper &other );
 
-    T       &operator*();
+    T &      operator*();
     const T &operator*() const;
 
-    T       *operator->();
+    T *      operator->();
     const T *operator->() const;
 
-    template < typename U > U       &unwrap();
-    template < typename U > const U &unwrap() const;
+    template < typename U > U *        dycast();
+    template < typename U >  const U *  dycast() const;
 };
 
 /* -------------------------------------------------------------------------- */

@@ -86,10 +86,12 @@ CallbackBase *ServerCluster::ClientCallback::clone() const {
 }
 
 void ServerCluster::ClientCallback::handle_read() {
-    const std::string CONTENT_LENGTH
-        = HTTP::Header::key_to_string().at( HTTP::Header::CONTENT_LENGTH );
-    const std::string HOST
-        = HTTP::Header::key_to_string().at( HTTP::Header::HOST );
+    const BiMap< HTTP::Header::e_key, std::string > &m
+        = HTTP::Header::key_to_string();
+    const std::string CONTENT_LENGTH = m.at( HTTP::Header::CONTENT_LENGTH );
+    const std::string HOST           = m.at( HTTP::Header::HOST );
+    const std::string TRANSFER_ENCODING
+        = m.at( HTTP::Header::TRANSFER_ENCODING );
 
     update_last_t();
     char   buff[_buffer_size];
@@ -110,8 +112,7 @@ void ServerCluster::ClientCallback::handle_read() {
         }
     }
     if ( _request.is_some() && _accu.is_none()
-         && _request.unwrap().header().count( HTTP::Header::key_to_string().at(
-             HTTP::Header::CONTENT_LENGTH ) ) ) {
+         && _request.unwrap().header().count( CONTENT_LENGTH ) ) {
         size_t l;
         std::istringstream( _request.unwrap().header().at( CONTENT_LENGTH ) )
             >> l;
@@ -120,9 +121,7 @@ void ServerCluster::ClientCallback::handle_read() {
         _accu = PolymorphicWrapper< HTTP::ContentAccumulatorBase >(
             HTTP::ContentAccumulator( l, max_body_size ) );
     } else if ( _request.is_some() && _accu.is_none()
-                && _request.unwrap().header().count(
-                    HTTP::Header::key_to_string().at(
-                        HTTP::Header::TRANSFER_ENCODING ) ) ) {
+                && _request.unwrap().header().count( TRANSFER_ENCODING ) ) {
         size_t max_body_size = _vhm[_request.unwrap().header().get( HOST )]
                                    ->client_max_body_size();
         _accu = PolymorphicWrapper< HTTP::ContentAccumulatorBase >(

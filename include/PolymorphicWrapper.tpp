@@ -32,14 +32,14 @@ template < typename T > const T *PolymorphicWrapper< T >::operator->() const {
 
 template < typename T >
 template < typename U >
-U &PolymorphicWrapper< T >::unwrap() {
-    return dynamic_cast< U & >( *_p );
+U *PolymorphicWrapper< T >::dycast() {
+    return dynamic_cast< U * >( _p.operator->() );
 }
 
 template < typename T >
 template < typename U >
-const U &PolymorphicWrapper< T >::unwrap() const {
-    return dynamic_cast< const U & >( *_p );
+const U *PolymorphicWrapper< T >::dycast() const {
+    return dynamic_cast< const U * >( _p.operator->() );
 }
 
 /* -------------------------------------------------------------------------- */
