@@ -39,15 +39,15 @@ class ServerCluster {
     class ClientCallback : public CallbackBase {
         enum e_step { HEADER, CONTENT, BODY, DONE, FAILED };
 
-        int                                    _fd;
-        const VirtualHostMapper &              _vhm;
-        std::string                            _raw;
-        std::string                            _raw_request;
-        std::string                            _raw_header;
-        Ptr::Shared< std::string >             _raw_content;
-        Option< HTTP::ContentAccumulator >     _accu;
-        Option< HTTP::Request >                _request;
-        Option< HTTP::Response::e_error_code > _error;
+        int                        _fd;
+        const VirtualHostMapper &  _vhm;
+        std::string                _raw;
+        std::string                _raw_request;
+        std::string                _raw_header;
+        Ptr::Shared< std::string > _raw_content;
+        Option< PolymorphicWrapper< HTTP::ContentAccumulatorBase > > _accu;
+        Option< HTTP::Request >                                      _request;
+        Option< HTTP::Response::e_error_code >                       _error;
 
     public:
         ClientCallback( int                      fd,

@@ -76,24 +76,57 @@ private:
     std::string _content;
 };
 
-/* --------------------------- ContentAccumulator --------------------------- */
+/* ------------------------- ContentAccumulatorBase ------------------------- */
 
-class ContentAccumulator {
-    size_t                     _content_length;
+class ContentAccumulatorBase
+    : public Trait::CloneCRTP< ContentAccumulatorBase > {
+protected:
     size_t                     _body_max_size;
-    Ptr::Shared< std::string > _content;
     bool                       _done;
     bool                       _failed;
+    Ptr::Shared< std::string > _content;
+
+public:
+    ContentAccumulatorBase( size_t body_max_size = SIZE_MAX );
+    virtual ~ContentAccumulatorBase();
+
+    virtual ContentAccumulatorBase *clone() const = 0;
+
+    virtual void feed( const char *first, const char *last ) = 0;
+
+    bool                       done() const;
+    bool                       failed() const;
+    Ptr::Shared< std::string > content() const;
+};
+
+/* --------------------------- ContentAccumulator --------------------------- */
+
+class ContentAccumulator : public ContentAccumulatorBase {
+    size_t _content_length;
 
 public:
     ContentAccumulator( size_t content_length,
                         size_t body_max_size = SIZE_MAX );
 
-    void feed( const char *first, const char *last );
+    ContentAccumulatorBase *clone() const;
 
-    bool                       done() const;
-    bool                       failed() const;
-    Ptr::Shared< std::string > content() const;
+    void feed( const char *first, const char *last );
+};
+
+/* ------------------------ ChunkedContentAccumulator ----------------------- */
+
+class ChunkedContentAccumulator : public ContentAccumulatorBase {
+    size_t      _chunk_size;
+    std::string _size_accu;
+    std::string _content_accu;
+    std::string _eol;
+
+public:
+    ChunkedContentAccumulator( size_t body_max_size = SIZE_MAX );
+
+    ContentAccumulatorBase *clone() const;
+
+    void feed( const char *first, const char *last );
 };
 
 /* --------------------------------- Request -------------------------------- */
@@ -110,11 +143,11 @@ private:
 public:
     Request();
 
-    const std::string         &method() const;
-    const std::string         &url() const;
-    const std::string         &version() const;
-    const std::string         &host() const;
-    const Header              &header() const;
+    const std::string &        method() const;
+    const std::string &        url() const;
+    const std::string &        version() const;
+    const std::string &        host() const;
+    const Header &             header() const;
     Ptr::Shared< std::string > content() const;
 
     void set_content( Ptr::Shared< std::string > content ) {

@@ -18,7 +18,7 @@
       },
       "/form/upload": {
         "root": "test/www/upload",
-        "handler": "extensions/upload/upload.py",
+        "handler": "extensions/upload.py",
         "methods": ["POST"],
         "cgi": {
           ".py": "/usr/bin/python3"
@@ -38,7 +38,8 @@
           ".php": "/usr/bin/php-cgi",
           ".js": "/usr/local/bin/node",
           ".rb": "/usr/bin/ruby",
-          ".sh": "/bin/sh"
+          ".sh": "/bin/sh",
+          ".lua": "/usr/bin/lua"
         }
       },
       "/redir": {
@@ -50,6 +51,14 @@
         "root": "test/www",
         "methods": ["GET"],
         "handler": "test/www/cgi/cookies.py",
+        "cgi": {
+          ".py": "/usr/bin/python3"
+        }
+      },
+      "/echo": {
+        "root": "test/www",
+        "methods": ["POST"],
+        "handler": "test/www/cgi/echo.py",
         "cgi": {
           ".py": "/usr/bin/python3"
         }

@@ -117,14 +117,24 @@ void ServerCluster::ClientCallback::handle_read() {
             >> l;
         size_t max_body_size = _vhm[_request.unwrap().header().get( HOST )]
                                    ->client_max_body_size();
-        _accu = HTTP::ContentAccumulator( l, max_body_size );
+        _accu = PolymorphicWrapper< HTTP::ContentAccumulatorBase >(
+            HTTP::ContentAccumulator( l, max_body_size ) );
+    } else if ( _request.is_some() && _accu.is_none()
+                && _request.unwrap().header().count(
+                    HTTP::Header::key_to_string().at(
+                        HTTP::Header::TRANSFER_ENCODING ) ) ) {
+        size_t max_body_size = _vhm[_request.unwrap().header().get( HOST )]
+                                   ->client_max_body_size();
+        _accu = PolymorphicWrapper< HTTP::ContentAccumulatorBase >(
+            HTTP::ChunkedContentAccumulator( max_body_size ) );
     }
     if ( _accu.is_some() ) {
-        _accu.unwrap().feed( buff + ret, buff + n );
-        if ( _accu.unwrap().done() ) {
-            _raw_content = _accu.unwrap().content();
-            if ( _accu.unwrap().failed() ) { _error = HTTP::Response::E413; }
-            _accu = Option< HTTP::ContentAccumulator >();
+        _accu.unwrap()->feed( buff + ret, buff + n );
+        if ( _accu.unwrap()->done() ) {
+            _raw_content = _accu.unwrap()->content();
+            if ( _accu.unwrap()->failed() ) { _error = HTTP::Response::E413; }
+            _accu = Option<
+                PolymorphicWrapper< HTTP::ContentAccumulatorBase > >();
         }
     }
 }
@@ -190,7 +200,7 @@ void ServerCluster::ClientCallback::_log_write_response(
 
 ServerCluster::SocketCallback::SocketCallback( int                fd,
                                                const sockaddr_in &addr,
-                                               ServerCluster     &server )
+                                               ServerCluster &    server )
     : CallbackBase( 0, 0 ),
       _fd( fd ),
       _addr( addr ),
@@ -209,11 +219,10 @@ void ServerCluster::SocketCallback::handle_read() {
     inet_ntop( AF_INET, &addr.sin_addr, buff, sizeof( buff ) );
     std::cout << CYAN << '[' << fd << "] " << RESET << buff << ':'
               << ntohs( _addr.sin_port ) << BLUE << " -> " << YELLOW
-              << " created tcp connection\n"
-              << RESET;
+              << " created tcp connection" << RESET << std::endl;
     getsockname( fd, reinterpret_cast< sockaddr * >( &addr ), &l );
     typedef std::map< u_int32_t, VirtualHostMapper > map_type;
-    const map_type          &m( _server._vh.at( addr.sin_port ) );
+    const map_type &         m( _server._vh.at( addr.sin_port ) );
     map_type::const_iterator it = m.find( addr.sin_addr.s_addr );
     if ( it == m.end() ) { it = m.find( htonl( INADDR_ANY ) ); }
     if ( it == m.end() ) {

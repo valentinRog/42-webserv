@@ -166,15 +166,33 @@ std::string HTTP::Response::stringify() const {
     return s + "\r\n" + _content;
 }
 
+/* ------------------------- ContentAccumulatorBase ------------------------- */
+
+HTTP::ContentAccumulatorBase::ContentAccumulatorBase( size_t body_max_size )
+    : _body_max_size( body_max_size ),
+      _done( false ),
+      _failed( false ),
+      _content( new std::string ) {}
+
+HTTP::ContentAccumulatorBase::~ContentAccumulatorBase() {}
+
+bool HTTP::ContentAccumulatorBase::done() const { return _done; }
+bool HTTP::ContentAccumulatorBase::failed() const { return _failed; }
+
+Ptr::Shared< std::string > HTTP::ContentAccumulatorBase::content() const {
+    return _content;
+}
+
 /* --------------------------- ContentAccumulator --------------------------- */
 
 HTTP::ContentAccumulator::ContentAccumulator( size_t content_length,
                                               size_t body_max_size )
-    : _content_length( content_length ),
-      _body_max_size( body_max_size ),
-      _content( new std::string() ),
-      _done( false ),
-      _failed( false ) {}
+    : ContentAccumulatorBase( body_max_size ),
+      _content_length( content_length ) {}
+
+HTTP::ContentAccumulatorBase *HTTP::ContentAccumulator::clone() const {
+    return new ContentAccumulator( *this );
+}
 
 void HTTP::ContentAccumulator::feed( const char *first, const char *last ) {
     for ( ; first != last && _content->size() < _content_length; ++first ) {
@@ -184,12 +202,39 @@ void HTTP::ContentAccumulator::feed( const char *first, const char *last ) {
     _failed = _content->size() > _body_max_size;
 }
 
-bool HTTP::ContentAccumulator::done() const { return _done; }
+/* ------------------------ ChunkedContentAccumulator ----------------------- */
 
-bool HTTP::ContentAccumulator::failed() const { return _failed; }
+HTTP::ChunkedContentAccumulator::ChunkedContentAccumulator(
+    size_t body_max_size )
+    : ContentAccumulatorBase( body_max_size ),
+      _chunk_size( 0 ),
+      _eol( "\r\n" ) {}
 
-Ptr::Shared< std::string > HTTP::ContentAccumulator::content() const {
-    return _content;
+HTTP::ContentAccumulatorBase *HTTP::ChunkedContentAccumulator::clone() const {
+    return new ChunkedContentAccumulator( *this );
+}
+
+void HTTP::ChunkedContentAccumulator::feed( const char *first,
+                                            const char *last ) {
+    while ( !_done && first != last ) {
+        size_t n = Str::append_max_len( *_content,
+                                        first,
+                                        last,
+                                        _content->size() + _chunk_size );
+        _chunk_size -= n;
+        first += n;
+        if ( _chunk_size ) { break; }
+        n = Str::append_until( _eol, first, last, "\r\n" );
+        first += n;
+        if ( _eol != "\r\n" ) { break; }
+        n = Str::append_until( _size_accu, first, last, "\r\n" );
+        first += n;
+        if ( !Str::ends_with( _size_accu, "\r\n" ) ) { break; }
+        std::istringstream( _size_accu ) >> std::hex >> _chunk_size;
+        if ( !_chunk_size ) { _done = true; }
+        _size_accu.clear();
+        _eol.clear();
+    }
 }
 
 /* --------------------------------- Request -------------------------------- */
