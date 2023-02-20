@@ -169,6 +169,7 @@ Option< ServerConf > ServerConf::from_json( const JSON::Object &o ) {
         {
             const JSON::Number *p2 = ( *p )[1].dycast< JSON::Number >();
             if ( !p2 ) { return fail; }
+            if ( *p2 > 65535 || *p2 <= 0 ) { return fail; }
             r._addr.sin_port = htons( *p2 );
         }
         {
@@ -177,7 +178,7 @@ Option< ServerConf > ServerConf::from_json( const JSON::Object &o ) {
             if ( ( r._addr.sin_addr.s_addr
                    = ::inet_addr( std::string( *p2 ).c_str() ) )
                  == INADDR_NONE ) {
-                throw std::runtime_error( "inet_addr" );
+                return fail;
             }
         }
     }
