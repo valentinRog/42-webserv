@@ -4,8 +4,21 @@
 #include "common.h"
 
 static void failed() {
-    std::cerr << RED << "invalid configuration file" << RESET << std::endl;
+    std::cerr << RED << "invalid configuration" << RESET << std::endl;
     exit( EXIT_FAILURE );
+}
+
+static void log_bind( const JSON::Object &o, bool success ) {
+    JSON::Array                  names;
+    JSON::Object::const_iterator it = o.find( "names" );
+    if ( it != o.end() ) { names = *it->second.dycast< JSON::Array >(); }
+    std::cout << YELLOW << "binding " << RESET << o.at( "listen" )->stringify()
+              << " with names: " << names.stringify() << BLUE " -> ";
+    if ( success ) {
+        std::cout << GREEN << "success" << RESET << std::endl;
+    } else {
+        std::cout << RED << "failure" << RESET << std::endl;
+    }
 }
 
 int main( int argc, char **argv ) {
@@ -26,7 +39,7 @@ int main( int argc, char **argv ) {
             if ( !p ) { failed(); }
             Option< ServerConf > o = ServerConf::from_json( *p );
             if ( o.is_none() ) { failed(); }
-            s.bind( o.unwrap() );
+            log_bind(*p, !s.bind( o.unwrap() ));
         }
     }
     s.run();

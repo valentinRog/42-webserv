@@ -4,7 +4,9 @@
 
 ServerCluster::VirtualHostMapper::VirtualHostMapper(
     const ServerConf &default_conf )
-    : _default( new ServerConf( default_conf ) ) {}
+    : _default( new ServerConf( default_conf ) ) {
+    add( default_conf );
+}
 
 Ptr::Shared< ServerConf >
 ServerCluster::VirtualHostMapper::get_default() const {
@@ -18,40 +20,47 @@ ServerCluster::VirtualHostMapper::operator[]( const std::string &s ) const {
     return it == _names_map.end() ? _default : it->second;
 }
 
-void ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
+size_t ServerCluster::VirtualHostMapper::add( const ServerConf &conf ) {
+    size_t n = 0;
     for ( std::set< std::string >::const_iterator it( conf.names().begin() );
           it != conf.names().end();
           it++ ) {
+        if ( _names_map.count( *it ) ) { continue; }
         _names_map[*it] = new ServerConf( conf );
+        n++;
     }
+    return n;
 }
 
 /* ------------------------------ ServerCluster ----------------------------- */
 
-ServerCluster::ServerCluster() : _q( _max_events ) {}
+ServerCluster::ServerCluster() : _q( _MAX_EVENTS ) {}
 
-void ServerCluster::bind( const ServerConf &conf ) {
+bool ServerCluster::bind( const ServerConf &conf ) {
     uint16_t port( conf.addr().sin_port );
     uint32_t addr( conf.addr().sin_addr.s_addr );
     if ( !_vh.count( port ) ) {
-        _bind( ntohs( port ) );
+        if ( _bind( ntohs( port ) ) ) { return true; }
         _vh[port];
     }
     if ( _vh.at( port ).count( addr ) ) {
-        _vh.at( port ).at( addr ).add( conf );
-    } else {
-        _vh.at( port ).insert(
-            std::make_pair( addr, VirtualHostMapper( conf ) ) );
+        size_t ret = _vh.at( port ).at( addr ).add( conf );
+        return ret ? false : true;
+        return _vh.at( port ).at( addr ).add( conf ) ? false : true;
     }
+    _vh.at( port ).insert( std::make_pair( addr, VirtualHostMapper( conf ) ) );
+    return false;
 }
 
 void ServerCluster::run() {
-    while ( ~0 ) { _q.wait(); }
+    if ( !_vh.empty() ) {
+        while ( ~0 ) { _q.wait(); }
+    }
 }
 
-void ServerCluster::_bind( uint16_t port ) {
+bool ServerCluster::_bind( uint16_t port ) {
     int fd = ::socket( AF_INET, SOCK_STREAM, 0 );
-    if ( fd < 0 ) { throw std::runtime_error( "socket" ); }
+    if ( fd < 0 ) { return true; }
     sockaddr_in addr;
     ::bzero( &addr, sizeof( addr ) );
     addr.sin_family      = AF_INET;
@@ -59,16 +68,15 @@ void ServerCluster::_bind( uint16_t port ) {
     addr.sin_addr.s_addr = htonl( INADDR_ANY );
     int ra               = 1;
     if ( ::setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &ra, sizeof( ra ) ) < 0 ) {
-        throw std::runtime_error( "setsockopt" );
+        return true;
     }
     if ( ::bind( fd, reinterpret_cast< sockaddr * >( &addr ), sizeof( addr ) )
          == -1 ) {
-        throw std::runtime_error( "bind" );
+        return true;
     }
-    if ( ::listen( fd, SOMAXCONN ) < 0 ) {
-        throw std::runtime_error( "listen" );
-    }
+    if ( ::listen( fd, SOMAXCONN ) < 0 ) { return true; }
     _q.add( fd, SocketCallback( fd, addr, *this ) );
+    return false;
 }
 
 /* ---------------------- ServerCluster::ClientCallback --------------------- */
@@ -94,7 +102,7 @@ void ServerCluster::ClientCallback::handle_read() {
         = m.at( HTTP::Header::TRANSFER_ENCODING );
 
     update_last_t();
-    char   buff[_buffer_size];
+    char   buff[_BUFFER_SIZE];
     size_t n( read( _fd, buff, sizeof( buff ) ) );
     size_t ret( 0 );
     if ( _request.is_none() ) {
@@ -139,6 +147,10 @@ void ServerCluster::ClientCallback::handle_read() {
 }
 
 void ServerCluster::ClientCallback::handle_write() {
+    const BiMap< HTTP::Header::e_key, std::string > &m
+        = HTTP::Header::key_to_string();
+    const std::string HOST = m.at( HTTP::Header::HOST );
+
     if ( _error.is_some() ) {
         std::string s = HTTP::Response::make_error_response( _error.unwrap() )
                             .stringify();
@@ -153,7 +165,7 @@ void ServerCluster::ClientCallback::handle_write() {
     Ptr::Shared< HTTP::Request > r = new HTTP::Request(
         HTTP::Request::from_string( _raw_request, _raw_header ).unwrap() );
     r->set_content( _raw_content );
-    RequestHandler rh( r, _vhm[r->host()] );
+    RequestHandler rh( r, _vhm[_request.unwrap().header().get( HOST )] );
     HTTP::Response response( rh.make_response() );
     std::string    s( response.stringify() );
     write( _fd, s.c_str(), s.size() );

@@ -10,10 +10,10 @@
 /* ------------------------------ ServerCluster ----------------------------- */
 
 class ServerCluster {
-    static const int    _max_events         = 4000;
-    static const size_t _buffer_size        = 8192;
-    static const time_t _connection_timeout = 30;
-    static const time_t _idle_timeout       = 5;
+    static const int    _MAX_EVENTS         = 4000;
+    static const size_t _BUFFER_SIZE        = 8192;
+    static const time_t _CONNECTION_TIMEOUT = 30;
+    static const time_t _IDLE_TIMEOUT       = 5;
 
     /* -------------------- ServerCluster::VirtualHostMapper -------------------- */
 
@@ -26,7 +26,7 @@ class ServerCluster {
 
         Ptr::Shared< ServerConf > get_default() const;
         Ptr::Shared< ServerConf > operator[]( const std::string &s ) const;
-        void                      add( const ServerConf &conf );
+        size_t                    add( const ServerConf &conf );
     };
 
     /* -------------------------------------------------------------------------- */
@@ -52,8 +52,8 @@ class ServerCluster {
     public:
         ClientCallback( int                      fd,
                         const VirtualHostMapper &vhm,
-                        time_t                   con_to  = _connection_timeout,
-                        time_t                   idle_to = _idle_timeout );
+                        time_t                   con_to  = _CONNECTION_TIMEOUT,
+                        time_t                   idle_to = _IDLE_TIMEOUT );
         CallbackBase *clone() const;
         void          handle_read();
         void          handle_write();
@@ -84,11 +84,11 @@ class ServerCluster {
 public:
     ServerCluster();
 
-    void bind( const ServerConf &conf );
+    bool bind( const ServerConf &conf );
     void run();
 
 private:
-    void _bind( uint16_t port );
+    bool _bind( uint16_t port );
 };
 
 /* -------------------------------------------------------------------------- */
