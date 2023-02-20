@@ -231,7 +231,10 @@ void HTTP::ChunkedContentAccumulator::feed( const char *first,
         first += n;
         if ( !Str::ends_with( _size_accu, "\r\n" ) ) { break; }
         std::istringstream( _size_accu ) >> std::hex >> _chunk_size;
-        if ( !_chunk_size ) { _done = true; }
+        if ( !_chunk_size ) {
+            _done   = true;
+            _failed = _content->size() > _body_max_size;
+        }
         _size_accu.clear();
         _eol.clear();
     }

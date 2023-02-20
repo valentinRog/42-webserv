@@ -10,7 +10,7 @@
 /* ------------------------------ ServerCluster ----------------------------- */
 
 class ServerCluster {
-    static const int    _MAX_EVENTS         = 4000;
+    static const int    _MAX_EVENTS         = 2048;
     static const size_t _BUFFER_SIZE        = 8192;
     static const time_t _CONNECTION_TIMEOUT = 30;
     static const time_t _IDLE_TIMEOUT       = 5;

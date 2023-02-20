@@ -4,9 +4,9 @@ SRC = $(wildcard src/*.cpp)
 
 INCLUDE = include
 
-CXX = clang++
+CXX = c++
 
-CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE) -fsanitize=address
+CXXFLAGS = -Wall -Wextra -std=c++98 -I$(INCLUDE)
 
 OBJ = $(SRC:.cpp=.o)
 

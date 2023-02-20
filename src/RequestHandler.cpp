@@ -100,6 +100,8 @@ HTTP::Response RequestHandler::make_response() {
     case POST: return _post();
     case DELETE: return _delete();
     }
+    return HTTP::Response::make_error_response( HTTP::Response::E500,
+                                                _conf->code_to_error_page() );
 }
 
 HTTP::Response RequestHandler::_get() {
@@ -196,6 +198,9 @@ HTTP::Response RequestHandler::_redir() {
 
 HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                                      const std::string &path ) {
+    HTTP::Response err(
+        HTTP::Response::make_error_response( HTTP::Response::E500,
+                                             _conf->code_to_error_page() ) );
     std::string bp( bin_path );
     std::string p( path );
     char *      args[] = { const_cast< char * >( bp.c_str() ),
@@ -222,24 +227,20 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     }
     int i_pipe[2];
     int o_pipe[2];
-    if ( ::pipe( i_pipe ) == -1 ) { throw std::runtime_error( "pipe" ); }
+    if ( ::pipe( i_pipe ) == -1 ) { return err; }
     if ( ::pipe( o_pipe ) == -1 ) {
         close( i_pipe[0] );
         close( i_pipe[1] );
-        throw std::runtime_error( "pipe" );
+        return err;
     }
     env[CGI::SCRIPT_FILENAME] = path;
     int pid                   = ::fork();
-    if ( pid == -1 ) { throw std::runtime_error( "fork" ); }
+    if ( pid == -1 ) { return err; }
     if ( !pid ) {
         char **envp( env.c_arr() );
-        if ( ::dup2( i_pipe[0], STDIN_FILENO ) == -1 ) {
-            throw std::runtime_error( "dup2" );
-        }
+        if ( ::dup2( i_pipe[0], STDIN_FILENO ) == -1 ) { return err; }
         ::close( i_pipe[1] );
-        if ( ::dup2( o_pipe[1], STDOUT_FILENO ) == -1 ) {
-            throw std::runtime_error( "pipe" );
-        }
+        if ( ::dup2( o_pipe[1], STDOUT_FILENO ) == -1 ) { return err; }
         ::close( o_pipe[0] );
         ::execve( *args, args, envp );
         CGI::Env::clear_c_env( envp );
@@ -252,7 +253,7 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                    _request->content()->c_str(),
                    _request->content()->size() )
                 == -1 ) {
-        throw std::runtime_error( "write" );
+        return err;
     }
     close( i_pipe[1] );
     char        buff[1024];
@@ -260,10 +261,8 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     std::string s;
     int         exit_code;
     wait( &exit_code );
-    if ( !WIFEXITED( exit_code ) | WEXITSTATUS( exit_code ) ) {
-        return HTTP::Response::make_error_response(
-            HTTP::Response::E500,
-            _conf->code_to_error_page() );
+    if ( ( !WIFEXITED( exit_code ) ) | WEXITSTATUS( exit_code ) ) {
+        return err;
     }
     while ( ( n = ::read( o_pipe[0], buff, 1024 ) ) == 1024 ) {
         s.append( buff, n );
