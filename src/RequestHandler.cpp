@@ -34,6 +34,7 @@ RequestHandler::CGI::key_to_string( RequestHandler::CGI::e_env_key k ) {
             m[SCRIPT_NAME]     = "SCRIPT_NAME";
             m[SCRIPT_FILENAME] = "SCRIPT_FILENAME";
             m[HTTP_COOKIE]     = "HTTP_COOKIE";
+            m[ROOT]            = "ROOT";
             return m;
         }
     };
@@ -165,7 +166,7 @@ HTTP::Response RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
     std::string    contentEnd = "</h1></body></html>";
-    DIR           *dir;
+    DIR *          dir;
     dir = opendir( _path.c_str() );
     if ( !dir )
         return HTTP::Response::make_error_response(
@@ -197,11 +198,12 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                                      const std::string &path ) {
     std::string bp( bin_path );
     std::string p( path );
-    char       *args[] = { const_cast< char       *>( bp.c_str() ),
-                           const_cast< char       *>( p.c_str() ),
-                           0 };
+    char *      args[] = { const_cast< char * >( bp.c_str() ),
+                     const_cast< char * >( p.c_str() ),
+                     0 };
     CGI::Env    env;
     env[CGI::PATH_INFO]      = path;
+    env[CGI::ROOT]           = _route->root();
     env[CGI::REQUEST_METHOD] = method_to_string().at( _request->method() );
     if ( _request->header().count( "Content-Type" ) ) {
         env[CGI::CONTENT_TYPE] = _request->header().at( "Content-Type" );
@@ -211,9 +213,8 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     } else {
         env[CGI::CONTENT_LENGTH] = "0";
     }
-    env[CGI::QUERY_STRING]    = _route->root();
+    env[CGI::QUERY_STRING]    = _request->query();
     env[CGI::REDIRECT_STATUS] = "200";
-    env[CGI::SCRIPT_FILENAME] = path;
     if ( _request->header().count(
              HTTP::Header::key_to_string().at( HTTP::Header::COOKIE ) ) ) {
         env[CGI::HTTP_COOKIE] = _request->header().at(
@@ -227,7 +228,8 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
         close( i_pipe[1] );
         throw std::runtime_error( "pipe" );
     }
-    int pid = ::fork();
+    env[CGI::SCRIPT_FILENAME] = path;
+    int pid                   = ::fork();
     if ( pid == -1 ) { throw std::runtime_error( "fork" ); }
     if ( !pid ) {
         char **envp( env.c_arr() );

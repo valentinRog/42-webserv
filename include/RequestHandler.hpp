@@ -33,7 +33,8 @@ class RequestHandler {
             SERVER_PORT,
             SCRIPT_FILENAME,
             SCRIPT_NAME,
-            REDIRECT_STATUS
+            REDIRECT_STATUS,
+            ROOT,
         };
         static const std::string &key_to_string( e_env_key k );
 

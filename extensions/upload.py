@@ -2,7 +2,7 @@ import cgi
 import os
 
 form = cgi.FieldStorage()
-upload_dir = os.environ["QUERY_STRING"]
+upload_dir = os.environ["ROOT"]
 
 if "file" in form:
     file = form["file"]

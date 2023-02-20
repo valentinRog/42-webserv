@@ -245,6 +245,8 @@ const std::string &HTTP::Request::method() const { return _method; }
 
 const std::string &HTTP::Request::url() const { return _url; }
 
+const std::string &HTTP::Request::query() const { return _query; }
+
 const std::string &HTTP::Request::version() const { return _version; }
 
 const std::string &HTTP::Request::host() const { return _host; }
@@ -261,6 +263,8 @@ HTTP::Request::from_string( const std::string &request_line,
     r._url     = request_line.substr( request_line.find( ' ' ) + 1,
                                   request_line.rfind( ' ' )
                                       - request_line.find( ' ' ) - 1 );
+    r._query   = r._url.substr( r._url.find( '?' ) + 1 );
+    r._url     = r._url.substr( 0, r._url.find( '?' ) );
     r._version = request_line.substr( request_line.rfind( ' ' ) + 1 );
     r._header = Header::from_string( Str::trim_right( raw_header, "\r\n\r\n" ) )
                     .unwrap();

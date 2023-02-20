@@ -135,6 +135,7 @@ class Request {
 private:
     std::string                _method;
     std::string                _url;
+    std::string                _query;
     std::string                _version;
     std::string                _host;
     Header                     _header;
@@ -145,6 +146,7 @@ public:
 
     const std::string &        method() const;
     const std::string &        url() const;
+    const std::string &        query() const;
     const std::string &        version() const;
     const std::string &        host() const;
     const Header &             header() const;
