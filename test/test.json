@@ -58,7 +58,7 @@
       "/echo": {
         "root": "test/www",
         "methods": ["POST"],
-        "handler": "test/www/cgi/echo.py",
+        "handler": "extensions/echo.py",
         "cgi": {
           ".py": "/usr/bin/python3"
         }

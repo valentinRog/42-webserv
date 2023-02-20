@@ -62,6 +62,9 @@ class ServerCluster {
     private:
         void _log_write_failure( HTTP::Response::e_error_code code ) const;
         void _log_write_response( HTTP::Response::e_error_code code ) const;
+        void _log_fatal( const std::string &msg ) const;
+
+        bool _check_io( ssize_t ret, const std::string &msg );
     };
 
     /* ---------------------- ServerCluster::SocketCallback --------------------- */
