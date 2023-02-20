@@ -10,7 +10,7 @@
 /* ------------------------------ ServerCluster ----------------------------- */
 
 class ServerCluster {
-    static const int    _MAX_EVENTS         = 2048;
+    static const int    _MAX_EVENTS         = 4092;
     static const size_t _BUFFER_SIZE        = 8192;
     static const time_t _CONNECTION_TIMEOUT = 30;
     static const time_t _IDLE_TIMEOUT       = 5;
@@ -62,9 +62,8 @@ class ServerCluster {
     private:
         void _log_write_failure( HTTP::Response::e_error_code code ) const;
         void _log_write_response( HTTP::Response::e_error_code code ) const;
-        void _log_fatal( const std::string &msg ) const;
 
-        bool _check_io( ssize_t ret, const std::string &msg );
+        bool _check_io( ssize_t ret);
     };
 
     /* ---------------------- ServerCluster::SocketCallback --------------------- */

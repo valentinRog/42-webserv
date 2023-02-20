@@ -147,14 +147,16 @@ HTTP::Response RequestHandler::_get() {
 }
 
 HTTP::Response RequestHandler::_post() {
-    return HTTP::Response( HTTP::Response::E500 );
+    return HTTP::Response::make_error_response( HTTP::Response::E500,
+                                                _conf->code_to_error_page() );
 }
 
 HTTP::Response RequestHandler::_delete() {
     struct stat s;
     if ( stat( _path.c_str(), &s ) == 0 ) {
         if ( s.st_mode & S_IFDIR ) {
-            return HTTP::Response( HTTP::Response::E400 );
+            HTTP::Response::make_error_response( HTTP::Response::E400,
+                                                 _conf->code_to_error_page() );
         } else {
             std::remove( _path.c_str() );
             return HTTP::Response( HTTP::Response::E200 );
@@ -168,7 +170,7 @@ HTTP::Response RequestHandler::_autoindex() {
     struct dirent *file;
     std::string    content    = "<!DOCTYPE html><html><body><h1>";
     std::string    contentEnd = "</h1></body></html>";
-    DIR *          dir;
+    DIR           *dir;
     dir = opendir( _path.c_str() );
     if ( !dir )
         return HTTP::Response::make_error_response(
@@ -203,9 +205,9 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                                              _conf->code_to_error_page() ) );
     std::string bp( bin_path );
     std::string p( path );
-    char *      args[] = { const_cast< char * >( bp.c_str() ),
-                     const_cast< char * >( p.c_str() ),
-                     0 };
+    char       *args[] = { const_cast< char       *>( bp.c_str() ),
+                           const_cast< char       *>( p.c_str() ),
+                           0 };
     CGI::Env    env;
     env[CGI::PATH_INFO]      = path;
     env[CGI::ROOT]           = _route->root();
@@ -253,6 +255,8 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
                    _request->content()->c_str(),
                    _request->content()->size() )
                 == -1 ) {
+        close( i_pipe[1] );
+        close( o_pipe[0] );
         return err;
     }
     close( i_pipe[1] );
@@ -261,13 +265,12 @@ HTTP::Response RequestHandler::_cgi( const std::string &bin_path,
     std::string s;
     int         exit_code;
     wait( &exit_code );
-    if ( ( !WIFEXITED( exit_code ) ) | WEXITSTATUS( exit_code ) ) {
-        return err;
-    }
+    if ( !WIFEXITED( exit_code ) || WEXITSTATUS( exit_code ) ) { return err; }
     while ( ( n = ::read( o_pipe[0], buff, 1024 ) ) == 1024 ) {
         s.append( buff, n );
     }
     ::close( o_pipe[0] );
+    if ( n < 0 ) { return err; }
     s.append( buff, n );
     HTTP::Response r( HTTP::Response::E200 );
     std::string    raw_header

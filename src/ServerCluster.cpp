@@ -104,7 +104,7 @@ void ServerCluster::ClientCallback::handle_read() {
     update_last_t();
     char    buff[_BUFFER_SIZE];
     ssize_t n( read( _fd, buff, sizeof( buff ) ) );
-    if ( _check_io( n, "read" ) ) { return; }
+    if ( _check_io( n ) ) { return; }
     size_t ret( 0 );
     if ( _request.is_none() ) {
         ret = Str::append_until( _raw_request, buff, buff + n, "\r\n" );
@@ -155,7 +155,7 @@ void ServerCluster::ClientCallback::handle_write() {
     if ( _error.is_some() ) {
         std::string s = HTTP::Response::make_error_response( _error.unwrap() )
                             .stringify();
-        if ( _check_io( write( _fd, s.c_str(), s.size() ), "write" ) ) {
+        if ( _check_io( write( _fd, s.c_str(), s.size() ) ) ) {
             return;
         }
         kill_me();
@@ -171,7 +171,7 @@ void ServerCluster::ClientCallback::handle_write() {
     RequestHandler rh( r, _vhm[_request.unwrap().header().get( HOST )] );
     HTTP::Response response( rh.make_response() );
     std::string    s( response.stringify() );
-    if ( _check_io( write( _fd, s.c_str(), s.size() ), "write" ) ) { return; }
+    if ( _check_io( write( _fd, s.c_str(), s.size() ) ) ) { return; }
     _log_write_response( response.code );
     if ( _request.unwrap().header().get(
              HTTP::Header::key_to_string().at( HTTP::Header::CONNECTION ) )
@@ -210,15 +210,8 @@ void ServerCluster::ClientCallback::_log_write_response(
               << HTTP::Response::code_to_message( code ) << std::endl;
 }
 
-void ServerCluster::ClientCallback::_log_fatal( const std::string &msg ) const {
-    std::cout << CYAN << '[' << _fd << ']' << ' ' << RED << "fatal: " << RESET
-              << msg << std::endl;
-}
-
-bool ServerCluster::ClientCallback::_check_io( ssize_t            ret,
-                                               const std::string &msg ) {
+bool ServerCluster::ClientCallback::_check_io( ssize_t            ret) {
     if ( ret > 0 ) { return false; }
-    _log_fatal( msg );
     kill_me();
     std::cout << CYAN << '[' << _fd << ']' << YELLOW << " closed" << RESET
               << std::endl;

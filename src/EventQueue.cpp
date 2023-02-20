@@ -132,10 +132,6 @@ void EventQueue::wait() {
     if ( n_events == -1 ) { throw std::runtime_error( "kevent" ); }
     for ( int i = 0; i < n_events; i++ ) {
         if ( !_callbacks.count( _events[i].ident ) ) { continue; }
-        if ( _callbacks.at( _events[i].ident )->get_kill_me() ) {
-            remove( _events[i].ident );
-            continue;
-        }
         switch ( _events[i].filter ) {
         case EVFILT_READ:
             _callbacks.at( _events[i].ident )->handle_read();
@@ -150,10 +146,14 @@ void EventQueue::wait() {
           it != _callbacks.end(); ) {
         std::map< int, PolymorphicWrapper< CallbackBase > >::iterator tmp( it );
         tmp++;
-        if ( ( it->second->idle_to()
-               && time( 0 ) - it->second->last_t() > it->second->idle_to() )
-             || ( it->second->con_to()
-                  && time( 0 ) - it->second->t0() > it->second->con_to() ) ) {
+        if ( it->second->get_kill_me() ) {
+            remove( it->first );
+        } else if ( ( it->second->idle_to()
+                      && time( 0 ) - it->second->last_t()
+                             > it->second->idle_to() )
+                    || ( it->second->con_to()
+                         && time( 0 ) - it->second->t0()
+                                > it->second->con_to() ) ) {
             it->second->handle_timeout();
         }
         it = tmp;

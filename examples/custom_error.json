@@ -1,0 +1,15 @@
+[
+  {
+    "listen": ["0.0.0.0", 80],
+    "error_pages": {
+      "www/1.html": ["404"],
+      "www/2.html": ["405"]
+    },
+    "routes": {
+      "/route": {
+        "root": "www",
+        "methods": []
+      }
+    }
+  }
+]
